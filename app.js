@@ -148,8 +148,10 @@ function translateAuthError(code) {
 function initApp() {
   document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
 
-  // Boutons type
+  // Boutons type — attachés après login pour éviter les conflits
   ["small_t1","grand_t1","rondelle"].forEach(type => {
+    const btn = document.getElementById("btn-"+type);
+    btn.replaceWith(btn.cloneNode(true)); // supprime anciens listeners
     document.getElementById("btn-"+type).addEventListener("click", () => selectType(type));
   });
 
