@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Changement – Temp/Machine | SGD Pharma</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- TOOLTIP -->
+<div id="tooltip">
+  <div class="tt-header"><div class="tt-dot" id="tt-dot"></div><div class="tt-title" id="tt-title"></div></div>
+  <div class="tt-row"><span class="tt-lbl">Qui</span><span class="tt-val" id="tt-qui"></span></div>
+  <div class="tt-row"><span class="tt-lbl">Début</span><span class="tt-val" id="tt-start"></span></div>
+  <div class="tt-row"><span class="tt-lbl">Fin</span><span class="tt-val" id="tt-end"></span></div>
+  <div class="tt-dur" id="tt-dur"></div>
+  <div class="tt-comment-box" id="tt-comment-box" style="display:none">
+    <div class="tt-comment-label">Commentaire</div>
+    <div class="tt-comment-text" id="tt-comment"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     ÉCRAN DE CONNEXION
+════════════════════════════════════ -->
+<div id="login-screen" style="display:flex">
+  <div class="login-card">
+    <div class="login-logo"><span>SGD<br>Pharma</span></div>
+    <h1 class="login-title">Suivi des changements<br>Temp / Machine</h1>
+    <p class="login-subtitle">Sucy-en-Brie · Accès sécurisé</p>
+    <div class="login-form">
+      <div class="login-field">
+        <label for="login-email">IDENTIFIANT</label>
+        <input type="text" id="login-email" placeholder="admin.sgd@gmail.com" autocomplete="username">
+      </div>
+      <div class="login-field">
+        <label for="login-pass">MOT DE PASSE</label>
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <p id="login-error" class="login-error" style="display:none"></p>
+      <button id="login-btn" class="login-btn">Se connecter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     APPLICATION PRINCIPALE
+════════════════════════════════════ -->
+<div id="app" style="display:none">
+
+  <div class="hdr">
+    <div class="logo"><span>SGD<br>Pharma</span></div>
+    <div class="hdr-text">
+      <h1>Changement – Temp/Machine</h1>
+      <p><span class="status-dot"></span><span id="sync-status">Connexion…</span></p>
+    </div>
+    <div class="hdr-right">
+      <span id="user-label"></span>
+      <button id="logout-btn" title="Se déconnecter">⏻</button>
+    </div>
+  </div>
+
+  <div class="form-wrap">
+    <div class="machine-banner">SGD Pharma – Sucy-en-Brie</div>
+
+    <div class="info-sec">
+      <div class="info-sec-hd">Informations de la séance</div>
+      <div class="info-row"><label>Date</label><input id="f-date" type="date"></div>
+      <div class="info-row"><label>Machine</label><input id="f-machine-name" placeholder="ex : Machine 32B" autocomplete="off"></div>
+    </div>
+
+    <div class="type-selector">
+      <div class="type-selector-hd">Type de changement</div>
+      <div class="type-btns">
+        <button class="type-btn" data-type="small_t1" id="btn-small_t1">OBJECTIF<br>Petit t1</button>
+        <button class="type-btn" data-type="grand_t1" id="btn-grand_t1">OBJECTIF<br>Grand T1</button>
+        <button class="type-btn" data-type="rondelle" id="btn-rondelle">OBJECTIF<br>Rondelle</button>
+      </div>
+    </div>
+
+    <div id="dynamic-sections"></div>
+
+    <div class="history-sec">
+      <div class="history-hd">
+        Historique <span id="history-count" style="font-weight:400;font-size:10px"></span>
+        <span class="history-del-all" id="del-all-btn">Tout supprimer</span>
+      </div>
+      <div class="history-list" id="history-list"><div class="history-empty">Aucune séance enregistrée</div></div>
+    </div>
+
+    <div class="btns">
+      <button class="btn btn-ok" id="save-btn">✓ Enregistrer et afficher le Gantt</button>
+      <button class="btn btn-full" id="new-session-btn">Nouvelle séance (repartir à zéro)</button>
+    </div>
+    <div class="sync-info" id="sync-info"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="gantt-section" id="gantt-section">
+    <div class="gantt-header-block">
+      <div class="gantt-logo"><span>SGD<br>Pharma</span></div>
+      <div class="gantt-title">
+        <h2 id="gantt-machine-title">Changement – Temp/Machine</h2>
+        <p id="gantt-subtitle">SGD Pharma – Sucy-en-Brie</p>
+      </div>
+    </div>
+
+    <div class="cmp-bar" id="cmp-bar">
+      <div class="cmp-bar-info">2 éléments sélectionnés<span id="cmp-bar-names"></span></div>
+      <button class="cmp-bar-btn" id="do-compare-btn">Comparer ▶</button>
+    </div>
+
+    <div class="cmp-result" id="cmp-result">
+      <div class="cmp-result-hd">
+        <h3 id="cmp-result-title">Comparaison</h3>
+        <span class="cmp-close" id="close-compare-btn">Fermer</span>
+      </div>
+      <div class="cmp-body">
+        <div class="cmp-cards" id="cmp-cards"></div>
+        <div class="cmp-diff-box" id="cmp-diff-box"></div>
+      </div>
+    </div>
+
+    <div class="gantt-scroll">
+      <div id="gantt-container"><div class="empty-gantt">Sélectionnez un type et enregistrez pour afficher le Gantt</div></div>
+    </div>
+  </div>
+
+</div><!-- fin #app -->
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
