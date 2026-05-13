@@ -163,14 +163,9 @@ function initApp() {
     document.getElementById("btn-"+type).addEventListener("click", () => selectType(type));
   });
 
-  // Listeners Firebase
-  ["small_t1","grand_t1","rondelle"].forEach(type => {
-    onValue(ref(db, "types/"+type), snap => {
-      typeStates[type] = snap.val() || {};
-      if (type === activeType) renderDynamicSections();
-    });
-  });
-
+  // Listeners Firebase — on écoute uniquement les sessions et le statut
+  // Les données types/global ne sont PAS restaurées au démarrage
+  // L'utilisateur repart toujours sur un formulaire vide
   onValue(ref(db, "global"), snap => {
     document.getElementById("sync-status").textContent = "Connecté";
   });
