@@ -601,6 +601,123 @@ function doCompare() {
 
 function closeCompare() { document.getElementById("cmp-result").classList.remove("visible"); }
 
+
+// ── EXPORT EXCEL ─────────────────────────────────────────────
+
+function initExportButtons() {
+  document.getElementById('export-toggle-btn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    var menu = document.getElementById('export-menu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  });
+
+  document.addEventListener('click', function() {
+    document.getElementById('export-menu').style.display = 'none';
+  });
+
+  document.getElementById('export-all').addEventListener('click', function(e) {
+    e.stopPropagation();
+    exportToExcel(null, null);
+    document.getElementById('export-menu').style.display = 'none';
+  });
+
+  document.getElementById('export-month').addEventListener('click', function(e) {
+    e.stopPropagation();
+    var now  = new Date();
+    var from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+    var to   = new Date(now.getFullYear(), now.getMonth()+1, 0).toISOString().slice(0,10);
+    exportToExcel(from, to);
+    document.getElementById('export-menu').style.display = 'none';
+  });
+
+  document.getElementById('export-custom').addEventListener('click', function(e) {
+    e.stopPropagation();
+    var range = document.getElementById('export-date-range');
+    range.style.display = range.style.display === 'none' ? 'flex' : 'none';
+  });
+
+  document.getElementById('export-confirm-btn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    var from = document.getElementById('export-date-from').value;
+    var to   = document.getElementById('export-date-to').value;
+    if (!from || !to) { alert('Veuillez choisir les deux dates.'); return; }
+    exportToExcel(from, to);
+    document.getElementById('export-menu').style.display = 'none';
+    document.getElementById('export-date-range').style.display = 'none';
+  });
+}
+
+function exportToExcel(dateFrom, dateTo) {
+  var sessions = Object.values(allSessions);
+
+  var filtered = sessions;
+  if (dateFrom && dateTo) {
+    filtered = sessions.filter(function(s) { return s.date >= dateFrom && s.date <= dateTo; });
+  }
+
+  if (filtered.length === 0) {
+    alert('Aucune séance trouvée pour cette période.');
+    return;
+  }
+
+  filtered.sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+
+  var rows = [];
+  rows.push(['Date', 'Jour', 'Machine', 'Type', 'Tâche', 'Qui', 'Début', 'Fin', 'Durée (min)', 'Commentaire', 'Objectif (min)', 'Écart (min)']);
+
+  filtered.forEach(function(session) {
+    var def       = session.activeType && TYPE_DATA[session.activeType] ? TYPE_DATA[session.activeType] : null;
+    var typeLabel = def ? def.label : (session.type || '');
+    var dateStr   = session.date || '';
+    var jourStr   = dateStr ? new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', {weekday: 'long'}) : '';
+    var machine   = session.machine || '';
+    var tasks     = session.typeData ? (session.typeData.tasks  || {}) : {};
+    var target    = session.typeData ? (session.typeData.target || {}) : {};
+
+    var tStart = getTV(target.sh||'', target.sm||'');
+    var tEnd   = getTV(target.eh||'', target.em||'');
+    var tSMin  = toMin(tStart);
+    var tEMin  = toMin(tEnd);
+    var tDur   = (tSMin !== null && tEMin !== null) ? tEMin - tSMin : '';
+    rows.push([dateStr, jourStr, machine, typeLabel, 'Objectif', '—', tStart, tEnd, tDur, target.comment||'', '', '']);
+
+    if (def) {
+      def.tasks.forEach(function(task) {
+        var t     = tasks[task.id] || {};
+        var start = getTV(t.sh||'', t.sm||'');
+        var end   = getTV(t.eh||'', t.em||'');
+        var sMin  = toMin(start);
+        var eMin  = toMin(end);
+        var dur   = (sMin !== null && eMin !== null) ? eMin - sMin : '';
+        var obj   = tDur !== '' ? tDur : '';
+        var ecart = (dur !== '' && obj !== '') ? dur - obj : '';
+        rows.push([dateStr, jourStr, machine, typeLabel, task.machine, task.qui, start, end, dur, t.comment||'', obj, ecart]);
+      });
+    }
+
+    rows.push(['', '', '', '', '', '', '', '', '', '', '', '']);
+  });
+
+  var csv = rows.map(function(row) {
+    return row.map(function(cell) {
+      var str = String(cell !== null && cell !== undefined ? cell : '');
+      return (str.indexOf(';') > -1 || str.indexOf('"') > -1 || str.indexOf('\n') > -1)
+        ? '"' + str.replace(/"/g, '""') + '"'
+        : str;
+    }).join(';');
+  }).join('\n');
+
+  var BOM  = '\uFEFF';
+  var blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  var now  = new Date().toLocaleDateString('fr-FR').replace(/\//g,'-');
+  a.href     = url;
+  a.download = 'SGD_Pharma_Gantt_' + now + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ── Utilitaire encodage commentaires ─────────────────────────
 function encCmt(str) {
   if (!str) return "";
