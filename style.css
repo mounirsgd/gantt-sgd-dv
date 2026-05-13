@@ -256,3 +256,45 @@ table.gantt tr.sel-b td { background: #e8f5e9 !important; outline: 2px solid #22
 .tt-comment-box { margin-top: 8px; padding: 8px 10px; background: rgba(255,255,255,.12); border-radius: 8px; border-left: 3px solid #ffd60a; line-height: 1.6; }
 .tt-comment-label { font-size: 10px; font-weight: 700; color: #ffd60a; text-transform: uppercase; margin-bottom: 4px; }
 .tt-comment-text { font-size: 12px; color: #f0f0f0; white-space: pre-line; }
+
+/* ── EXPORT EXCEL ────────────────────────────────────────────── */
+.export-row { justify-content: space-between; align-items: center; }
+.export-label { font-size: 13px; color: #c7c7cc; font-style: italic; }
+.export-right { position: relative; }
+.export-btn {
+  background: #1a3a6b; color: #fff;
+  border: none; border-radius: 8px;
+  padding: 7px 14px; font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: Arial, sans-serif;
+  transition: background .15s;
+}
+.export-btn:hover { background: #142d55; }
+.export-menu {
+  position: absolute; right: 0; top: 110%;
+  background: #fff; border: 1px solid #e0e0e5;
+  border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  min-width: 200px; z-index: 500; overflow: hidden;
+}
+.export-menu-item {
+  padding: 11px 16px; font-size: 13px; cursor: pointer;
+  border-bottom: 1px solid #f0f0f2; color: #1c1c1e;
+  transition: background .1s;
+}
+.export-menu-item:last-child { border-bottom: none; }
+.export-menu-item:hover { background: #f0f4ff; color: #1a3a6b; font-weight: 700; }
+.export-date-range {
+  padding: 10px 12px; display: flex;
+  align-items: center; gap: 6px; flex-wrap: wrap;
+  background: #f7f7f8; border-top: 1px solid #e0e0e5;
+}
+.export-date-range input {
+  flex: 1; min-width: 120px; padding: 5px 8px;
+  border: 1px solid #d1d1d6; border-radius: 6px;
+  font-size: 12px; font-family: Arial, sans-serif;
+}
+.export-date-range span { font-size: 12px; color: #6c6c70; }
+.export-date-range button {
+  padding: 5px 12px; background: #1a3a6b; color: #fff;
+  border: none; border-radius: 6px; font-size: 12px;
+  font-weight: 700; cursor: pointer; font-family: Arial, sans-serif;
+}
