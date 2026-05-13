@@ -146,7 +146,15 @@ function translateAuthError(code) {
 
 // ── INIT APP ─────────────────────────────────────────────────
 function initApp() {
-  document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
+  // Formulaire toujours vide à la connexion
+  activeType = null;
+  typeStates = { small_t1:{}, grand_t1:{}, rondelle:{} };
+  selectedIds = [];
+  document.getElementById("f-date").value         = new Date().toISOString().slice(0,10);
+  document.getElementById("f-machine-name").value  = "";
+  document.getElementById("dynamic-sections").innerHTML = "";
+  document.getElementById("gantt-container").innerHTML  = '<div class="empty-gantt">Sélectionnez un type et enregistrez pour afficher le Gantt</div>';
+  document.querySelectorAll(".type-btn").forEach(b => b.classList.remove("active"));
 
   // Boutons type — attachés après login pour éviter les conflits
   ["small_t1","grand_t1","rondelle"].forEach(type => {
@@ -164,9 +172,6 @@ function initApp() {
   });
 
   onValue(ref(db, "global"), snap => {
-    // On ne restaure pas le formulaire au démarrage
-    // Chaque utilisateur commence avec un formulaire vide
-    // Pour revoir une séance : utiliser le bouton Charger dans l'historique
     document.getElementById("sync-status").textContent = "Connecté";
   });
 
@@ -545,10 +550,16 @@ function showTT(e, label, qui, start, end, color, comment) {
   document.getElementById("tt-comment").textContent = decoded;
   cb.style.display = decoded ? "block" : "none";
   TT.classList.add("visible");
-  let x=e.clientX+16, y=e.clientY+16;
-  if(x+310>window.innerWidth) x=e.clientX-310;
-  if(y+230>window.innerHeight) y=e.clientY-230;
-  TT.style.left=x+"px"; TT.style.top=y+"px";
+  // Calcul dynamique de la hauteur réelle du tooltip
+  const ttH = TT.offsetHeight || 250;
+  const ttW = TT.offsetWidth  || 310;
+  let x = e.clientX + 16;
+  let y = e.clientY + 16;
+  if (x + ttW > window.innerWidth)  x = e.clientX - ttW - 8;
+  if (y + ttH > window.innerHeight) y = e.clientY - ttH - 8;
+  if (y < 0) y = 8;
+  TT.style.left = x + "px";
+  TT.style.top  = y + "px";
 }
 function hideTT() { document.getElementById("tooltip").classList.remove("visible"); }
 
