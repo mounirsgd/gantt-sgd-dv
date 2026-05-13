@@ -6,7 +6,7 @@
 <title>Changement – Temp/Machine | SGD Pharma</title>
 <link rel="stylesheet" href="style.css">
 </head>
-<body> 
+<body>
 
 <!-- TOOLTIP -->
 <div id="tooltip">
@@ -68,6 +68,25 @@
       <div class="info-sec-hd">Informations de la séance</div>
       <div class="info-row"><label>Date</label><input id="f-date" type="date"></div>
       <div class="info-row"><label>Machine</label><input id="f-machine-name" placeholder="ex : Machine 32B" autocomplete="off"></div>
+      <div class="info-row export-row">
+        <span class="export-label">Exporter les données</span>
+        <div class="export-right">
+          <div class="export-dropdown" id="export-dropdown">
+            <button class="export-btn" id="export-toggle-btn">📊 Exporter Excel ▾</button>
+            <div class="export-menu" id="export-menu" style="display:none">
+              <div class="export-menu-item" id="export-all">Tout exporter</div>
+              <div class="export-menu-item" id="export-month">Ce mois-ci</div>
+              <div class="export-menu-item" id="export-custom">Choisir une période</div>
+              <div class="export-date-range" id="export-date-range" style="display:none">
+                <input type="date" id="export-date-from" />
+                <span>au</span>
+                <input type="date" id="export-date-to" />
+                <button id="export-confirm-btn">OK</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="type-selector">
