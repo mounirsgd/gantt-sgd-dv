@@ -61,6 +61,7 @@ const TYPE_DATA = {
 };
 
 // ── État local ───────────────────────────────────────────────
+let allSessions = {};
 let activeType  = null;
 let typeStates  = { small_t1:{}, grand_t1:{}, rondelle:{} };
 let selectedIds = [];
@@ -170,7 +171,7 @@ function initApp() {
     document.getElementById("sync-status").textContent = "Connecté";
   });
 
-  onValue(ref(db, "sessions"), snap => renderHistory(snap.val() || {}));
+  onValue(ref(db, "sessions"), snap => { allSessions = snap.val() || {}; renderHistory(allSessions); });
 
   // Boutons
   document.getElementById("save-btn").addEventListener("click", saveSession);
