@@ -178,6 +178,7 @@ function initApp() {
   document.getElementById("del-all-btn").addEventListener("click", deleteAllHistory);
   document.getElementById("do-compare-btn").addEventListener("click", doCompare);
   document.getElementById("close-compare-btn").addEventListener("click", closeCompare);
+  initExportButtons();
 
   // Tooltip
   const TT = document.getElementById("tooltip");
