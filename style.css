@@ -109,7 +109,7 @@ body { font-family: Arial, sans-serif; background: #f2f2f7; color: #1c1c1e; min-
 .type-btn[data-type="grand_t1"].active { background: #c0392b; color: #fff; }
 .type-btn[data-type="rondelle"].active  { background: #7d3c98; color: #fff; }
 
-.info-sec { background: #fff; border-radius: 12px; border: 1px solid #e0e0e5; margin-bottom: 10px; overflow: hidden; }
+.info-sec { background: #fff; border-radius: 12px; border: 1px solid #e0e0e5; margin-bottom: 10px; overflow: visible; }
 .info-sec-hd { font-size: 11px; font-weight: 700; color: #6c6c70; padding: 7px 12px; background: #f7f7f8; border-bottom: 1px solid #e0e0e5; text-transform: uppercase; }
 .info-row { display: flex; align-items: center; padding: 10px 12px; border-bottom: 1px solid #f0f0f2; }
 .info-row:last-child { border-bottom: none; }
