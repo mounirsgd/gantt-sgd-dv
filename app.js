@@ -347,6 +347,26 @@ async function saveSession() {
   const date     = document.getElementById("f-date").value;
   const machine  = document.getElementById("f-machine-name").value.trim();
 
+  if (!date || !machine || !activeType) {
+    alert("Veuillez remplir la date, la machine et le type de changement.");
+    return;
+  }
+
+  // Vérifier si une séance strictement identique existe déjà
+  // Bloqué uniquement si date + machine + type + toutes les heures sont identiques
+  const newTasks  = JSON.stringify(typeData.tasks  || {});
+  const newTarget = JSON.stringify(typeData.target || {});
+  const doublon = Object.values(allSessions).find(function(s) {
+    if (s.date !== date || s.machine !== machine || s.activeType !== activeType) return false;
+    const sTasks  = JSON.stringify((s.typeData && s.typeData.tasks)  || {});
+    const sTarget = JSON.stringify((s.typeData && s.typeData.target) || {});
+    return sTasks === newTasks && sTarget === newTarget;
+  });
+  if (doublon) {
+    alert("Cette séance est identique à une séance déjà enregistrée. Aucune modification détectée.");
+    return;
+  }
+
   if (activeType) await set(ref(db, "types/"+activeType), typeData);
   await set(ref(db, "global"), { date, machine, activeType, savedAt: Date.now() });
   if (activeType) typeStates[activeType] = typeData;
