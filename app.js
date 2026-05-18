@@ -629,12 +629,17 @@ function closeCompare() { document.getElementById("cmp-result").classList.remove
 function initExportButtons() {
   document.getElementById('export-toggle-btn').addEventListener('click', function(e) {
     e.stopPropagation();
+    e.preventDefault();
     var menu = document.getElementById('export-menu');
     menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
   });
 
-  document.addEventListener('click', function() {
-    document.getElementById('export-menu').style.display = 'none';
+  // Fermer le menu seulement si on clique en dehors
+  document.addEventListener('click', function(e) {
+    var dropdown = document.getElementById('export-dropdown');
+    if (dropdown && !dropdown.contains(e.target)) {
+      document.getElementById('export-menu').style.display = 'none';
+    }
   });
 
   document.getElementById('export-all').addEventListener('click', function(e) {
