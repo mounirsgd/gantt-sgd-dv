@@ -705,30 +705,28 @@ function exportToExcel(dateFrom, dateTo) {
     rows.push([dateStr, jourStr, machine, typeLabel, tStart, tEnd, tDur, tCmt]);
   });
 
-  // Générer un fichier .xlsx avec SheetJS
-  var ws   = XLSX.utils.aoa_to_sheet(rows);
-  var wb   = XLSX.utils.book_new();
+  // Générer CSV compatible Excel français
+  var csv = rows.map(function(row) {
+    return row.map(function(cell) {
+      var str = String(cell !== null && cell !== undefined ? cell : '');
+      str = str.replace(/\n/g, ' | ').replace(/\r/g, '');
+      return (str.indexOf(';') > -1 || str.indexOf('"') > -1)
+        ? '"' + str.replace(/"/g, '""') + '"'
+        : str;
+    }).join(';');
+  }).join('\n');
 
-  // Largeur des colonnes
-  ws['!cols'] = [
-    {wch:12}, // Date
-    {wch:10}, // Jour
-    {wch:14}, // Machine
-    {wch:22}, // Type
-    {wch:30}, // Tâche
-    {wch:16}, // Qui
-    {wch:8},  // Début
-    {wch:8},  // Fin
-    {wch:12}, // Durée
-    {wch:40}, // Commentaire
-    {wch:14}, // Objectif
-    {wch:12}, // Écart
-  ];
-
-  XLSX.utils.book_append_sheet(wb, ws, 'Séances');
-
-  var now = new Date().toLocaleDateString('fr-FR').replace(/\//g,'-');
-  XLSX.writeFile(wb, 'SGD_Pharma_Gantt_' + now + '.xlsx');
+  var BOM  = '\uFEFF';
+  var blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  var now  = new Date().toLocaleDateString('fr-FR').replace(/\//g, '-');
+  a.href     = url;
+  a.download = 'SGD_Pharma_Gantt_' + now + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ── Utilitaire encodage commentaires ─────────────────────────
