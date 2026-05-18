@@ -685,7 +685,7 @@ function exportToExcel(dateFrom, dateTo) {
   filtered.sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
 
   var rows = [];
-  rows.push(['Date', 'Jour', 'Machine', 'Type', 'Tâche', 'Qui', 'Début', 'Fin', 'Durée (min)', 'Commentaire', 'Objectif (min)', 'Écart (min)']);
+  rows.push(['Date', 'Jour', 'Machine', 'Type', 'Début objectif', 'Fin objectif', 'Durée objectif (min)', 'Commentaire objectif']);
 
   filtered.forEach(function(session) {
     var def       = session.activeType && TYPE_DATA[session.activeType] ? TYPE_DATA[session.activeType] : null;
@@ -693,7 +693,6 @@ function exportToExcel(dateFrom, dateTo) {
     var dateStr   = session.date || '';
     var jourStr   = dateStr ? new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', {weekday: 'long'}) : '';
     var machine   = session.machine || '';
-    var tasks     = session.typeData ? (session.typeData.tasks  || {}) : {};
     var target    = session.typeData ? (session.typeData.target || {}) : {};
 
     var tStart = getTV(target.sh||'', target.sm||'');
@@ -701,45 +700,35 @@ function exportToExcel(dateFrom, dateTo) {
     var tSMin  = toMin(tStart);
     var tEMin  = toMin(tEnd);
     var tDur   = (tSMin !== null && tEMin !== null) ? tEMin - tSMin : '';
-    rows.push([dateStr, jourStr, machine, typeLabel, 'Objectif', '—', tStart, tEnd, tDur, target.comment||'', '', '']);
+    var tCmt   = (target.comment||'').replace(/\n/g, ' | ').replace(/\r/g, '');
 
-    if (def) {
-      def.tasks.forEach(function(task) {
-        var t     = tasks[task.id] || {};
-        var start = getTV(t.sh||'', t.sm||'');
-        var end   = getTV(t.eh||'', t.em||'');
-        var sMin  = toMin(start);
-        var eMin  = toMin(end);
-        var dur   = (sMin !== null && eMin !== null) ? eMin - sMin : '';
-        var obj   = tDur !== '' ? tDur : '';
-        var ecart = (dur !== '' && obj !== '') ? dur - obj : '';
-        rows.push([dateStr, jourStr, machine, typeLabel, task.machine, task.qui, start, end, dur, t.comment||'', obj, ecart]);
-      });
-    }
-
-    rows.push(['', '', '', '', '', '', '', '', '', '', '', '']);
+    rows.push([dateStr, jourStr, machine, typeLabel, tStart, tEnd, tDur, tCmt]);
   });
 
-  var csv = rows.map(function(row) {
-    return row.map(function(cell) {
-      var str = String(cell !== null && cell !== undefined ? cell : '');
-      // Remplacer les retours à la ligne par un espace pour éviter les décalages dans Excel
-      str = str.replace(/\n/g, ' | ').replace(/\r/g, '');
-      return (str.indexOf(';') > -1 || str.indexOf('"') > -1)
-        ? '"' + str.replace(/"/g, '""') + '"'
-        : str;
-    }).join(';');
-  }).join('\n');
+  // Générer un fichier .xlsx avec SheetJS
+  var ws   = XLSX.utils.aoa_to_sheet(rows);
+  var wb   = XLSX.utils.book_new();
 
-  var BOM  = '\uFEFF';
-  var blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
-  var now  = new Date().toLocaleDateString('fr-FR').replace(/\//g,'-');
-  a.href     = url;
-  a.download = 'SGD_Pharma_Gantt_' + now + '.csv';
-  a.click();
-  URL.revokeObjectURL(url);
+  // Largeur des colonnes
+  ws['!cols'] = [
+    {wch:12}, // Date
+    {wch:10}, // Jour
+    {wch:14}, // Machine
+    {wch:22}, // Type
+    {wch:30}, // Tâche
+    {wch:16}, // Qui
+    {wch:8},  // Début
+    {wch:8},  // Fin
+    {wch:12}, // Durée
+    {wch:40}, // Commentaire
+    {wch:14}, // Objectif
+    {wch:12}, // Écart
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Séances');
+
+  var now = new Date().toLocaleDateString('fr-FR').replace(/\//g,'-');
+  XLSX.writeFile(wb, 'SGD_Pharma_Gantt_' + now + '.xlsx');
 }
 
 // ── Utilitaire encodage commentaires ─────────────────────────
