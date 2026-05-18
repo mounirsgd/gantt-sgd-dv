@@ -685,7 +685,7 @@ function exportToExcel(dateFrom, dateTo) {
   filtered.sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
 
   var rows = [];
-  rows.push(['Date', 'Jour', 'Machine', 'Type', 'Début objectif', 'Fin objectif', 'Durée objectif (min)', 'Commentaire objectif']);
+  rows.push(['Date', 'Jour', 'Machine', 'Type', 'Tâche', 'Qui', 'Début', 'Fin', 'Durée (min)', 'Commentaire']);
 
   filtered.forEach(function(session) {
     var def       = session.activeType && TYPE_DATA[session.activeType] ? TYPE_DATA[session.activeType] : null;
@@ -693,16 +693,34 @@ function exportToExcel(dateFrom, dateTo) {
     var dateStr   = session.date || '';
     var jourStr   = dateStr ? new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', {weekday: 'long'}) : '';
     var machine   = session.machine || '';
+    var tasks     = session.typeData ? (session.typeData.tasks  || {}) : {};
     var target    = session.typeData ? (session.typeData.target || {}) : {};
 
+    // Ligne objectif
     var tStart = getTV(target.sh||'', target.sm||'');
     var tEnd   = getTV(target.eh||'', target.em||'');
     var tSMin  = toMin(tStart);
     var tEMin  = toMin(tEnd);
     var tDur   = (tSMin !== null && tEMin !== null) ? tEMin - tSMin : '';
     var tCmt   = (target.comment||'').replace(/\n/g, ' | ').replace(/\r/g, '');
+    rows.push([dateStr, jourStr, machine, typeLabel, 'Objectif', '—', tStart, tEnd, tDur, tCmt]);
 
-    rows.push([dateStr, jourStr, machine, typeLabel, tStart, tEnd, tDur, tCmt]);
+    // Lignes tâches
+    if (def) {
+      def.tasks.forEach(function(task) {
+        var t     = tasks[task.id] || {};
+        var start = getTV(t.sh||'', t.sm||'');
+        var end   = getTV(t.eh||'', t.em||'');
+        var sMin  = toMin(start);
+        var eMin  = toMin(end);
+        var dur   = (sMin !== null && eMin !== null) ? eMin - sMin : '';
+        var cmt   = (t.comment||'').replace(/\n/g, ' | ').replace(/\r/g, '');
+        rows.push([dateStr, jourStr, machine, typeLabel, task.machine, task.qui, start, end, dur, cmt]);
+      });
+    }
+
+    // Ligne vide séparatrice entre séances
+    rows.push(['', '', '', '', '', '', '', '', '', '']);
   });
 
   // Générer CSV compatible Excel français
