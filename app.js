@@ -723,7 +723,9 @@ function exportToExcel(dateFrom, dateTo) {
   var csv = rows.map(function(row) {
     return row.map(function(cell) {
       var str = String(cell !== null && cell !== undefined ? cell : '');
-      return (str.indexOf(';') > -1 || str.indexOf('"') > -1 || str.indexOf('\n') > -1)
+      // Remplacer les retours à la ligne par un espace pour éviter les décalages dans Excel
+      str = str.replace(/\n/g, ' | ').replace(/\r/g, '');
+      return (str.indexOf(';') > -1 || str.indexOf('"') > -1)
         ? '"' + str.replace(/"/g, '""') + '"'
         : str;
     }).join(';');
