@@ -66,6 +66,8 @@ let activeType  = null;
 let typeStates  = { small_t1:{}, grand_t1:{}, rondelle:{} };
 let selectedIds = [];
 let allTasks    = {};
+let historyPage = 0;
+const HISTORY_PAGE_SIZE = 5;
 
 // ── Sélecteurs DOM ───────────────────────────────────────────
 const loginScreen = document.getElementById("login-screen");
@@ -409,7 +411,13 @@ function renderHistory(sessions) {
   document.getElementById("history-count").textContent = arr.length ? arr.length+" séance(s)" : "";
   if (!arr.length) { list.innerHTML = '<div class="history-empty">Aucune séance enregistrée</div>'; return; }
 
-  list.innerHTML = arr.map(([id, s]) => {
+  const totalPages = Math.ceil(arr.length / HISTORY_PAGE_SIZE);
+  if (historyPage >= totalPages) historyPage = totalPages - 1;
+  if (historyPage < 0) historyPage = 0;
+
+  const pageArr = arr.slice(historyPage * HISTORY_PAGE_SIZE, (historyPage + 1) * HISTORY_PAGE_SIZE);
+
+  let html = pageArr.map(([id, s]) => {
     const def    = s.activeType && TYPE_DATA[s.activeType] ? TYPE_DATA[s.activeType] : null;
     const color  = def ? def.color : "#6c6c70";
     const typeLbl= def ? def.label : "";
@@ -427,12 +435,28 @@ function renderHistory(sessions) {
     '</div>';
   }).join("");
 
+  // Pagination
+  if (totalPages > 1) {
+    html += '<div class="history-pagination">' +
+      '<button class="history-page-btn" id="hist-prev" '+(historyPage===0?'disabled':'')+'>← Précédent</button>' +
+      '<span class="history-page-info">'+(historyPage+1)+' / '+totalPages+'</span>' +
+      '<button class="history-page-btn" id="hist-next" '+(historyPage>=totalPages-1?'disabled':'')+'>Suivant →</button>' +
+    '</div>';
+  }
+
+  list.innerHTML = html;
+
   list.querySelectorAll("[data-load]").forEach(el =>
     el.addEventListener("click", () => loadHistorySession(el.dataset.load))
   );
   list.querySelectorAll("[data-del]").forEach(el =>
     el.addEventListener("click", () => deleteSession(el.dataset.del))
   );
+
+  const prevBtn = document.getElementById("hist-prev");
+  const nextBtn = document.getElementById("hist-next");
+  if (prevBtn) prevBtn.addEventListener("click", () => { historyPage--; renderHistory(allSessions); });
+  if (nextBtn) nextBtn.addEventListener("click", () => { historyPage++; renderHistory(allSessions); });
 }
 
 async function loadHistorySession(id) {
@@ -567,16 +591,31 @@ function showTT(e, label, qui, start, end, color, comment) {
   document.getElementById("tt-comment").textContent = decoded;
   cb.style.display = decoded ? "block" : "none";
   TT.classList.add("visible");
-  // Calcul dynamique de la hauteur réelle du tooltip
   const ttH = TT.offsetHeight || 250;
   const ttW = TT.offsetWidth  || 310;
-  let x = e.clientX + 16;
-  let y = e.clientY + 16;
-  if (x + ttW > window.innerWidth)  x = e.clientX - ttW - 8;
-  if (y + ttH > window.innerHeight) y = e.clientY - ttH - 8;
-  if (y < 0) y = 8;
-  TT.style.left = x + "px";
-  TT.style.top  = y + "px";
+  const isMobile = window.innerWidth < 600;
+  if (isMobile) {
+    // Sur mobile : centré en bas de l'écran
+    TT.style.left   = "50%";
+    TT.style.transform = "translateX(-50%)";
+    TT.style.top    = "auto";
+    TT.style.bottom = "10px";
+    TT.style.width  = "90vw";
+    TT.style.maxWidth = "90vw";
+  } else {
+    // Sur PC : position normale près du curseur
+    TT.style.transform = "";
+    TT.style.bottom = "auto";
+    TT.style.width  = "";
+    TT.style.maxWidth = "300px";
+    let x = e.clientX + 16;
+    let y = e.clientY + 16;
+    if (x + ttW > window.innerWidth)  x = e.clientX - ttW - 8;
+    if (y + ttH > window.innerHeight) y = e.clientY - ttH - 8;
+    if (y < 0) y = 8;
+    TT.style.left = x + "px";
+    TT.style.top  = y + "px";
+  }
 }
 function hideTT() { document.getElementById("tooltip").classList.remove("visible"); }
 
