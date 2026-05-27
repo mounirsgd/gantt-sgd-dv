@@ -483,3 +483,48 @@ table.gantt tr.sel-b td { background: #e8f5e9 !important; outline: 2px solid #22
   flex-shrink: 0;
 }
 .annot-del:hover { opacity: .7; }
+
+/* ── ÉDITEUR QUI INLINE ─────────────────────────────────────── */
+.qui-editor {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  background: #fff;
+  border: 1.5px solid #1a3a6b;
+  border-radius: 8px;
+  padding: 6px;
+  display: flex;
+  gap: 4px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  white-space: nowrap;
+}
+.qui-editor-input {
+  border: 1px solid #d1d1d6;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+  width: 140px;
+  outline: none;
+}
+.qui-editor-input:focus { border-color: #1a3a6b; }
+.qui-editor-save {
+  background: #1a3a6b;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+}
+.qui-editor-cancel {
+  background: transparent;
+  color: #ff3b30;
+  border: 1px solid #ffb3b0;
+  border-radius: 5px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
