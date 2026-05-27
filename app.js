@@ -207,6 +207,9 @@ function initApp() {
 
 // ── SÉLECTION TYPE ───────────────────────────────────────────
 function selectType(type) {
+  // Vider toujours le formulaire du type précédent
+  if (activeType) typeStates[activeType] = {};
+
   if (activeType === type) {
     activeType = null;
     document.getElementById("btn-"+type).classList.remove("active");
@@ -214,7 +217,6 @@ function selectType(type) {
     activeType = type;
     document.querySelectorAll(".type-btn").forEach(b => b.classList.remove("active"));
     document.getElementById("btn-"+type).classList.add("active");
-    // Vider les données du type sélectionné pour repartir propre
     typeStates[type] = {};
   }
   renderDynamicSections();
@@ -401,6 +403,14 @@ async function saveSession() {
   setTimeout(() => document.getElementById("sync-status").textContent = "Connecté", 2000);
   renderGantt(date, machine, typeData);
   setTimeout(() => document.getElementById("gantt-section").scrollIntoView({behavior:"smooth"}), 100);
+
+  // Vider le formulaire après enregistrement
+  document.getElementById("f-machine-name").value = "";
+  document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
+  activeType = null;
+  typeStates = { small_t1:{}, grand_t1:{}, rondelle:{} };
+  document.querySelectorAll(".type-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("dynamic-sections").innerHTML = "";
 }
 
 // ── NOUVELLE SÉANCE ──────────────────────────────────────────
