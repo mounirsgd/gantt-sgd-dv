@@ -345,3 +345,13 @@ table.gantt tr.sel-b td { background: #e8f5e9 !important; outline: 2px solid #22
     transform: none !important;
   }
 }
+
+/* ── BOUTON MODIFIER HISTORIQUE ─────────────────────────────── */
+.history-edit-btn {
+  font-size: 11px;
+  color: #f59e0b;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.history-edit-btn:hover { text-decoration: underline; }
