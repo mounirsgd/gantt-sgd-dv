@@ -214,6 +214,8 @@ function selectType(type) {
     activeType = type;
     document.querySelectorAll(".type-btn").forEach(b => b.classList.remove("active"));
     document.getElementById("btn-"+type).classList.add("active");
+    // Vider les données du type sélectionné pour repartir propre
+    typeStates[type] = {};
   }
   renderDynamicSections();
   document.getElementById("gantt-container").innerHTML = '<div class="empty-gantt">Sélectionnez un type et enregistrez pour afficher le Gantt</div>';
