@@ -627,20 +627,16 @@ function renderGantt(date, machine, typeData) {
     chk.addEventListener("change", () => toggleSelect(chk.dataset.uid));
   });
 
-  // Clic sur "Qui" pour modifier
-  container.querySelectorAll(".who-editable").forEach(function(cell) {
-    cell.addEventListener("click", function() {
-      var uid     = cell.dataset.uid;
-      var current = ganttQuiOverrides[uid] || cell.textContent.replace(" ✏️","").trim();
-      var newQui  = prompt("Modifier le responsable pour cette séance :", current);
-      if (newQui !== null && newQui.trim() !== "") {
-        ganttQuiOverrides[uid] = newQui.trim();
-        cell.textContent = newQui.trim() + " ✏️";
-      }
-    });
+  // Clic sur "Qui" pour modifier — fenêtre custom
+  container.addEventListener("click", function(e) {
+    var cell = e.target.closest(".who-editable");
+    if (!cell) return;
+    var uid     = cell.dataset.uid;
+    var current = ganttQuiOverrides[uid] || cell.textContent.replace(" ✏️","").trim();
+    showQuiEditor(cell, uid, current);
   });
 
-  // Bouton annotation
+  // Bouton annotation — ajouté après le tableau dans la section Gantt
   var existingAddBtn = document.getElementById("add-annotation-btn");
   if (existingAddBtn) existingAddBtn.remove();
   var addBtn = document.createElement("button");
@@ -648,7 +644,8 @@ function renderGantt(date, machine, typeData) {
   addBtn.className = "btn-annotation-add";
   addBtn.textContent = "+ Ajouter une annotation";
   addBtn.addEventListener("click", function() { openAnnotationPanel(def, rows); });
-  container.appendChild(addBtn);
+  var ganttSection = document.getElementById("gantt-section");
+  ganttSection.appendChild(addBtn);
 
   // Afficher les annotations existantes
   renderAnnotations(container, rows, globalMin, span);
@@ -958,6 +955,58 @@ function exportToExcel(dateFrom, dateTo) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// ── Éditeur "Qui" inline ─────────────────────────────────────
+function showQuiEditor(cell, uid, current) {
+  // Supprimer éditeur existant
+  var existing = document.getElementById("qui-editor");
+  if (existing) existing.remove();
+
+  var editor = document.createElement("div");
+  editor.id = "qui-editor";
+  editor.className = "qui-editor";
+
+  var input = document.createElement("input");
+  input.type = "text";
+  input.value = current;
+  input.className = "qui-editor-input";
+  input.placeholder = "Nom du responsable";
+
+  var saveBtn = document.createElement("button");
+  saveBtn.textContent = "✓";
+  saveBtn.className = "qui-editor-save";
+
+  var cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "✕";
+  cancelBtn.className = "qui-editor-cancel";
+
+  editor.appendChild(input);
+  editor.appendChild(saveBtn);
+  editor.appendChild(cancelBtn);
+
+  // Positionner l'éditeur sous la cellule
+  cell.style.position = "relative";
+  cell.appendChild(editor);
+  input.focus();
+  input.select();
+
+  function applyEdit() {
+    var val = input.value.trim();
+    if (val) {
+      ganttQuiOverrides[uid] = val;
+      cell.textContent = val + " ✏️";
+      cell.dataset.uid = uid;
+    }
+    editor.remove();
+  }
+
+  saveBtn.addEventListener("click", applyEdit);
+  input.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") applyEdit();
+    if (e.key === "Escape") editor.remove();
+  });
+  cancelBtn.addEventListener("click", function() { editor.remove(); });
 }
 
 // ── Toast de notification ────────────────────────────────────
