@@ -391,16 +391,18 @@ async function saveSession() {
   if (activeType) {
     const def    = TYPE_DATA[activeType];
     const dl     = date ? new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"}) : "";
-    const sessId = "sess_"+activeType+"_"+Date.now();
+    const sessId = window._editingSessionId || "sess_"+activeType+"_"+Date.now();
     await set(ref(db, "sessions/"+sessId), {
       date, machine, activeType, typeData,
       title: [(machine||"Séance"), def?def.label:"", dl].filter(Boolean).join(" — "),
       savedAt: Date.now()
     });
+    window._editingSessionId = null;
   }
 
   document.getElementById("sync-status").textContent = "Enregistré ✓";
   setTimeout(() => document.getElementById("sync-status").textContent = "Connecté", 2000);
+  showToast("✓ Séance enregistrée avec succès !", "#34c759");
   renderGantt(date, machine, typeData);
   setTimeout(() => document.getElementById("gantt-section").scrollIntoView({behavior:"smooth"}), 100);
 
@@ -453,6 +455,7 @@ function renderHistory(sessions) {
       '</div>' +
       '<div class="history-item-actions">' +
         '<span class="history-load-btn" data-load="'+id+'">Charger</span>' +
+        '<span class="history-edit-btn" data-edit="'+id+'">Modifier</span>' +
         '<span class="history-del-btn"  data-del="'+id+'">Supprimer</span>' +
       '</div>' +
     '</div>';
@@ -471,6 +474,9 @@ function renderHistory(sessions) {
 
   list.querySelectorAll("[data-load]").forEach(el =>
     el.addEventListener("click", () => loadHistorySession(el.dataset.load))
+  );
+  list.querySelectorAll("[data-edit]").forEach(el =>
+    el.addEventListener("click", () => editHistorySession(el.dataset.edit))
   );
   list.querySelectorAll("[data-del]").forEach(el =>
     el.addEventListener("click", () => deleteSession(el.dataset.del))
@@ -501,6 +507,28 @@ async function loadHistorySession(id) {
   renderDynamicSections();
   renderGantt(d.date, d.machine, d.typeData || {});
   setTimeout(() => document.getElementById("gantt-section").scrollIntoView({behavior:"smooth"}), 200);
+}
+
+async function editHistorySession(id) {
+  const snap = await get(ref(db, "sessions/"+id));
+  const d = snap.val(); if (!d) return;
+
+  // Charger les données dans le formulaire
+  activeType = d.activeType;
+  if (d.typeData) typeStates[d.activeType] = d.typeData;
+  document.getElementById("f-date").value         = d.date    || "";
+  document.getElementById("f-machine-name").value = d.machine || "";
+  document.querySelectorAll(".type-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.type === activeType)
+  );
+  renderDynamicSections();
+
+  // Stocker l'ID pour écraser lors de la sauvegarde
+  window._editingSessionId = id;
+
+  // Scroll vers le formulaire
+  document.querySelector(".info-sec").scrollIntoView({behavior:"smooth"});
+  showToast("✏️ Séance chargée — modifiez puis enregistrez", "#1a3a6b");
 }
 
 async function deleteSession(id) {
@@ -812,6 +840,25 @@ function exportToExcel(dateFrom, dateTo) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// ── Toast de notification ────────────────────────────────────
+function showToast(message, color) {
+  var existing = document.getElementById("toast-notif");
+  if (existing) existing.remove();
+
+  var toast = document.createElement("div");
+  toast.id = "toast-notif";
+  toast.textContent = message;
+  toast.style.cssText = "position:fixed;top:70px;left:50%;transform:translateX(-50%);" +
+    "background:"+color+";color:#fff;padding:12px 24px;border-radius:10px;" +
+    "font-size:14px;font-weight:700;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);" +
+    "transition:opacity .3s;font-family:Arial,sans-serif;";
+  document.body.appendChild(toast);
+  setTimeout(function() {
+    toast.style.opacity = "0";
+    setTimeout(function() { toast.remove(); }, 300);
+  }, 2500);
 }
 
 // ── Utilitaire encodage commentaires ─────────────────────────
