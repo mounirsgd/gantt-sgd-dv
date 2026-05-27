@@ -118,10 +118,21 @@ logoutBtn.addEventListener("click", () => {
 
 // ── AUTH : observer (pour les rechargements de page) ─────────
 onAuthStateChanged(auth, user => {
-  if (user && appDiv.style.display === "none") {
+  if (user) {
+    // Toujours réinitialiser l'app quand l'état auth change
     afficherApp(user);
+  } else {
+    showLogin();
   }
 });
+
+function showLogin() {
+  loginScreen.style.display = "flex";
+  appDiv.style.display      = "none";
+  loginBtn.textContent      = "Se connecter";
+  loginBtn.disabled         = false;
+  loginError.style.display  = "none";
+}
 
 function afficherApp(user) {
   loginScreen.style.display = "none";
