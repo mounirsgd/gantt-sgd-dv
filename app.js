@@ -68,6 +68,8 @@ let selectedIds = [];
 let allTasks    = {};
 let historyPage = 0;
 const HISTORY_PAGE_SIZE = 5;
+let ganttQuiOverrides = {}; // stocke les "qui" modifiés dans le Gantt
+let ganttAnnotations  = []; // stocke les annotations ajoutées sur le Gantt
 
 // ── Sélecteurs DOM ───────────────────────────────────────────
 const loginScreen = document.getElementById("login-screen");
@@ -609,7 +611,8 @@ function renderGantt(date, machine, typeData) {
     }
     const isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
     const rowCls=isSelA?"sel-a":isSelB?"sel-b":idx%2===0?"odd":"even";
-    h += '<tr class="'+rowCls+'" data-uid="'+uid+'"><td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+'  data-uid="'+uid+'"></td><td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+task.machine+'</td><td class="info who-cell">'+task.qui+'</td><td class="info time-cell">'+(start||"—")+'</td><td class="info time-cell">'+(end||"—")+'</td><td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td></tr>';
+    var quiDisplay = ganttQuiOverrides[uid] || task.qui;
+    h += '<tr class="'+rowCls+'" data-uid="'+uid+'"><td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+'  data-uid="'+uid+'"></td><td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+task.machine+'</td><td class="info who-cell who-editable" data-uid="'+uid+'" title="Cliquer pour modifier">'+quiDisplay+' ✏️</td><td class="info time-cell">'+(start||"—")+'</td><td class="info time-cell">'+(end||"—")+'</td><td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td></tr>';
   });
 
   h += '</table>';
@@ -624,7 +627,122 @@ function renderGantt(date, machine, typeData) {
     chk.addEventListener("change", () => toggleSelect(chk.dataset.uid));
   });
 
+  // Clic sur "Qui" pour modifier
+  container.querySelectorAll(".who-editable").forEach(function(cell) {
+    cell.addEventListener("click", function() {
+      var uid     = cell.dataset.uid;
+      var current = ganttQuiOverrides[uid] || cell.textContent.replace(" ✏️","").trim();
+      var newQui  = prompt("Modifier le responsable pour cette séance :", current);
+      if (newQui !== null && newQui.trim() !== "") {
+        ganttQuiOverrides[uid] = newQui.trim();
+        cell.textContent = newQui.trim() + " ✏️";
+      }
+    });
+  });
+
+  // Bouton annotation
+  var existingAddBtn = document.getElementById("add-annotation-btn");
+  if (existingAddBtn) existingAddBtn.remove();
+  var addBtn = document.createElement("button");
+  addBtn.id        = "add-annotation-btn";
+  addBtn.className = "btn-annotation-add";
+  addBtn.textContent = "+ Ajouter une annotation";
+  addBtn.addEventListener("click", function() { openAnnotationPanel(def, rows); });
+  container.appendChild(addBtn);
+
+  // Afficher les annotations existantes
+  renderAnnotations(container, rows, globalMin, span);
+
   updateCmpBar();
+}
+
+// ── ANNOTATIONS ──────────────────────────────────────────────
+function openAnnotationPanel(def, rows) {
+  var existing = document.getElementById("annotation-panel");
+  if (existing) { existing.remove(); return; }
+
+  var panel = document.createElement("div");
+  panel.id = "annotation-panel";
+  panel.className = "annotation-panel";
+
+  var taskNames = (def ? def.tasks : []).map(function(t, i) { return {id:i, label:t.machine}; });
+
+  var html = '<div class="annotation-panel-title">📌 Nouvelle annotation</div>';
+  html += '<div class="annotation-panel-row"><label>Position</label>';
+  html += '<select id="annot-position">';
+  html += '<option value="0">Avant toutes les tâches</option>';
+  taskNames.forEach(function(t, i) {
+    html += '<option value="'+(i+1)+'">Après : '+t.label+'</option>';
+  });
+  html += '</select></div>';
+  html += '<div class="annotation-panel-row"><label>Commentaire</label>';
+  html += '<textarea id="annot-text" placeholder="Votre commentaire..." rows="2"></textarea></div>';
+  html += '<div class="annotation-panel-actions">';
+  html += '<button id="annot-save-btn" class="btn-annot-save">Ajouter</button>';
+  html += '<button id="annot-cancel-btn" class="btn-annot-cancel">Annuler</button>';
+  html += '</div>';
+  panel.innerHTML = html;
+
+  document.getElementById("gantt-container").appendChild(panel);
+
+  document.getElementById("annot-cancel-btn").addEventListener("click", function() { panel.remove(); });
+  document.getElementById("annot-save-btn").addEventListener("click", function() {
+    var pos  = parseInt(document.getElementById("annot-position").value);
+    var text = document.getElementById("annot-text").value.trim();
+    if (!text) { alert("Veuillez saisir un commentaire."); return; }
+    ganttAnnotations.push({ pos: pos, text: text, id: Date.now() });
+    panel.remove();
+    // Re-render gantt pour afficher l'annotation
+    var ganttDiv = document.getElementById("gantt-container");
+    renderAnnotations(ganttDiv, rows, globalMin, span);
+  });
+}
+
+function renderAnnotations(container, rows, globalMin, span) {
+  // Supprimer anciennes étiquettes
+  container.querySelectorAll(".gantt-annotation-label").forEach(function(el) { el.remove(); });
+
+  ganttAnnotations.forEach(function(annot) {
+    var label = document.createElement("div");
+    label.className = "gantt-annotation-label";
+    label.dataset.id = annot.id;
+
+    var dot = document.createElement("span");
+    dot.className = "annot-dot";
+    dot.textContent = "📌";
+
+    var bubble = document.createElement("div");
+    bubble.className = "annot-bubble";
+    bubble.textContent = annot.text;
+    bubble.style.display = "none";
+
+    var delBtn = document.createElement("span");
+    delBtn.className = "annot-del";
+    delBtn.textContent = "✕";
+    delBtn.title = "Supprimer";
+    delBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      ganttAnnotations = ganttAnnotations.filter(function(a) { return a.id !== annot.id; });
+      label.remove();
+    });
+
+    dot.addEventListener("click", function() {
+      bubble.style.display = bubble.style.display === "none" ? "block" : "none";
+    });
+
+    label.appendChild(dot);
+    label.appendChild(bubble);
+    label.appendChild(delBtn);
+
+    // Position après la ligne concernée
+    var targetRow = container.querySelectorAll("tr[data-uid]")[annot.pos];
+    if (targetRow) {
+      targetRow.insertAdjacentElement("afterend", label.cloneNode ? label : label);
+    } else {
+      container.appendChild(label);
+    }
+    container.appendChild(label);
+  });
 }
 
 // ── TOOLTIP ──────────────────────────────────────────────────
