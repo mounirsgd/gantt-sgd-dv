@@ -594,13 +594,22 @@ function renderGantt(date, machine, typeData) {
 
   allTasks = {};
   let minT = Infinity, maxT = -Infinity;
-  function regT(h,m,h2,m2) { const s=toMin(getTV(h,m)),e=toMin(getTV(h2,m2)); if(s!==null)minT=Math.min(minT,s); if(e!==null)maxT=Math.max(maxT,e); }
+  function regT(h,m,h2,m2) {
+    const s=toMin(getTV(h,m)), e=toMin(getTV(h2,m2));
+    // Ignorer les valeurs 0:00 qui correspondent à des champs vides
+    if(s!==null && s>0) minT=Math.min(minT,s);
+    if(e!==null && e>0) maxT=Math.max(maxT,e);
+  }
   regT(savedTarget.sh||"",savedTarget.sm||"",savedTarget.eh||"",savedTarget.em||"");
   def.tasks.forEach(task => { const t=savedTasks[task.id]||{}; regT(t.sh||"",t.sm||"",t.eh||"",t.em||""); });
 
-  if (!isFinite(minT)) minT=480; if (!isFinite(maxT)) maxT=minT+120;
-  minT = Math.floor(minT/60)*60; maxT = Math.ceil(maxT/60)*60+60;
-  const total=maxT-minT, slotMin=10, slots=total/slotMin, slotW=600/slots;
+  if (!isFinite(minT)) minT=360; if (!isFinite(maxT)) maxT=minT+120;
+  minT = Math.max(0, minT - 10); // 10 min avant la première tâche
+  maxT = maxT + 10;              // 10 min après la dernière tâche
+  minT = Math.floor(minT/60)*60;
+  maxT = Math.ceil(maxT/60)*60;
+  const total=maxT-minT, slotMin=10, slots=total/slotMin;
+  const slotW = Math.max(35, Math.min(90, 900/slots));
 
   const dateStr = date ? new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"}) : "";
   document.getElementById("gantt-machine-title").textContent = machine || "Changement – Temp/Machine";
