@@ -829,7 +829,7 @@ function openJustifPanel(pairKey, ecartMin, nameA, nameB, existing) {
   panel.className = "justif-panel";
 
   panel.innerHTML =
-    '<div class="justif-panel-title">✏️ Justification de l'écart (' + ecartMin + ' min)</div>' +
+    '<div class="justif-panel-title">✏️ Justification de l\'écart (' + ecartMin + ' min)</div>' +
     '<div class="justif-panel-sub">Entre : <strong>' + nameA + '</strong> et <strong>' + nameB + '</strong></div>' +
     '<textarea id="justif-text" class="justif-textarea" placeholder="Ex: Attente pièce, pause, problème technique...">' + existing + '</textarea>' +
     '<div class="justif-panel-actions">' +
