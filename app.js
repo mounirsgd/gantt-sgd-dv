@@ -188,7 +188,21 @@ function initApp() {
     document.getElementById("sync-status").textContent = "Connecté";
   });
 
-  onValue(ref(db, "sessions"), snap => { allSessions = snap.val() || {}; renderHistory(allSessions); });
+  onValue(ref(db, "sessions"), snap => {
+    allSessions = snap.val() || {};
+    renderHistory(allSessions);
+    // Si le Gantt est affiché, le mettre à jour automatiquement
+    var ganttSection = document.getElementById("gantt-section");
+    if (ganttSection && ganttSection.style.display !== "none" && activeType) {
+      var date    = document.getElementById("f-date").value;
+      var machine = document.getElementById("f-machine-name").value;
+      // Trouver la séance correspondante dans allSessions
+      var current = Object.values(allSessions).find(function(s) {
+        return s.date === date && s.machine === machine && s.activeType === activeType;
+      });
+      if (current) renderGantt(current.date, current.machine, current.typeData || {});
+    }
+  });
 
   // Boutons
   document.getElementById("save-btn").addEventListener("click", saveSession);
@@ -395,7 +409,17 @@ async function saveSession() {
   if (activeType) {
     const def    = TYPE_DATA[activeType];
     const dl     = date ? new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"}) : "";
-    const sessId = window._editingSessionId || "sess_"+activeType+"_"+Date.now();
+    // Si on est en mode édition OU si une séance identique existe déjà → écraser
+    var existingId = window._editingSessionId;
+    if (!existingId) {
+      // Chercher une séance avec même date + machine + type
+      var existing = Object.entries(allSessions).find(function(entry) {
+        var s = entry[1];
+        return s.date === date && s.machine === machine && s.activeType === activeType;
+      });
+      if (existing) existingId = existing[0];
+    }
+    const sessId = existingId || "sess_"+activeType+"_"+Date.now();
     await set(ref(db, "sessions/"+sessId), {
       date, machine, activeType, typeData,
       title: [(machine||"Séance"), def?def.label:"", dl].filter(Boolean).join(" — "),
@@ -412,7 +436,15 @@ async function saveSession() {
 
   // Vider le formulaire après enregistrement
   document.getElementById("f-machine-name").value = "";
-  document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
+  // Date auto-refresh — mise à jour chaque minute
+  function refreshDate() {
+    var dateInput = document.getElementById("f-date");
+    if (dateInput && !dateInput.value) {
+      dateInput.value = new Date().toISOString().slice(0,10);
+    }
+  }
+  refreshDate();
+  setInterval(refreshDate, 60000);
   activeType = null;
   typeStates = { small_t1:{}, grand_t1:{}, rondelle:{} };
   document.querySelectorAll(".type-btn").forEach(b => b.classList.remove("active"));
