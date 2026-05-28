@@ -69,7 +69,6 @@ let allTasks    = {};
 let historyPage = 0;
 const HISTORY_PAGE_SIZE = 5;
 let ganttQuiOverrides = {}; // stocke les "qui" modifiés dans le Gantt
-let ganttAnnotations  = []; // stocke les annotations ajoutées sur le Gantt
 let ganttCurrentRows = [];
 let ganttCurrentDef  = null;
 let ganttGlobalMin   = 0;
@@ -681,118 +680,13 @@ function renderGantt(date, machine, typeData) {
     showQuiEditor(cell, uid, current);
   });
 
-  // Bouton annotation — ajouté après le tableau dans la section Gantt
-  var existingAddBtn = document.getElementById("add-annotation-btn");
-  if (existingAddBtn) existingAddBtn.remove();
-  var addBtn = document.createElement("button");
-  addBtn.id        = "add-annotation-btn";
-  addBtn.className = "btn-annotation-add";
-  addBtn.textContent = "+ Ajouter une annotation";
-  // Stocker les tâches pour les annotations
+  // Stocker les tâches pour les justifications d'écart
   ganttCurrentRows = def ? def.tasks : [];
   ganttCurrentDef  = def;
   ganttGlobalMin   = minT;
   ganttSpan        = total;
-  addBtn.addEventListener("click", function() { openAnnotationPanel(ganttCurrentDef, ganttCurrentRows); });
-  // Ajouter le bouton directement dans gantt-section après le scroll
-  var ganttSectionEl = document.getElementById("gantt-section");
-  if (ganttSectionEl) {
-    ganttSectionEl.appendChild(addBtn);
-  }
-
-  // Afficher les annotations existantes
-  renderAnnotations(container, ganttCurrentRows, ganttGlobalMin, ganttSpan);
 
   updateCmpBar();
-}
-
-// ── ANNOTATIONS ──────────────────────────────────────────────
-function openAnnotationPanel(def, rows) {
-  var existing = document.getElementById("annotation-panel");
-  if (existing) { existing.remove(); return; }
-
-  var panel = document.createElement("div");
-  panel.id = "annotation-panel";
-  panel.className = "annotation-panel";
-
-  var taskNames = (def ? def.tasks : []).map(function(t, i) { return {id:i, label:t.machine}; });
-
-  var html = '<div class="annotation-panel-title">📌 Nouvelle annotation</div>';
-  html += '<div class="annotation-panel-row"><label>Position</label>';
-  html += '<select id="annot-position">';
-  html += '<option value="0">Avant toutes les tâches</option>';
-  taskNames.forEach(function(t, i) {
-    html += '<option value="'+(i+1)+'">Après : '+t.label+'</option>';
-  });
-  html += '</select></div>';
-  html += '<div class="annotation-panel-row"><label>Commentaire</label>';
-  html += '<textarea id="annot-text" placeholder="Votre commentaire..." rows="2"></textarea></div>';
-  html += '<div class="annotation-panel-actions">';
-  html += '<button id="annot-save-btn" class="btn-annot-save">Ajouter</button>';
-  html += '<button id="annot-cancel-btn" class="btn-annot-cancel">Annuler</button>';
-  html += '</div>';
-  panel.innerHTML = html;
-
-  document.getElementById("gantt-container").appendChild(panel);
-
-  document.getElementById("annot-cancel-btn").addEventListener("click", function() { panel.remove(); });
-  document.getElementById("annot-save-btn").addEventListener("click", function() {
-    var pos  = parseInt(document.getElementById("annot-position").value);
-    var text = document.getElementById("annot-text").value.trim();
-    if (!text) { alert("Veuillez saisir un commentaire."); return; }
-    ganttAnnotations.push({ pos: pos, text: text, id: Date.now() });
-    panel.remove();
-    // Re-render gantt pour afficher l'annotation
-    var ganttDiv = document.getElementById("gantt-container");
-    renderAnnotations(ganttDiv, ganttCurrentRows, ganttGlobalMin, ganttSpan);
-  });
-}
-
-function renderAnnotations(container, rows, globalMin, span) {
-  // Supprimer anciennes étiquettes
-  container.querySelectorAll(".gantt-annotation-label").forEach(function(el) { el.remove(); });
-
-  ganttAnnotations.forEach(function(annot) {
-    var label = document.createElement("div");
-    label.className = "gantt-annotation-label";
-    label.dataset.id = annot.id;
-
-    var dot = document.createElement("span");
-    dot.className = "annot-dot";
-    dot.textContent = "📌";
-
-    var bubble = document.createElement("div");
-    bubble.className = "annot-bubble";
-    bubble.textContent = annot.text;
-    bubble.style.display = "none";
-
-    var delBtn = document.createElement("span");
-    delBtn.className = "annot-del";
-    delBtn.textContent = "✕";
-    delBtn.title = "Supprimer";
-    delBtn.addEventListener("click", function(e) {
-      e.stopPropagation();
-      ganttAnnotations = ganttAnnotations.filter(function(a) { return a.id !== annot.id; });
-      label.remove();
-    });
-
-    dot.addEventListener("click", function() {
-      bubble.style.display = bubble.style.display === "none" ? "block" : "none";
-    });
-
-    label.appendChild(dot);
-    label.appendChild(bubble);
-    label.appendChild(delBtn);
-
-    // Position après la ligne concernée
-    var targetRow = container.querySelectorAll("tr[data-uid]")[annot.pos];
-    if (targetRow) {
-      targetRow.insertAdjacentElement("afterend", label.cloneNode ? label : label);
-    } else {
-      container.appendChild(label);
-    }
-    container.appendChild(label);
-  });
 }
 
 // ── TOOLTIP ──────────────────────────────────────────────────
@@ -856,7 +750,149 @@ function updateCmpBar() {
   if (selectedIds.length===2) {
     bar.classList.add("visible");
     document.getElementById("cmp-bar-names").textContent = selectedIds.map(id => allTasks[id]?allTasks[id].machine||"—":"—").join(" vs ");
-  } else bar.classList.remove("visible");
+    // Vérifier si un écart existe entre les deux tâches sélectionnées
+    checkEcartBetweenSelected();
+  } else {
+    bar.classList.remove("visible");
+    hideJustifBar();
+  }
+}
+
+// ── JUSTIFICATION D'ÉCART ────────────────────────────────────
+var justifications = {}; // stocke les justifications par paire de tâches
+
+function checkEcartBetweenSelected() {
+  if (selectedIds.length !== 2) return;
+  var idA = selectedIds[0], idB = selectedIds[1];
+  var taskA = allTasks[idA], taskB = allTasks[idB];
+  if (!taskA || !taskB) return;
+
+  var endA   = toMin(taskA.end);
+  var startB = toMin(taskB.start);
+  var endB   = toMin(taskB.end);
+  var startA = toMin(taskA.start);
+
+  // Trouver quelle tâche finit en premier
+  var firstEnd, secondStart, firstName, secondName;
+  if (endA !== null && startB !== null && startB > endA) {
+    firstEnd = endA; secondStart = startB;
+    firstName = taskA.machine; secondName = taskB.machine;
+  } else if (endB !== null && startA !== null && startA > endB) {
+    firstEnd = endB; secondStart = startA;
+    firstName = taskB.machine; secondName = taskA.machine;
+  }
+
+  if (firstEnd !== null && secondStart !== null && secondStart > firstEnd) {
+    var ecart = secondStart - firstEnd;
+    showJustifBar(idA, idB, ecart, firstName, secondName);
+  } else {
+    hideJustifBar();
+  }
+}
+
+function showJustifBar(idA, idB, ecartMin, nameA, nameB) {
+  var existing = document.getElementById("justif-bar");
+  if (existing) existing.remove();
+
+  var bar = document.createElement("div");
+  bar.id = "justif-bar";
+  bar.className = "justif-bar";
+
+  var pairKey = [idA, idB].sort().join("__");
+  var existingJustif = justifications[pairKey] || "";
+
+  bar.innerHTML =
+    '<span class="justif-bar-info">⏱ Écart de <strong>' + ecartMin + ' min</strong> entre <em>' + nameA + '</em> et <em>' + nameB + '</em></span>' +
+    '<button class="justif-btn" id="justif-open-btn">✏️ Justifier</button>';
+
+  var ganttSection = document.getElementById("gantt-section");
+  ganttSection.appendChild(bar);
+
+  document.getElementById("justif-open-btn").addEventListener("click", function() {
+    openJustifPanel(pairKey, ecartMin, nameA, nameB, existingJustif);
+  });
+}
+
+function hideJustifBar() {
+  var bar = document.getElementById("justif-bar");
+  if (bar) bar.remove();
+  var panel = document.getElementById("justif-panel");
+  if (panel) panel.remove();
+}
+
+function openJustifPanel(pairKey, ecartMin, nameA, nameB, existing) {
+  var existingPanel = document.getElementById("justif-panel");
+  if (existingPanel) existingPanel.remove();
+
+  var panel = document.createElement("div");
+  panel.id = "justif-panel";
+  panel.className = "justif-panel";
+
+  panel.innerHTML =
+    '<div class="justif-panel-title">✏️ Justification de l'écart (' + ecartMin + ' min)</div>' +
+    '<div class="justif-panel-sub">Entre : <strong>' + nameA + '</strong> et <strong>' + nameB + '</strong></div>' +
+    '<textarea id="justif-text" class="justif-textarea" placeholder="Ex: Attente pièce, pause, problème technique...">' + existing + '</textarea>' +
+    '<div class="justif-panel-actions">' +
+      '<button id="justif-save-btn" class="justif-save-btn">✓ Enregistrer</button>' +
+      '<button id="justif-cancel-btn" class="justif-cancel-btn">Annuler</button>' +
+    '</div>';
+
+  var ganttSection = document.getElementById("gantt-section");
+  ganttSection.appendChild(panel);
+
+  document.getElementById("justif-cancel-btn").addEventListener("click", function() { panel.remove(); });
+  document.getElementById("justif-save-btn").addEventListener("click", function() {
+    var text = document.getElementById("justif-text").value.trim();
+    if (!text) { alert("Veuillez saisir une justification."); return; }
+    justifications[pairKey] = text;
+    panel.remove();
+    renderJustifications();
+    showToast("✓ Justification enregistrée !", "#1a3a6b");
+  });
+}
+
+function renderJustifications() {
+  // Supprimer les anciennes étiquettes
+  document.querySelectorAll(".justif-label").forEach(function(el) { el.remove(); });
+
+  Object.keys(justifications).forEach(function(pairKey) {
+    var text = justifications[pairKey];
+    var ids  = pairKey.split("__");
+    var idA  = ids[0], idB = ids[1];
+    var taskA = allTasks[idA], taskB = allTasks[idB];
+    if (!taskA || !taskB) return;
+
+    // Trouver quelle tâche finit en premier
+    var endA = toMin(taskA.end), startB = toMin(taskB.start);
+    var endB = toMin(taskB.end), startA = toMin(taskA.start);
+    var firstEnd, secondStart;
+    if (endA !== null && startB !== null && startB > endA) {
+      firstEnd = endA; secondStart = startB;
+    } else if (endB !== null && startA !== null && startA > endB) {
+      firstEnd = endB; secondStart = startA;
+    }
+    if (!firstEnd || !secondStart) return;
+
+    var ecart = secondStart - firstEnd;
+    var leftPct  = ((firstEnd  - ganttGlobalMin) / ganttSpan) * 100;
+    var widthPct = (ecart / ganttSpan) * 100;
+
+    // Trouver la ligne de la première tâche dans le tableau
+    var rowA = document.querySelector('tr[data-uid="'+idA+'"]');
+    var rowB = document.querySelector('tr[data-uid="'+idB+'"]');
+    var targetRow = rowA || rowB;
+    if (!targetRow) return;
+
+    var label = document.createElement("div");
+    label.className = "justif-label";
+    label.innerHTML =
+      '<div class="justif-label-inner" style="left:'+leftPct+'%;width:'+widthPct+'%">' +
+        '<div class="justif-label-text">⚠️ ' + text + '</div>' +
+        '<div class="justif-label-ecart">' + ecart + ' min</div>' +
+      '</div>';
+
+    targetRow.insertAdjacentElement("afterend", label);
+  });
 }
 
 function doCompare() {
