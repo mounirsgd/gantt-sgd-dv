@@ -72,6 +72,8 @@ let ganttQuiOverrides = {}; // stocke les "qui" modifiés dans le Gantt
 let ganttAnnotations  = []; // stocke les annotations ajoutées sur le Gantt
 let ganttCurrentRows = [];
 let ganttCurrentDef  = null;
+let ganttGlobalMin   = 0;
+let ganttSpan        = 1;
 
 // ── Sélecteurs DOM ───────────────────────────────────────────
 const loginScreen = document.getElementById("login-screen");
@@ -688,12 +690,14 @@ function renderGantt(date, machine, typeData) {
   addBtn.textContent = "+ Ajouter une annotation";
   ganttCurrentRows = rows;
   ganttCurrentDef  = def;
+  ganttGlobalMin   = minT;
+  ganttSpan        = total;
   addBtn.addEventListener("click", function() { openAnnotationPanel(ganttCurrentDef, ganttCurrentRows); });
   var ganttSection = document.getElementById("gantt-section");
   ganttSection.appendChild(addBtn);
 
   // Afficher les annotations existantes
-  renderAnnotations(container, rows, globalMin, span);
+  renderAnnotations(container, rows, minT, total);
 
   updateCmpBar();
 }
@@ -736,7 +740,7 @@ function openAnnotationPanel(def, rows) {
     panel.remove();
     // Re-render gantt pour afficher l'annotation
     var ganttDiv = document.getElementById("gantt-container");
-    renderAnnotations(ganttDiv, rows, globalMin, span);
+    renderAnnotations(ganttDiv, ganttCurrentRows, ganttGlobalMin, ganttSpan);
   });
 }
 
