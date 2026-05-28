@@ -688,7 +688,8 @@ function renderGantt(date, machine, typeData) {
   addBtn.id        = "add-annotation-btn";
   addBtn.className = "btn-annotation-add";
   addBtn.textContent = "+ Ajouter une annotation";
-  ganttCurrentRows = rows;
+  // Stocker les tâches pour les annotations
+  ganttCurrentRows = def ? def.tasks : [];
   ganttCurrentDef  = def;
   ganttGlobalMin   = minT;
   ganttSpan        = total;
