@@ -364,126 +364,6 @@ table.gantt tr.sel-b td { background: #e8f5e9 !important; outline: 2px solid #22
 }
 .who-editable:hover { background: #eef3fa; border-radius: 4px; }
 
-/* ── BOUTON ANNOTATION ──────────────────────────────────────── */
-.btn-annotation-add {
-  margin-top: 12px;
-  padding: 8px 16px;
-  background: transparent;
-  border: 1.5px dashed #1a3a6b;
-  border-radius: 8px;
-  color: #1a3a6b;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: Arial, sans-serif;
-  transition: background .15s;
-  display: block;
-}
-.btn-annotation-add:hover { background: #eef3fa; }
-
-/* ── PANEL ANNOTATION ───────────────────────────────────────── */
-.annotation-panel {
-  margin-top: 12px;
-  background: #fff8e1;
-  border: 1.5px solid #f59e0b;
-  border-radius: 10px;
-  padding: 14px;
-}
-.annotation-panel-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: #b45309;
-  margin-bottom: 10px;
-}
-.annotation-panel-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.annotation-panel-row label {
-  font-size: 12px;
-  color: #6c6c70;
-  min-width: 80px;
-  padding-top: 6px;
-}
-.annotation-panel-row select,
-.annotation-panel-row textarea {
-  flex: 1;
-  border: 1px solid #e0e0e5;
-  border-radius: 6px;
-  padding: 6px 8px;
-  font-size: 12px;
-  font-family: Arial, sans-serif;
-  outline: none;
-  resize: none;
-}
-.annotation-panel-row select:focus,
-.annotation-panel-row textarea:focus { border-color: #f59e0b; }
-.annotation-panel-actions { display: flex; gap: 8px; }
-.btn-annot-save {
-  padding: 7px 16px;
-  background: #f59e0b;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: Arial, sans-serif;
-}
-.btn-annot-cancel {
-  padding: 7px 16px;
-  background: transparent;
-  color: #6c6c70;
-  border: 1px solid #d1d1d6;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  font-family: Arial, sans-serif;
-}
-
-/* ── ÉTIQUETTE ANNOTATION ───────────────────────────────────── */
-.gantt-annotation-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  background: #fff8e1;
-  border-left: 3px solid #f59e0b;
-  margin: 2px 0;
-  position: relative;
-}
-.annot-dot {
-  cursor: pointer;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-.annot-bubble {
-  background: #1c1c1e;
-  color: #fff;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 12px;
-  line-height: 1.5;
-  max-width: 300px;
-  position: absolute;
-  left: 30px;
-  top: 30px;
-  z-index: 500;
-  box-shadow: 0 4px 12px rgba(0,0,0,.2);
-  white-space: pre-wrap;
-}
-.annot-del {
-  margin-left: auto;
-  color: #ff3b30;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-.annot-del:hover { opacity: .7; }
-
 /* ── ÉDITEUR QUI INLINE ─────────────────────────────────────── */
 .qui-editor {
   position: absolute;
@@ -527,4 +407,125 @@ table.gantt tr.sel-b td { background: #e8f5e9 !important; outline: 2px solid #22
   padding: 4px 8px;
   cursor: pointer;
   font-size: 12px;
+}
+
+/* ── JUSTIFICATION D'ÉCART ─────────────────────────────────── */
+.justif-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff8e1;
+  border: 1.5px solid #f59e0b;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+.justif-bar-info {
+  flex: 1;
+  font-size: 13px;
+  color: #92400e;
+}
+.justif-btn {
+  padding: 7px 14px;
+  background: #f59e0b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  white-space: nowrap;
+}
+.justif-btn:hover { background: #d97706; }
+
+.justif-panel {
+  background: #fff;
+  border: 1.5px solid #f59e0b;
+  border-radius: 10px;
+  padding: 14px;
+  margin: 8px 0;
+}
+.justif-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 4px;
+}
+.justif-panel-sub {
+  font-size: 12px;
+  color: #6c6c70;
+  margin-bottom: 10px;
+}
+.justif-textarea {
+  width: 100%;
+  border: 1px solid #e0e0e5;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: Arial, sans-serif;
+  resize: none;
+  min-height: 60px;
+  outline: none;
+  margin-bottom: 10px;
+}
+.justif-textarea:focus { border-color: #f59e0b; }
+.justif-panel-actions { display: flex; gap: 8px; }
+.justif-save-btn {
+  padding: 7px 16px;
+  background: #f59e0b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+}
+.justif-cancel-btn {
+  padding: 7px 14px;
+  background: transparent;
+  color: #6c6c70;
+  border: 1px solid #d1d1d6;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+}
+
+.justif-label {
+  position: relative;
+  height: 28px;
+  overflow: visible;
+}
+.justif-label-inner {
+  position: absolute;
+  top: 2px;
+  height: 24px;
+  background: rgba(245,158,11,.15);
+  border: 1.5px dashed #f59e0b;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 6px;
+  overflow: hidden;
+  min-width: 20px;
+}
+.justif-label-text {
+  font-size: 11px;
+  color: #92400e;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.justif-label-ecart {
+  font-size: 10px;
+  color: #b45309;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
