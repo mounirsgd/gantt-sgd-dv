@@ -693,13 +693,10 @@ function renderGantt(date, machine, typeData) {
   ganttGlobalMin   = minT;
   ganttSpan        = total;
   addBtn.addEventListener("click", function() { openAnnotationPanel(ganttCurrentDef, ganttCurrentRows); });
-  // Ajouter le bouton après le scroll du Gantt
-  var ganttScroll = document.querySelector(".gantt-scroll");
-  if (ganttScroll) {
-    ganttScroll.insertAdjacentElement("afterend", addBtn);
-  } else {
-    var ganttSection = document.getElementById("gantt-section");
-    ganttSection.appendChild(addBtn);
+  // Ajouter le bouton directement dans gantt-section après le scroll
+  var ganttSectionEl = document.getElementById("gantt-section");
+  if (ganttSectionEl) {
+    ganttSectionEl.appendChild(addBtn);
   }
 
   // Afficher les annotations existantes
