@@ -1,7 +1,7 @@
 import { initializeApp }                       from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword,
          signOut, onAuthStateChanged }         from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, set, get, 
+import { getDatabase, ref, set, get,
          onValue, remove }                     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // ── Configuration Firebase ───────────────────────────────────
