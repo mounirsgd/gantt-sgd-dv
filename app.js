@@ -69,6 +69,7 @@ let allTasks    = {};
 let historyPage = 0;
 const HISTORY_PAGE_SIZE = 5;
 let ganttQuiOverrides = {}; // stocke les "qui" modifiés dans le Gantt
+let appInitialized = false; // évite les appels multiples à initApp
 let ganttCurrentRows = [];
 let ganttCurrentDef  = null;
 let ganttGlobalMin   = 0;
@@ -114,6 +115,7 @@ loginBtn.addEventListener("click", async () => {
 // ── AUTH : logout ────────────────────────────────────────────
 logoutBtn.addEventListener("click", () => {
   signOut(auth);
+  appInitialized = false;
   appDiv.style.display      = "none";
   loginScreen.style.display = "flex";
   loginBtn.textContent      = "Se connecter";
@@ -143,7 +145,10 @@ function afficherApp(user) {
   loginScreen.style.display = "none";
   appDiv.style.display      = "block";
   userLabel.textContent     = user.email;
-  initApp();
+  if (!appInitialized) {
+    appInitialized = true;
+    initApp();
+  }
 }
 
 function showLoginError(msg) {
