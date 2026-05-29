@@ -794,7 +794,7 @@ function openJustifDialog() {
   dialog.id = "justif-dialog";
   dialog.className = "justif-dialog";
   dialog.innerHTML =
-    '<div class="justif-dialog-title">📝 Justification de l'écart — ' + ecartMin + ' min</div>' +
+    '<div class="justif-dialog-title">📝 Justification - ' + ecartMin + ' min</div>' +
     '<div class="justif-dialog-sub">Entre <strong>' + firstTask.machine + '</strong> et <strong>' + secondTask.machine + '</strong></div>' +
     '<textarea id="justif-input" class="justif-input" placeholder="Ex: Attente pièce, pause, problème technique..." rows="3"></textarea>' +
     '<div class="justif-dialog-actions">' +
