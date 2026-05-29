@@ -210,6 +210,8 @@ function initApp() {
   document.getElementById("new-session-btn").addEventListener("click", newSession);
   document.getElementById("del-all-btn").addEventListener("click", deleteAllHistory);
   document.getElementById("do-compare-btn").addEventListener("click", doCompare);
+  var justifBtn = document.getElementById("do-justif-btn");
+  if (justifBtn) justifBtn.addEventListener("click", openJustifDialog);
   document.getElementById("close-compare-btn").addEventListener("click", closeCompare);
   initExportButtons();
 
@@ -747,12 +749,121 @@ function toggleSelect(id) {
 
 function updateCmpBar() {
   const bar = document.getElementById("cmp-bar");
+  const justifBtnContainer = document.getElementById("justif-btn-container");
   if (selectedIds.length===2) {
     bar.classList.add("visible");
     document.getElementById("cmp-bar-names").textContent = selectedIds.map(id => allTasks[id]?allTasks[id].machine||"—":"—").join(" vs ");
+    if (justifBtnContainer) justifBtnContainer.style.display = "block";
   } else {
     bar.classList.remove("visible");
+    if (justifBtnContainer) justifBtnContainer.style.display = "none";
+    // Supprimer dialog si ouvert
+    var dialog = document.getElementById("justif-dialog");
+    if (dialog) dialog.remove();
   }
+}
+
+// ── JUSTIFICATION D'ÉCART ────────────────────────────────────
+var justifications = [];
+
+function openJustifDialog() {
+  if (selectedIds.length !== 2) return;
+  var idA = selectedIds[0], idB = selectedIds[1];
+  var taskA = allTasks[idA], taskB = allTasks[idB];
+  if (!taskA || !taskB) return;
+
+  // Calculer l'écart
+  var endA = toMin(taskA.end), startB = toMin(taskB.start);
+  var endB = toMin(taskB.end), startA = toMin(taskA.start);
+  var firstTask, secondTask, ecartMin;
+
+  if (endA !== null && startB !== null && startB > endA) {
+    firstTask = taskA; secondTask = taskB; ecartMin = startB - endA;
+  } else if (endB !== null && startA !== null && startA > endB) {
+    firstTask = taskB; secondTask = taskA; ecartMin = startA - endB;
+  } else {
+    alert("Ces deux tâches se chevauchent ou sont consécutives — pas d'écart à justifier.");
+    return;
+  }
+
+  // Supprimer panel existant
+  var old = document.getElementById("justif-dialog");
+  if (old) old.remove();
+
+  var dialog = document.createElement("div");
+  dialog.id = "justif-dialog";
+  dialog.className = "justif-dialog";
+  dialog.innerHTML =
+    '<div class="justif-dialog-title">📝 Justification de l'écart — ' + ecartMin + ' min</div>' +
+    '<div class="justif-dialog-sub">Entre <strong>' + firstTask.machine + '</strong> et <strong>' + secondTask.machine + '</strong></div>' +
+    '<textarea id="justif-input" class="justif-input" placeholder="Ex: Attente pièce, pause, problème technique..." rows="3"></textarea>' +
+    '<div class="justif-dialog-actions">' +
+      '<button id="justif-confirm" class="justif-confirm-btn">✓ Enregistrer</button>' +
+      '<button id="justif-cancel" class="justif-cancel-btn">Annuler</button>' +
+    '</div>';
+
+  var justifBtnContainer = document.getElementById("justif-btn-container");
+  justifBtnContainer.insertAdjacentElement("afterend", dialog);
+  document.getElementById("justif-input").focus();
+
+  document.getElementById("justif-cancel").addEventListener("click", function() { dialog.remove(); });
+  document.getElementById("justif-confirm").addEventListener("click", function() {
+    var text = document.getElementById("justif-input").value.trim();
+    if (!text) { alert("Veuillez saisir un commentaire."); return; }
+    justifications.push({
+      firstTask: firstTask,
+      secondTask: secondTask,
+      ecartMin: ecartMin,
+      text: text
+    });
+    dialog.remove();
+    renderJustifications();
+    showToast("✓ Justification enregistrée !", "#f59e0b");
+  });
+}
+
+function renderJustifications() {
+  var container = document.getElementById("justif-container");
+  if (!container) {
+    container = document.getElementById("justif-container");
+  }
+  container.innerHTML = "";
+  if (justifications.length === 0) return;
+
+  var title = document.createElement("div");
+  title.style.cssText = "font-size:11px;font-weight:700;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding:0 4px;";
+  title.textContent = "Justifications d'écart";
+  container.appendChild(title);
+
+  justifications.forEach(function(j, idx) {
+    var card = document.createElement("div");
+    card.className = "justif-timeline-card";
+    card.innerHTML =
+      '<div class="justif-timeline-row">' +
+        '<div class="justif-task-box" style="background:' + (j.firstTask.color||"#3b82f6") + '">' +
+          '<div class="justif-task-name">' + j.firstTask.machine + '</div>' +
+          '<div class="justif-task-time">' + (j.firstTask.end||"?") + '</div>' +
+        '</div>' +
+        '<div class="justif-arrow">' +
+          '<div class="justif-arrow-line"></div>' +
+          '<div class="justif-arrow-label">' + j.ecartMin + ' min</div>' +
+          '<div class="justif-arrow-head">▶</div>' +
+        '</div>' +
+        '<div class="justif-task-box" style="background:' + (j.secondTask.color||"#22c55e") + '">' +
+          '<div class="justif-task-name">' + j.secondTask.machine + '</div>' +
+          '<div class="justif-task-time">' + (j.secondTask.start||"?") + '</div>' +
+        '</div>' +
+        '<button class="justif-del-btn" data-idx="'+idx+'">✕</button>' +
+      '</div>' +
+      '<div class="justif-comment">💬 ' + j.text + '</div>';
+
+    card.querySelector(".justif-del-btn").addEventListener("click", function() {
+      justifications.splice(idx, 1);
+      renderJustifications();
+    });
+
+    container.appendChild(card);
+  });
 }
 
 function doCompare() {
