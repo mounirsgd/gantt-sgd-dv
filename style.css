@@ -409,3 +409,156 @@ table.gantt tr.sel-b td { background: #e8f5e9 !important; outline: 2px solid #22
   font-size: 12px;
 }
 
+
+/* ── DIALOG JUSTIFICATION ───────────────────────────────────── */
+.justif-dialog {
+  background: #fff;
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+}
+.justif-dialog-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 4px;
+}
+.justif-dialog-sub {
+  font-size: 12px;
+  color: #6c6c70;
+  margin-bottom: 10px;
+}
+.justif-input {
+  width: 100%;
+  border: 1.5px solid #e0e0e5;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: Arial, sans-serif;
+  resize: vertical;
+  outline: none;
+  margin-bottom: 10px;
+}
+.justif-input:focus { border-color: #f59e0b; }
+.justif-dialog-actions { display: flex; gap: 8px; }
+.justif-confirm-btn {
+  padding: 7px 16px;
+  background: #f59e0b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+}
+.justif-cancel-btn {
+  padding: 7px 14px;
+  background: transparent;
+  color: #6c6c70;
+  border: 1px solid #d1d1d6;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+}
+
+/* ── TIMELINE JUSTIFICATION ─────────────────────────────────── */
+.justif-timeline-card {
+  background: #fff;
+  border: 1.5px solid #f59e0b;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.justif-timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.justif-task-box {
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: #fff;
+  min-width: 120px;
+  text-align: center;
+}
+.justif-task-name {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.justif-task-time {
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.justif-arrow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 80px;
+}
+.justif-arrow-line {
+  flex: 1;
+  height: 2px;
+  background: #f59e0b;
+}
+.justif-arrow-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #b45309;
+  white-space: nowrap;
+  background: #fff8e1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #f59e0b;
+}
+.justif-arrow-head {
+  color: #f59e0b;
+  font-size: 14px;
+}
+.justif-comment {
+  font-size: 13px;
+  color: #1c1c1e;
+  background: #f7f7f8;
+  border-radius: 6px;
+  padding: 8px 10px;
+  border-left: 3px solid #f59e0b;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.justif-del-btn {
+  background: transparent;
+  border: none;
+  color: #ff3b30;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ── BOUTON JUSTIFIER ÉCART ─────────────────────────────────── */
+.btn-justif-ecart {
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: 2px dashed #f59e0b;
+  border-radius: 10px;
+  color: #b45309;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  transition: background .15s;
+}
+.btn-justif-ecart:hover { background: #fff8e1; }
