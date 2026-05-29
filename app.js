@@ -680,7 +680,7 @@ function renderGantt(date, machine, typeData) {
     showQuiEditor(cell, uid, current);
   });
 
-  // Stocker les tâches pour les justifications d'écart
+  // Stocker les tâches courantes
   ganttCurrentRows = def ? def.tasks : [];
   ganttCurrentDef  = def;
   ganttGlobalMin   = minT;
@@ -750,151 +750,9 @@ function updateCmpBar() {
   if (selectedIds.length===2) {
     bar.classList.add("visible");
     document.getElementById("cmp-bar-names").textContent = selectedIds.map(id => allTasks[id]?allTasks[id].machine||"—":"—").join(" vs ");
-    // Vérifier si un écart existe entre les deux tâches sélectionnées
-    checkEcartBetweenSelected();
   } else {
     bar.classList.remove("visible");
-    hideJustifBar();
   }
-}
-
-// ── JUSTIFICATION D'ÉCART ────────────────────────────────────
-var justifications = {}; // stocke les justifications par paire de tâches
-
-function checkEcartBetweenSelected() {
-  if (selectedIds.length !== 2) return;
-  var idA = selectedIds[0], idB = selectedIds[1];
-  var taskA = allTasks[idA], taskB = allTasks[idB];
-  if (!taskA || !taskB) return;
-
-  var endA   = toMin(taskA.end);
-  var startB = toMin(taskB.start);
-  var endB   = toMin(taskB.end);
-  var startA = toMin(taskA.start);
-
-  // Trouver quelle tâche finit en premier
-  var firstEnd, secondStart, firstName, secondName;
-  if (endA !== null && startB !== null && startB > endA) {
-    firstEnd = endA; secondStart = startB;
-    firstName = taskA.machine; secondName = taskB.machine;
-  } else if (endB !== null && startA !== null && startA > endB) {
-    firstEnd = endB; secondStart = startA;
-    firstName = taskB.machine; secondName = taskA.machine;
-  }
-
-  if (firstEnd !== null && secondStart !== null && secondStart > firstEnd) {
-    var ecart = secondStart - firstEnd;
-    showJustifBar(idA, idB, ecart, firstName, secondName);
-  } else {
-    hideJustifBar();
-  }
-}
-
-function showJustifBar(idA, idB, ecartMin, nameA, nameB) {
-  var existing = document.getElementById("justif-bar");
-  if (existing) existing.remove();
-
-  var bar = document.createElement("div");
-  bar.id = "justif-bar";
-  bar.className = "justif-bar";
-
-  var pairKey = [idA, idB].sort().join("__");
-  var existingJustif = justifications[pairKey] || "";
-
-  bar.innerHTML =
-    '<span class="justif-bar-info">⏱ Écart de <strong>' + ecartMin + ' min</strong> entre <em>' + nameA + '</em> et <em>' + nameB + '</em></span>' +
-    '<button class="justif-btn" id="justif-open-btn">✏️ Justifier</button>';
-
-  var ganttSection = document.getElementById("gantt-section");
-  var formWrap = document.querySelector(".btns");
-  formWrap.insertAdjacentElement("afterend", bar);
-
-  document.getElementById("justif-open-btn").addEventListener("click", function() {
-    openJustifPanel(pairKey, ecartMin, nameA, nameB, existingJustif);
-  });
-}
-
-function hideJustifBar() {
-  var bar = document.getElementById("justif-bar");
-  if (bar) bar.remove();
-  var panel = document.getElementById("justif-panel");
-  if (panel) panel.remove();
-}
-
-function openJustifPanel(pairKey, ecartMin, nameA, nameB, existing) {
-  var existingPanel = document.getElementById("justif-panel");
-  if (existingPanel) existingPanel.remove();
-
-  var panel = document.createElement("div");
-  panel.id = "justif-panel";
-  panel.className = "justif-panel";
-
-  panel.innerHTML =
-    '<div class="justif-panel-title">✏️ Justification de l\'écart (' + ecartMin + ' min)</div>' +
-    '<div class="justif-panel-sub">Entre : <strong>' + nameA + '</strong> et <strong>' + nameB + '</strong></div>' +
-    '<textarea id="justif-text" class="justif-textarea" placeholder="Ex: Attente pièce, pause, problème technique...">' + existing + '</textarea>' +
-    '<div class="justif-panel-actions">' +
-      '<button id="justif-save-btn" class="justif-save-btn">✓ Enregistrer</button>' +
-      '<button id="justif-cancel-btn" class="justif-cancel-btn">Annuler</button>' +
-    '</div>';
-
-  var ganttSection = document.getElementById("gantt-section");
-  var formWrap2 = document.querySelector(".btns");
-  formWrap2.insertAdjacentElement("afterend", panel);
-
-  document.getElementById("justif-cancel-btn").addEventListener("click", function() { panel.remove(); });
-  document.getElementById("justif-save-btn").addEventListener("click", function() {
-    var text = document.getElementById("justif-text").value.trim();
-    if (!text) { alert("Veuillez saisir une justification."); return; }
-    justifications[pairKey] = text;
-    panel.remove();
-    renderJustifications();
-    showToast("✓ Justification enregistrée !", "#1a3a6b");
-  });
-}
-
-function renderJustifications() {
-  // Supprimer les anciennes étiquettes
-  document.querySelectorAll(".justif-label").forEach(function(el) { el.remove(); });
-
-  Object.keys(justifications).forEach(function(pairKey) {
-    var text = justifications[pairKey];
-    var ids  = pairKey.split("__");
-    var idA  = ids[0], idB = ids[1];
-    var taskA = allTasks[idA], taskB = allTasks[idB];
-    if (!taskA || !taskB) return;
-
-    // Trouver quelle tâche finit en premier
-    var endA = toMin(taskA.end), startB = toMin(taskB.start);
-    var endB = toMin(taskB.end), startA = toMin(taskA.start);
-    var firstEnd, secondStart;
-    if (endA !== null && startB !== null && startB > endA) {
-      firstEnd = endA; secondStart = startB;
-    } else if (endB !== null && startA !== null && startA > endB) {
-      firstEnd = endB; secondStart = startA;
-    }
-    if (!firstEnd || !secondStart) return;
-
-    var ecart = secondStart - firstEnd;
-    var leftPct  = ((firstEnd  - ganttGlobalMin) / ganttSpan) * 100;
-    var widthPct = (ecart / ganttSpan) * 100;
-
-    // Trouver la ligne de la première tâche dans le tableau
-    var rowA = document.querySelector('tr[data-uid="'+idA+'"]');
-    var rowB = document.querySelector('tr[data-uid="'+idB+'"]');
-    var targetRow = rowA || rowB;
-    if (!targetRow) return;
-
-    var label = document.createElement("div");
-    label.className = "justif-label";
-    label.innerHTML =
-      '<div class="justif-label-inner" style="left:'+leftPct+'%;width:'+widthPct+'%">' +
-        '<div class="justif-label-text">⚠️ ' + text + '</div>' +
-        '<div class="justif-label-ecart">' + ecart + ' min</div>' +
-      '</div>';
-
-    targetRow.insertAdjacentElement("afterend", label);
-  });
 }
 
 function doCompare() {
