@@ -657,7 +657,10 @@ function renderGantt(date, machine, typeData) {
     }
     const isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
     const rowCls=isSelA?"sel-a":isSelB?"sel-b":idx%2===0?"odd":"even";
-    var quiDisplay = ganttQuiOverrides[uid] || task.qui;
+    // Charger le "qui" depuis Firebase si disponible
+    var taskId = task.id;
+    var quiFromDb = (tv.tasks && tv.tasks[taskId] && tv.tasks[taskId].qui) ? tv.tasks[taskId].qui : null;
+    var quiDisplay = ganttQuiOverrides[uid] || quiFromDb || task.qui;
     h += '<tr class="'+rowCls+'" data-uid="'+uid+'"><td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+'  data-uid="'+uid+'"></td><td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+task.machine+'</td><td class="info who-cell who-editable" data-uid="'+uid+'" title="Cliquer pour modifier">'+quiDisplay+' ✏️</td><td class="info time-cell">'+(start||"—")+'</td><td class="info time-cell">'+(end||"—")+'</td><td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td></tr>';
   });
 
@@ -1057,6 +1060,28 @@ function showQuiEditor(cell, uid, current) {
       ganttQuiOverrides[uid] = val;
       cell.textContent = val + " ✏️";
       cell.dataset.uid = uid;
+
+      // Sauvegarder dans Firebase
+      // uid format: "activeType_taskId" ou "target"
+      var date    = document.getElementById("f-date").value;
+      var machine = document.getElementById("f-machine-name").value.trim();
+      if (date && machine && activeType) {
+        var existing = Object.entries(allSessions).find(function(entry) {
+          var s = entry[1];
+          return s.date === date && s.machine === machine && s.activeType === activeType;
+        });
+        if (existing) {
+          var sessId  = existing[0];
+          var session = JSON.parse(JSON.stringify(existing[1]));
+          var taskId  = uid.replace(activeType + "_", "");
+          if (!session.typeData) session.typeData = {};
+          if (!session.typeData.tasks) session.typeData.tasks = {};
+          if (!session.typeData.tasks[taskId]) session.typeData.tasks[taskId] = {};
+          session.typeData.tasks[taskId].qui = val;
+          set(ref(db, "sessions/" + sessId), session);
+          showToast("✓ Responsable mis a jour !", "#1a3a6b");
+        }
+      }
     }
     editor.remove();
   }
