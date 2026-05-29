@@ -806,7 +806,8 @@ function showJustifBar(idA, idB, ecartMin, nameA, nameB) {
     '<button class="justif-btn" id="justif-open-btn">✏️ Justifier</button>';
 
   var ganttSection = document.getElementById("gantt-section");
-  ganttSection.appendChild(bar);
+  var formWrap = document.querySelector(".btns");
+  formWrap.insertAdjacentElement("afterend", bar);
 
   document.getElementById("justif-open-btn").addEventListener("click", function() {
     openJustifPanel(pairKey, ecartMin, nameA, nameB, existingJustif);
@@ -838,7 +839,8 @@ function openJustifPanel(pairKey, ecartMin, nameA, nameB, existing) {
     '</div>';
 
   var ganttSection = document.getElementById("gantt-section");
-  ganttSection.appendChild(panel);
+  var formWrap2 = document.querySelector(".btns");
+  formWrap2.insertAdjacentElement("afterend", panel);
 
   document.getElementById("justif-cancel-btn").addEventListener("click", function() { panel.remove(); });
   document.getElementById("justif-save-btn").addEventListener("click", function() {
