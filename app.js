@@ -1061,8 +1061,7 @@ function showQuiEditor(cell, uid, current) {
       cell.textContent = val + " ✏️";
       cell.dataset.uid = uid;
 
-      // Sauvegarder dans Firebase
-      // uid format: "activeType_taskId" ou "target"
+      // Sauvegarder dans Firebase — sessions ET types
       var date    = document.getElementById("f-date").value;
       var machine = document.getElementById("f-machine-name").value.trim();
       if (date && machine && activeType) {
@@ -1078,8 +1077,13 @@ function showQuiEditor(cell, uid, current) {
           if (!session.typeData.tasks) session.typeData.tasks = {};
           if (!session.typeData.tasks[taskId]) session.typeData.tasks[taskId] = {};
           session.typeData.tasks[taskId].qui = val;
+          // Mettre à jour la session ET le typeState local
           set(ref(db, "sessions/" + sessId), session);
-          showToast("✓ Responsable mis a jour !", "#1a3a6b");
+          if (typeStates[activeType] && typeStates[activeType].tasks) {
+            if (!typeStates[activeType].tasks[taskId]) typeStates[activeType].tasks[taskId] = {};
+            typeStates[activeType].tasks[taskId].qui = val;
+          }
+          showToast("Responsable mis a jour !", "#1a3a6b");
         }
       }
     }
