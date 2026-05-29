@@ -772,7 +772,7 @@ function openJustifDialog() {
   var taskA = allTasks[idA], taskB = allTasks[idB];
   if (!taskA || !taskB) return;
 
-  // Calculer l'écart
+  // Calculer le delai
   var endA = toMin(taskA.end), startB = toMin(taskB.start);
   var endB = toMin(taskB.end), startA = toMin(taskA.start);
   var firstTask, secondTask, ecartMin;
@@ -782,7 +782,7 @@ function openJustifDialog() {
   } else if (endB !== null && startA !== null && startA > endB) {
     firstTask = taskB; secondTask = taskA; ecartMin = startA - endB;
   } else {
-    alert("Ces deux tâches se chevauchent ou sont consécutives — pas d'écart à justifier.");
+    alert("Ces deux tâches se chevauchent ou sont consécutives — pas de delai a justifier.");
     return;
   }
 
@@ -832,7 +832,7 @@ function renderJustifications() {
 
   var title = document.createElement("div");
   title.style.cssText = "font-size:11px;font-weight:700;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding:0 4px;";
-  title.textContent = "Justifications d'écart";
+  title.textContent = "Justifications des delais";
   container.appendChild(title);
 
   justifications.forEach(function(j, idx) {
