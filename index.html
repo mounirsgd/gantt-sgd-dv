@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Changement – Temp/Machine | SGD Pharma</title>
-<link rel="stylesheet" href="style.css?v=6.2">
+<link rel="stylesheet" href="style.css?v=7.0">
 </head>
 <body>
 
@@ -21,9 +21,7 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════
-     ÉCRAN DE CONNEXION
-════════════════════════════════════ -->
+<!-- ÉCRAN DE CONNEXION -->
 <div id="login-screen" style="display:flex">
   <div class="login-card">
     <div class="login-logo"><span>SGD<br>Pharma</span></div>
@@ -44,9 +42,7 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════
-     APPLICATION PRINCIPALE
-════════════════════════════════════ -->
+<!-- APPLICATION PRINCIPALE -->
 <div id="app" style="display:none">
 
   <div class="hdr">
@@ -64,6 +60,7 @@
   <div class="form-wrap">
     <div class="machine-banner">SGD Pharma – Sucy-en-Brie</div>
 
+    <!-- INFORMATIONS DE LA SEANCE -->
     <div class="info-sec">
       <div class="info-sec-hd">Informations de la séance</div>
       <div class="info-row"><label>Date</label><input id="f-date" type="date"></div>
@@ -89,6 +86,7 @@
       </div>
     </div>
 
+    <!-- TYPE DE CHANGEMENT -->
     <div class="type-selector">
       <div class="type-selector-hd">Type de changement</div>
       <div class="type-btns">
@@ -98,8 +96,10 @@
       </div>
     </div>
 
+    <!-- SECTIONS DYNAMIQUES -->
     <div id="dynamic-sections"></div>
 
+    <!-- HISTORIQUE -->
     <div class="history-sec">
       <div class="history-hd">
         Historique <span id="history-count" style="font-weight:400;font-size:10px"></span>
@@ -108,6 +108,7 @@
       <div class="history-list" id="history-list"><div class="history-empty">Aucune séance enregistrée</div></div>
     </div>
 
+    <!-- BOUTONS -->
     <div class="btns">
       <button class="btn btn-ok" id="save-btn">✓ Enregistrer et afficher le Gantt</button>
       <button class="btn btn-full" id="new-session-btn">Nouvelle séance (repartir à zéro)</button>
@@ -117,6 +118,7 @@
 
   <div class="divider"></div>
 
+  <!-- GANTT -->
   <div class="gantt-section" id="gantt-section">
     <div class="gantt-header-block">
       <div class="gantt-logo"><span>SGD<br>Pharma</span></div>
@@ -126,11 +128,13 @@
       </div>
     </div>
 
+    <!-- BARRE SELECTION -->
     <div class="cmp-bar" id="cmp-bar">
       <div class="cmp-bar-info">2 éléments sélectionnés<span id="cmp-bar-names"></span></div>
       <button class="cmp-bar-btn" id="do-compare-btn">Comparer ▶</button>
     </div>
 
+    <!-- COMPARAISON -->
     <div class="cmp-result" id="cmp-result">
       <div class="cmp-result-hd">
         <h3 id="cmp-result-title">Comparaison</h3>
@@ -146,6 +150,7 @@
       <div id="gantt-container"><div class="empty-gantt">Sélectionnez un type et enregistrez pour afficher le Gantt</div></div>
     </div>
 
+    <!-- JUSTIFICATION -->
     <div id="justif-btn-container" style="display:none;padding:10px;">
       <button class="btn-justif-ecart" id="do-justif-btn">📝 Justifier le delai entre les deux taches selectionnees</button>
     </div>
@@ -155,8 +160,7 @@
 
 </div><!-- fin #app -->
 
-<!-- SheetJS pour export Excel -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script type="module" src="app.js?v=6.2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module" src="app.js?v=7.0"></script>
 </body>
 </html>
