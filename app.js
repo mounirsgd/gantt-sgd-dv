@@ -159,12 +159,9 @@ function buildForm() {
   var container = document.getElementById("form-sections");
   container.innerHTML = "";
 
-var targetsGroup = document.createElement("div");
-targetsGroup.style.cssText = "background:#f0f2f5;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;margin-bottom:4px;";
-targetsGroup.appendChild(buildTargetSection("grand_t1", "TARGET (Grand T1)", "#c0392b", ganttData.targets.grand_t1));
-targetsGroup.appendChild(buildTargetSection("petit_t1", "TARGET (Petit t1)", "#e07b54", ganttData.targets.petit_t1));
-targetsGroup.appendChild(buildTargetSection("rondelle", "TARGET (Rondelle)", "#7d3c98", ganttData.targets.rondelle));
-container.appendChild(targetsGroup);
+  container.appendChild(buildTargetSection("grand_t1", "TARGET (Grand T1)", "#c0392b", ganttData.targets.grand_t1));
+  container.appendChild(buildTargetSection("petit_t1", "TARGET (Petit t1)", "#e07b54", ganttData.targets.petit_t1));
+  container.appendChild(buildTargetSection("rondelle", "TARGET (Rondelle)", "#7d3c98", ganttData.targets.rondelle));
 
   var tasksSec = document.createElement("div"); tasksSec.className = "tasks-sec"; tasksSec.style.borderColor = "#1a3a6b";
   var tasksHd = document.createElement("div"); tasksHd.className = "tasks-sec-hd"; tasksHd.style.background = "#1a3a6b";
@@ -289,6 +286,16 @@ function appendExtraTaskRow(sec, et, idx, color) {
   delBtn.addEventListener("click", function() {
     row.remove();
     sec._extraFields = sec._extraFields.filter(function(f) { return f.row !== row; });
+    var date = document.getElementById("f-date").value;
+    var machine = document.getElementById("f-machine-name").value.trim();
+    if (date && machine) {
+      var data = collectData();
+      var existing = Object.entries(allSessions).find(function(e) { return e[1].date===date && e[1].machine===machine; });
+      if (existing) {
+        set(ref(db, "sessions/"+existing[0]+"/ganttData/extraTasks"), data.extraTasks || []);
+        showToast("Tache supprimee !", "#e74c3c");
+      }
+    }
   });
   top.appendChild(bar); top.appendChild(nameInp); top.appendChild(whoInp); top.appendChild(delBtn);
   row.appendChild(top);
@@ -554,15 +561,15 @@ function renderGantt(date, machine, data) {
   var extras = data.extraTasks || [];
 
   // REMARQUE 3 — tri chronologique des taches dynamiques
- extras = extras.slice().sort(function(a, b) {
-  var ha = parseInt(a.sh||"0")||0, ma = parseInt(a.sm||"0")||0;
-  var hb = parseInt(b.sh||"0")||0, mb = parseInt(b.sm||"0")||0;
-  var sa = (a.sh||"") ? ha*60+ma : null;
-  var sb = (b.sh||"") ? hb*60+mb : null;
-  if (sa === null) return 1;
-  if (sb === null) return -1;
-  return sa - sb;
-});
+  extras = extras.slice().sort(function(a, b) {
+    var ha = parseInt(a.sh||"") , ma = parseInt(a.sm||"0")||0;
+    var hb = parseInt(b.sh||"") , mb = parseInt(b.sm||"0")||0;
+    var sa = isNaN(ha) ? null : ha*60+ma;
+    var sb = isNaN(hb) ? null : hb*60+mb;
+    if (sa === null) return 1;
+    if (sb === null) return -1;
+    return sa - sb;
+  });
 
   allTasks = {};
   var minT = Infinity, maxT = -Infinity;
