@@ -746,6 +746,7 @@ function renderGantt(date, machine, data) {
       '<td class="info time-cell">'+(end||"--")+'</td>'+
       '<td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td>'+
       '</tr>';
+    }
   });
 
   h += '</table>';
