@@ -656,78 +656,92 @@ function renderGantt(date, machine, data) {
 
   h += '<tr><td colspan="'+(5+slots)+'" style="background:#e8edf5;height:4px;"></td></tr>';
 
+  // Fusionner taches fixes + extras en une seule liste triee chronologiquement
+  var allTaskRows = [];
   TASKS_RONDELLE.forEach(function(task, idx) {
     var t = tasks[task.id] || {};
-    var start = getTV(t.sh||"",t.sm||""), end = getTV(t.eh||"",t.em||"");
-    var s = toMin(start), e = toMin(end);
-    var color = TASK_COLORS[idx % TASK_COLORS.length];
-    var uid = "task_"+task.id;
-    var quiDisplay = ganttQuiOverrides[uid] || t.qui || task.qui;
-    allTasks[uid] = {machine:task.machine, qui:quiDisplay, start:start, end:end, color:color};
-
-    var bar = "";
-    if (s!==null&&e!==null&&e>s) {
-      var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
-      bar = '<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+color+'" data-uid="'+uid+'" data-label="'+task.machine+'" data-qui="'+quiDisplay+'" data-start="'+start+'" data-end="'+end+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment||"")+'">'+( t.comment?'<div class="gantt-comment-dot"></div>':"")+'</div>';
-    }
-
-    if (t.sh2 || t.eh2) {
-      var start2=getTV(t.sh2||"",t.sm2||""), end2=getTV(t.eh2||"",t.em2||"");
-      var s2=toMin(start2), e2=toMin(end2);
-      if (s!==null&&e!==null&&s2!==null&&s2>e) {
-        var gapL=((e-minT)/total)*100, gapW=((s2-e)/total)*100;
-        bar += '<div style="position:absolute;top:8px;bottom:8px;left:'+gapL+'%;width:'+gapW+'%;background:'+color+';opacity:.25;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;border-radius:3px;">&#x2192;</div>';
-      }
-      if (s2!==null&&e2!==null&&e2>s2) {
-        var lp2=((s2-minT)/total)*100, wp2=((e2-s2)/total)*100;
-        // REMARQUE 2 — commentaire du slot 2 dans le tooltip
-        bar += '<div class="gantt-bar" style="left:'+lp2+'%;width:'+wp2+'%;background:'+color+';opacity:.75;" data-uid="'+uid+'_2" data-label="'+task.machine+' (2)" data-qui="'+quiDisplay+'" data-start="'+start2+'" data-end="'+end2+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment2||"")+'"></div>';
-      }
-    }
-
-    var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
-    var rowCls=isSelA?"sel-a":isSelB?"sel-b":idx%2===0?"odd":"even";
-    h += '<tr class="'+rowCls+'" data-uid="'+uid+'">'+
-      '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
-      '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+task.machine+'</td>'+
-      '<td class="info who-cell who-editable" data-uid="'+uid+'" title="Cliquer pour modifier">'+quiDisplay+' ✏️</td>'+
-      '<td class="info time-cell">'+(start||"--")+'</td>'+
-      '<td class="info time-cell">'+(end||"--")+'</td>'+
-      '<td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td>'+
-      '</tr>';
+    var start = getTV(t.sh||"",t.sm||"");
+    allTaskRows.push({ type:"fixed", task:task, t:t, idx:idx, start:start, sMin:toMin(start) });
+  });
+  extras.forEach(function(et, idx) {
+    var start = getTV(et.sh||"",et.sm||"");
+    allTaskRows.push({ type:"extra", et:et, idx:idx, start:start, sMin:toMin(start) });
+  });
+  allTaskRows.sort(function(a, b) {
+    if (a.sMin===null) return 1;
+    if (b.sMin===null) return -1;
+    return a.sMin - b.sMin;
   });
 
-  extras.forEach(function(et, idx) {
-    var color = TASK_COLORS[(TASKS_RONDELLE.length + idx) % TASK_COLORS.length];
-    var uid = "task_extra_"+idx;
-    var start = getTV(et.sh||"",et.sm||""), end = getTV(et.eh||"",et.em||"");
-    var s = toMin(start), e = toMin(end);
-    allTasks[uid] = {machine:et.machine||"Extra", qui:et.qui||"", start:start, end:end, color:color};
+  allTaskRows.forEach(function(row, rowIdx) {
+    if (row.type === "fixed") {
+      var task=row.task, t=row.t, idx=row.idx;
+      var start = getTV(t.sh||"",t.sm||""), end = getTV(t.eh||"",t.em||"");
+      var s = toMin(start), e = toMin(end);
+      var color = TASK_COLORS[idx % TASK_COLORS.length];
+      var uid = "task_"+task.id;
+      var quiDisplay = ganttQuiOverrides[uid] || t.qui || task.qui;
+      allTasks[uid] = {machine:task.machine, qui:quiDisplay, start:start, end:end, color:color};
 
-    var bar = "";
-    if (s!==null&&e!==null&&e>s) {
-      var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
-      bar = '<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+color+'" data-uid="'+uid+'" data-label="'+(et.machine||"Extra")+'" data-qui="'+(et.qui||"")+'" data-start="'+start+'" data-end="'+end+'" data-color="'+color+'" data-cmt="'+encCmt(et.comment||"")+'">'+( et.comment?'<div class="gantt-comment-dot"></div>':"")+'</div>';
-    }
-
-    // Slot 2 pour extras
-    if (et.sh2 || et.eh2) {
-      var start2=getTV(et.sh2||"",et.sm2||""), end2=getTV(et.eh2||"",et.em2||"");
-      var s2=toMin(start2), e2=toMin(end2);
-      if (s!==null&&e!==null&&s2!==null&&s2>e) {
-        var gapL=((e-minT)/total)*100, gapW=((s2-e)/total)*100;
-        bar += '<div style="position:absolute;top:8px;bottom:8px;left:'+gapL+'%;width:'+gapW+'%;background:'+color+';opacity:.25;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;border-radius:3px;">&#x2192;</div>';
+      var bar = "";
+      if (s!==null&&e!==null&&e>s) {
+        var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
+        bar = '<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+color+'" data-uid="'+uid+'" data-label="'+task.machine+'" data-qui="'+quiDisplay+'" data-start="'+start+'" data-end="'+end+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment||"")+'">'+( t.comment?'<div class="gantt-comment-dot"></div>':"")+'</div>';
       }
-      if (s2!==null&&e2!==null&&e2>s2) {
-        var lp2=((s2-minT)/total)*100, wp2=((e2-s2)/total)*100;
-        bar += '<div class="gantt-bar" style="left:'+lp2+'%;width:'+wp2+'%;background:'+color+';opacity:.75;" data-uid="'+uid+'_2" data-label="'+(et.machine||"Extra")+' (2)" data-qui="'+(et.qui||"")+'" data-start="'+start2+'" data-end="'+end2+'" data-color="'+color+'" data-cmt="'+encCmt(et.comment2||"")+'"></div>';
+      if (t.sh2 || t.eh2) {
+        var start2=getTV(t.sh2||"",t.sm2||""), end2=getTV(t.eh2||"",t.em2||"");
+        var s2=toMin(start2), e2=toMin(end2);
+        if (s!==null&&e!==null&&s2!==null&&s2>e) {
+          var gapL=((e-minT)/total)*100, gapW=((s2-e)/total)*100;
+          bar += '<div style="position:absolute;top:8px;bottom:8px;left:'+gapL+'%;width:'+gapW+'%;background:'+color+';opacity:.25;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;border-radius:3px;">&#x2192;</div>';
+        }
+        if (s2!==null&&e2!==null&&e2>s2) {
+          var lp2=((s2-minT)/total)*100, wp2=((e2-s2)/total)*100;
+          bar += '<div class="gantt-bar" style="left:'+lp2+'%;width:'+wp2+'%;background:'+color+';opacity:.75;" data-uid="'+uid+'_2" data-label="'+task.machine+' (2)" data-qui="'+quiDisplay+'" data-start="'+start2+'" data-end="'+end2+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment2||"")+'"></div>';
+        }
       }
-    }
+      var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
+      var rowCls=isSelA?"sel-a":isSelB?"sel-b":rowIdx%2===0?"odd":"even";
+      h += '<tr class="'+rowCls+'" data-uid="'+uid+'">'+
+        '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
+        '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+task.machine+'</td>'+
+        '<td class="info who-cell who-editable" data-uid="'+uid+'" title="Cliquer pour modifier">'+quiDisplay+' ✏️</td>'+
+        '<td class="info time-cell">'+(start||"--")+'</td>'+
+        '<td class="info time-cell">'+(end||"--")+'</td>'+
+        '<td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td>'+
+        '</tr>';
 
-    h += '<tr class="odd" data-uid="'+uid+'">'+
-      '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
-      '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+(et.machine||"Extra")+'</td>'+
-      '<td class="info who-cell">'+(et.qui||"")+'</td>'+
+    } else {
+      var et=row.et, idx=row.idx;
+      var color = TASK_COLORS[(TASKS_RONDELLE.length + idx) % TASK_COLORS.length];
+      var uid = "task_extra_"+idx;
+      var start = getTV(et.sh||"",et.sm||""), end = getTV(et.eh||"",et.em||"");
+      var s = toMin(start), e = toMin(end);
+      allTasks[uid] = {machine:et.machine||"Extra", qui:et.qui||"", start:start, end:end, color:color};
+
+      var bar = "";
+      if (s!==null&&e!==null&&e>s) {
+        var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
+        bar = '<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+color+'" data-uid="'+uid+'" data-label="'+(et.machine||"Extra")+'" data-qui="'+(et.qui||"")+'" data-start="'+start+'" data-end="'+end+'" data-color="'+color+'" data-cmt="'+encCmt(et.comment||"")+'">'+( et.comment?'<div class="gantt-comment-dot"></div>':"")+'</div>';
+      }
+      if (et.sh2 || et.eh2) {
+        var start2=getTV(et.sh2||"",et.sm2||""), end2=getTV(et.eh2||"",et.em2||"");
+        var s2=toMin(start2), e2=toMin(end2);
+        if (s!==null&&e!==null&&s2!==null&&s2>e) {
+          var gapL=((e-minT)/total)*100, gapW=((s2-e)/total)*100;
+          bar += '<div style="position:absolute;top:8px;bottom:8px;left:'+gapL+'%;width:'+gapW+'%;background:'+color+';opacity:.25;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;border-radius:3px;">&#x2192;</div>';
+        }
+        if (s2!==null&&e2!==null&&e2>s2) {
+          var lp2=((s2-minT)/total)*100, wp2=((e2-s2)/total)*100;
+          bar += '<div class="gantt-bar" style="left:'+lp2+'%;width:'+wp2+'%;background:'+color+';opacity:.75;" data-uid="'+uid+'_2" data-label="'+(et.machine||"Extra")+' (2)" data-qui="'+(et.qui||"")+'" data-start="'+start2+'" data-end="'+end2+'" data-color="'+color+'" data-cmt="'+encCmt(et.comment2||"")+'"></div>';
+        }
+      }
+      var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
+      var rowCls=isSelA?"sel-a":isSelB?"sel-b":rowIdx%2===0?"odd":"even";
+      h += '<tr class="'+rowCls+'" data-uid="'+uid+'">'+
+        '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
+        '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+(et.machine||"Extra")+'</td>'+
+        '<td class="info who-cell">'+(et.qui||"")+'</td>'+
       '<td class="info time-cell">'+(start||"--")+'</td>'+
       '<td class="info time-cell">'+(end||"--")+'</td>'+
       '<td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td>'+
