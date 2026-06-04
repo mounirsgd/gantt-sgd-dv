@@ -705,7 +705,7 @@ function renderGantt(date, machine, data) {
       h += '<tr class="'+rowCls+'" data-uid="'+uid+'">'+
         '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
         '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+task.machine+'</td>'+
-        '<td class="info who-cell who-editable" data-uid="'+uid+'" title="Cliquer pour modifier">'+quiDisplay+' ✏️</td>'+
+        '<td class="info who-cell who-editable" data-uid="'+uid+'" title="Cliquer pour modifier">'+quiDisplay+' [mod]</td>'+
         '<td class="info time-cell">'+(start||"--")+'</td>'+
         '<td class="info time-cell">'+(end||"--")+'</td>'+
         '<td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td>'+
@@ -764,7 +764,7 @@ function renderGantt(date, machine, data) {
   container.addEventListener("click", function(e) {
     var cell = e.target.closest(".who-editable");
     if (!cell) return;
-    showQuiEditor(cell, cell.dataset.uid, cell.textContent.replace(" ✏️","").trim());
+    showQuiEditor(cell, cell.dataset.uid, cell.textContent.replace(" [mod]","").trim());
   });
 
   document.getElementById("gantt-section").style.display = "block";
@@ -922,7 +922,7 @@ function showQuiEditor(cell, uid, current) {
   function applyEdit() {
     var val=input.value.trim();
     if(val){
-      ganttQuiOverrides[uid]=val; cell.textContent=val+" ✏️"; cell.dataset.uid=uid;
+      ganttQuiOverrides[uid]=val; cell.textContent=val+" [mod]"; cell.dataset.uid=uid;
       var date=document.getElementById("f-date").value, machine=document.getElementById("f-machine-name").value.trim();
       var ex=Object.entries(allSessions).find(function(e){return e[1].date===date&&e[1].machine===machine;});
       if(!ex) ex=Object.entries(allSessions).find(function(e){return true;});
