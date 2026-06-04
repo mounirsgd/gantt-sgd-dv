@@ -554,13 +554,15 @@ function renderGantt(date, machine, data) {
   var extras = data.extraTasks || [];
 
   // REMARQUE 3 — tri chronologique des taches dynamiques
-  extras = extras.slice().sort(function(a, b) {
-    var sa = toMin(getTV(a.sh||"", a.sm||""));
-    var sb = toMin(getTV(b.sh||"", b.sm||""));
-    if (sa === null) return 1;
-    if (sb === null) return -1;
-    return sa - sb;
-  });
+ extras = extras.slice().sort(function(a, b) {
+  var ha = parseInt(a.sh||"0")||0, ma = parseInt(a.sm||"0")||0;
+  var hb = parseInt(b.sh||"0")||0, mb = parseInt(b.sm||"0")||0;
+  var sa = (a.sh||"") ? ha*60+ma : null;
+  var sb = (b.sh||"") ? hb*60+mb : null;
+  if (sa === null) return 1;
+  if (sb === null) return -1;
+  return sa - sb;
+});
 
   allTasks = {};
   var minT = Infinity, maxT = -Infinity;
