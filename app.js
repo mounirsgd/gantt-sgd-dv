@@ -159,9 +159,12 @@ function buildForm() {
   var container = document.getElementById("form-sections");
   container.innerHTML = "";
 
-  container.appendChild(buildTargetSection("grand_t1", "TARGET (Grand T1)", "#c0392b", ganttData.targets.grand_t1));
-  container.appendChild(buildTargetSection("petit_t1", "TARGET (Petit t1)", "#e07b54", ganttData.targets.petit_t1));
-  container.appendChild(buildTargetSection("rondelle", "TARGET (Rondelle)", "#7d3c98", ganttData.targets.rondelle));
+var targetsGroup = document.createElement("div");
+targetsGroup.style.cssText = "background:#f0f2f5;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;margin-bottom:4px;";
+targetsGroup.appendChild(buildTargetSection("grand_t1", "TARGET (Grand T1)", "#c0392b", ganttData.targets.grand_t1));
+targetsGroup.appendChild(buildTargetSection("petit_t1", "TARGET (Petit t1)", "#e07b54", ganttData.targets.petit_t1));
+targetsGroup.appendChild(buildTargetSection("rondelle", "TARGET (Rondelle)", "#7d3c98", ganttData.targets.rondelle));
+container.appendChild(targetsGroup);
 
   var tasksSec = document.createElement("div"); tasksSec.className = "tasks-sec"; tasksSec.style.borderColor = "#1a3a6b";
   var tasksHd = document.createElement("div"); tasksHd.className = "tasks-sec-hd"; tasksHd.style.background = "#1a3a6b";
