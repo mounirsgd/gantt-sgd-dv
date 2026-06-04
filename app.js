@@ -117,10 +117,14 @@ function initApp() {
   function refreshDate() { var d = document.getElementById("f-date"); if (d && !d.value) d.value = new Date().toISOString().slice(0,10); }
   refreshDate(); setInterval(refreshDate, 60000);
 
-  document.getElementById("f-machine-name").value = "";
-  document.getElementById("gantt-container").innerHTML = '<div class="empty-gantt">Remplissez le formulaire et enregistrez pour afficher le Gantt</div>';
-
-  buildForm();
+  var savedDate = date;
+var savedMachine = machine;
+var savedData = data;
+document.getElementById("f-machine-name").value = "";
+document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
+ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
+buildForm();
+renderGantt(savedDate, savedMachine, savedData);
 
   onValue(ref(db, "global"), function(snap) { document.getElementById("sync-status").textContent = "Connecte"; });
 
