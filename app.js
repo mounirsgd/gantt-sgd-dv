@@ -24,15 +24,15 @@ const TASK_COLORS = [
 
 const TASKS_RONDELLE = [
   {id:"ron_1", machine:"Nettoyage machine", qui:"Production"},
-  {id:"ron_2", machine:"Changement cuvette", qui:"Alimenteurs"},
-  {id:"ron_3", machine:"Cote finisseur", qui:"Atelier IS"},
-  {id:"ron_4", machine:"Cote ebauche", qui:"Atelier IS"},
-  {id:"ron_5", machine:"Entonnoir sous verre", qui:"Alimenteurs"},
-  {id:"ron_6", machine:"Distributeur sous verre", qui:"Alimenteurs"},
-  {id:"ron_7", machine:"Demarrage section sans flacon", qui:"Chef de section"},
-  {id:"ron_8", machine:"Demarrage section avec flacon", qui:"Chef de section"},
+  {id:"ron_2", machine:"Changement cuvette", qui:"Feederman"},
+  {id:"ron_3", machine:"Côté finisseur", qui:"Atelier IS"},
+  {id:"ron_4", machine:"Côté ébauche", qui:"Atelier IS"},
+  {id:"ron_5", machine:"Entonnoir sous verre", qui:"Feederman"},
+  {id:"ron_6", machine:"Distributeur sous verre", qui:"Feederman"},
+  {id:"ron_7", machine:"Démarrage section sans flacon", qui:"Chef de section"},
+  {id:"ron_8", machine:"Démarrage section avec flacon", qui:"Chef de section"},
   {id:"ron_9", machine:"Machine complete avec flacon", qui:"Chef de section"},
-  {id:"ron_10", machine:"Mise a l arche", qui:"Chef de section"}
+  {id:"ron_10", machine:"Mise à l'arche", qui:"Chef de section"}
 ];
 
 let allSessions = {};
