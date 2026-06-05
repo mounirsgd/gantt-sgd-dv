@@ -131,6 +131,12 @@ function initApp() {
     allSessions = snap.val() || {};
     renderHistory(allSessions);
     document.getElementById("sync-status").textContent = "Connecte";
+
+    // Synchro temps reel — affiche la session la plus recente automatiquement
+    var arr = Object.values(allSessions).sort(function(a,b){ return (b.savedAt||0)-(a.savedAt||0); });
+    if (arr.length > 0 && arr[0] && arr[0].ganttData) {
+      renderGantt(arr[0].date, arr[0].machine, arr[0].ganttData);
+    }
   });
 
   document.getElementById("save-btn").addEventListener("click", saveSession);
@@ -620,7 +626,7 @@ function renderGantt(date, machine, data) {
   extras.forEach(function(et){ regT(et.sh||"",et.sm||"",et.eh||"",et.em||""); if(et.sh2||et.eh2) regT(et.sh2||"",et.sm2||"",et.eh2||"",et.em2||""); });
 
   if (!isFinite(minT)) minT=360; if (!isFinite(maxT)) maxT=minT+120;
-  minT=Math.max(0,minT-10); maxT=maxT+10;
+  minT=Math.max(360,minT-10); maxT=maxT+10;
   minT=Math.floor(minT/60)*60; maxT=Math.ceil(maxT/60)*60;
   var total=maxT-minT, slotMin=10, slots=total/slotMin;
   var slotW=Math.max(35,Math.min(90,900/slots));
@@ -631,8 +637,8 @@ function renderGantt(date, machine, data) {
 
   var targetDefs=[
     {key:"grand_t1",label:"TARGET (Grand T1)",color:"#c0392b"},
-    {key:"petit_t1",label:"TARGET (Petit t1)",color:"#e07b54"},
-    {key:"rondelle",label:"TARGET (Rondelle)",color:"#7d3c98"}
+    {key:"petit_t1",label:"TARGET (Petit t1)",color:"#c0392b"},
+    {key:"rondelle",label:"TARGET (Rondelle)",color:"#c0392b"}
   ];
 
   var h='<table class="gantt"><tr><th colspan="5"></th>';
