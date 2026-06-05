@@ -32,7 +32,7 @@ const TASKS_RONDELLE = [
   {id:"ron_7", machine:"Demarrage section sans flacon", qui:"Chef de section"},
   {id:"ron_8", machine:"Demarrage section avec flacon", qui:"Chef de section"},
   {id:"ron_9", machine:"Machine complete avec flacon", qui:"Chef de section"},
-  {id:"ron_10", machine:"Mise à l'arche", qui:"Chef de section"}
+  {id:"ron_10", machine:"Mise a l arche", qui:"Chef de section"}
 ];
 
 let allSessions = {};
@@ -132,10 +132,13 @@ function initApp() {
     renderHistory(allSessions);
     document.getElementById("sync-status").textContent = "Connecte";
 
-    // Synchro temps reel — affiche la session la plus recente automatiquement
-    var arr = Object.values(allSessions).sort(function(a,b){ return (b.savedAt||0)-(a.savedAt||0); });
-    if (arr.length > 0 && arr[0] && arr[0].ganttData) {
-      renderGantt(arr[0].date, arr[0].machine, arr[0].ganttData);
+    // Synchro temps reel — met a jour le Gantt seulement s il est deja visible
+    var gs = document.getElementById("gantt-section");
+    if (gs && gs.style.display !== "none") {
+      var arr = Object.values(allSessions).sort(function(a,b){ return (b.savedAt||0)-(a.savedAt||0); });
+      if (arr.length > 0 && arr[0] && arr[0].ganttData) {
+        renderGantt(arr[0].date, arr[0].machine, arr[0].ganttData);
+      }
     }
   });
 
@@ -643,7 +646,7 @@ function renderGantt(date, machine, data) {
 
   var h='<table class="gantt"><tr><th colspan="5"></th>';
   for(var m=minT;m<maxT;m+=60) h+='<th colspan="'+(60/slotMin)+'" style="background:#1a3a6b;color:#fff">60 min</th>';
-  h+='</tr><tr><th class="chk-cell"></th><th style="width:150px;text-align:left;padding-left:8px">MACHINE / SECTEUR</th><th style="width:80px">WHO</th><th style="width:52px">START</th><th style="width:48px">FINAL</th>';
+  h+='</tr><tr><th class="chk-cell"></th><th style="width:150px;text-align:left;padding-left:8px">MACHINE / SECTEUR<br><span style="font-weight:400;color:#1a5fa8;font-size:10px;">"+machine+"</span></th><th style="width:80px">WHO</th><th style="width:52px">START</th><th style="width:48px">FINAL</th>';
   for(var m=minT;m<maxT;m+=slotMin){
     var hh=Math.floor(m/60).toString().padStart(2,"0"),mm2=(m%60).toString().padStart(2,"0");
     h+='<th style="width:'+slotW+'px;font-size:10px;color:#555;font-weight:400">'+(mm2==="00"?hh+"h":mm2)+'</th>';
