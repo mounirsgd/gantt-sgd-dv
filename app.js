@@ -36,9 +36,9 @@ const TASKS_RONDELLE = [
 ];
 
 const TASKS_BOUT_FROID = [
-  {id:"bf_1", machine:"Duree vide de ligne", qui:"xyz"},
-  {id:"bf_2", machine:"Duree reglage", qui:"xyz"},
-  {id:"bf_3", machine:"Ajustement", qui:"xyz"}
+  {id:"bf_1", machine:"Duree vide de ligne", qui:"x"},
+  {id:"bf_2", machine:"Duree reglage", qui:"y"},
+  {id:"bf_3", machine:"Ajustement", qui:"z"}
 ];
 
 const BOUT_FROID_COLOR = "#2e86ab";
@@ -763,7 +763,7 @@ function renderGantt(date, machine, data) {
   });
   TASKS_BOUT_FROID.forEach(function(task,idx){
     var t=tasks[task.id]||{}, start=getTV(t.sh||"",t.sm||"");
-    allRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:toMin(start),group:"boutfroid"});
+    allRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:null,group:"boutfroid"});
   });
   extras.forEach(function(et,idx){
     var start=getTV(et.sh||"",et.sm||"");
