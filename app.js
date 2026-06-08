@@ -9,7 +9,7 @@ const firebaseConfig = {
   projectId: "gantt-sgd",
   storageBucket: "gantt-sgd.firebasestorage.app",
   messagingSenderId: "363250513679",
-  appId: "1:363250513679:web:bdf947bd2800614d7a307a"
+  appId: "1:363250513679:web:bdf947bd2800614d7a307a" 
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
