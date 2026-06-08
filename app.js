@@ -26,7 +26,7 @@ const TASKS_RONDELLE = [
   {id:"ron_1", machine:"Nettoyage machine", qui:"Production"},
   {id:"ron_2", machine:"Changement cuvette", qui:"Feederman"},
   {id:"ron_3", machine:"Cote finisseur", qui:"Atelier IS"},
-  {id:"ron_4", machine:"Cote ebaucheur", qui:"Atelier IS"},
+  {id:"ron_4", machine:"Cote ebauche", qui:"Atelier IS"},
   {id:"ron_5", machine:"Entonnoir sous verre", qui:"Feederman"},
   {id:"ron_6", machine:"Distributeur sous verre", qui:"Feederman"},
   {id:"ron_7", machine:"Demarrage section sans flacon", qui:"Chef de section"},
@@ -34,6 +34,14 @@ const TASKS_RONDELLE = [
   {id:"ron_9", machine:"Machine complete avec flacon", qui:"Chef de section"},
   {id:"ron_10", machine:"Mise a l arche", qui:"Chef de section"}
 ];
+
+const TASKS_BOUT_FROID = [
+  {id:"bf_1", machine:"Duree vide de ligne", qui:"xyz"},
+  {id:"bf_2", machine:"Duree reglage", qui:"xyz"},
+  {id:"bf_3", machine:"Ajustement", qui:"xyz"}
+];
+
+const BOUT_FROID_COLOR = "#2e86ab";
 
 let allSessions = {};
 let ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
@@ -187,6 +195,18 @@ function buildForm() {
     appendTaskRow(tasksSec, task.id, task.machine, task.qui, tv, TASK_COLORS[idx % TASK_COLORS.length]);
   });
 
+  // Separateur Bout Froid
+  var bfSep = document.createElement("div");
+  bfSep.style.cssText = "background:"+BOUT_FROID_COLOR+";color:#fff;font-size:12px;font-weight:700;padding:8px 12px;margin:0;letter-spacing:.5px;";
+  bfSep.textContent = "BOUT FROID";
+  tasksSec.appendChild(bfSep);
+
+  TASKS_BOUT_FROID.forEach(function(task, idx) {
+    var tv = ganttData.tasks[task.id] || {};
+    var color = BOUT_FROID_COLOR;
+    appendTaskRowBF(tasksSec, task.id, task.machine, task.qui, tv, color);
+  });
+
   (ganttData.extraTasks || []).forEach(function(et, idx) {
     appendExtraTaskRow(tasksSec, et, TASK_COLORS[(TASKS_RONDELLE.length + idx) % TASK_COLORS.length]);
   });
@@ -305,6 +325,54 @@ function addRemoveSlotBtn(slotsWrap, row, cmt2Wrap) {
     slotsWrap.appendChild(addSlotBtn);
   });
   slotsWrap.appendChild(removeBtn);
+}
+
+function appendTaskRowBF(sec, taskId, machineName, quiDefault, tv, color) {
+  var row = document.createElement("div");
+  row.className = "task-row";
+  row.style.background = "#eaf6fb";
+  var top = document.createElement("div"); top.className = "task-row-top";
+  var colorBar = document.createElement("div"); colorBar.className = "task-color-bar"; colorBar.style.background = color;
+  var lbl = document.createElement("span"); lbl.className = "task-row-label"; lbl.textContent = machineName;
+  var who = document.createElement("span"); who.className = "task-row-who"; who.textContent = quiDefault;
+  top.appendChild(colorBar); top.appendChild(lbl); top.appendChild(who);
+  row.appendChild(top);
+
+  var slotsWrap = document.createElement("div"); slotsWrap.className = "task-row-times";
+  var slot1 = makeSlotRow(tv.sh||"",tv.sm||"",tv.eh||"",tv.em||"");
+  slotsWrap.appendChild(slot1);
+  row._slot1 = slot1; row._slot2 = null;
+
+  var cmtTA = makeTextarea("Commentaire...", tv.comment||"");
+  var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap"; cmtWrap.appendChild(cmtTA);
+  var cmt2TA = makeTextarea("Commentaire 2eme creneau...", tv.comment2||"");
+  var cmt2Wrap = document.createElement("div"); cmt2Wrap.className = "task-comment-wrap"; cmt2Wrap.appendChild(cmt2TA);
+
+  if (tv.sh2 || tv.eh2) {
+    var sep = makeSep();
+    var s2 = makeSlotRow(tv.sh2||"",tv.sm2||"",tv.eh2||"",tv.em2||"");
+    slotsWrap.appendChild(sep); slotsWrap.appendChild(s2);
+    row._slot2 = s2;
+    addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
+  } else {
+    cmt2Wrap.style.display = "none";
+    var addSlotBtn = document.createElement("button");
+    addSlotBtn.className = "btn-add-slot"; addSlotBtn.textContent = "+";
+    addSlotBtn.addEventListener("click", function() {
+      var sep = makeSep();
+      var s2 = makeSlotRow("","","","");
+      slotsWrap.insertBefore(sep, addSlotBtn);
+      slotsWrap.insertBefore(s2, addSlotBtn);
+      row._slot2 = s2; addSlotBtn.style.display = "none";
+      cmt2Wrap.style.display = "block";
+      addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
+    });
+    slotsWrap.appendChild(addSlotBtn);
+  }
+
+  row.appendChild(slotsWrap); row.appendChild(cmtWrap); row.appendChild(cmt2Wrap);
+  sec._taskFields[taskId] = { sF:slot1._sF, eF:slot1._eF, cmtTA:cmtTA, cmt2TA:cmt2TA, color:color, row:row };
+  sec.appendChild(row);
 }
 
 function appendExtraTaskRow(sec, et, color) {
@@ -457,6 +525,16 @@ function collectData() {
   var tasksSec = container._tasksSec;
   if (tasksSec) {
     TASKS_RONDELLE.forEach(function(task) {
+      var f = tasksSec._taskFields[task.id]; if (!f) return;
+      var d = { sh:f.sF._getH(), sm:f.sF._getM(), eh:f.eF._getH(), em:f.eF._getM(), comment:f.cmtTA.value };
+      if (f.row._slot2) {
+        d.sh2=f.row._slot2._sF._getH(); d.sm2=f.row._slot2._sF._getM();
+        d.eh2=f.row._slot2._eF._getH(); d.em2=f.row._slot2._eF._getM();
+        d.comment2 = f.cmt2TA ? f.cmt2TA.value : "";
+      }
+      out.tasks[task.id] = d;
+    });
+    TASKS_BOUT_FROID.forEach(function(task) {
       var f = tasksSec._taskFields[task.id]; if (!f) return;
       var d = { sh:f.sF._getH(), sm:f.sF._getM(), eh:f.eF._getH(), em:f.eF._getM(), comment:f.cmtTA.value };
       if (f.row._slot2) {
@@ -626,6 +704,7 @@ function renderGantt(date, machine, data) {
   }
   ["grand_t1","petit_t1","rondelle"].forEach(function(k){ var t=targets[k]||{}; regT(t.sh||"",t.sm||"",t.eh||"",t.em||""); });
   TASKS_RONDELLE.forEach(function(task){ var t=tasks[task.id]||{}; regT(t.sh||"",t.sm||"",t.eh||"",t.em||""); if(t.sh2||t.eh2) regT(t.sh2||"",t.sm2||"",t.eh2||"",t.em2||""); });
+  TASKS_BOUT_FROID.forEach(function(task){ var t=tasks[task.id]||{}; regT(t.sh||"",t.sm||"",t.eh||"",t.em||""); if(t.sh2||t.eh2) regT(t.sh2||"",t.sm2||"",t.eh2||"",t.em2||""); });
   extras.forEach(function(et){ regT(et.sh||"",et.sm||"",et.eh||"",et.em||""); if(et.sh2||et.eh2) regT(et.sh2||"",et.sm2||"",et.eh2||"",et.em2||""); });
 
   if (!isFinite(minT)) minT=360; if (!isFinite(maxT)) maxT=minT+120;
@@ -680,7 +759,11 @@ function renderGantt(date, machine, data) {
   var allRows=[];
   TASKS_RONDELLE.forEach(function(task,idx){
     var t=tasks[task.id]||{}, start=getTV(t.sh||"",t.sm||"");
-    allRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:toMin(start)});
+    allRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:toMin(start),group:"rondelle"});
+  });
+  TASKS_BOUT_FROID.forEach(function(task,idx){
+    var t=tasks[task.id]||{}, start=getTV(t.sh||"",t.sm||"");
+    allRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:toMin(start),group:"boutfroid"});
   });
   extras.forEach(function(et,idx){
     var start=getTV(et.sh||"",et.sm||"");
@@ -688,7 +771,13 @@ function renderGantt(date, machine, data) {
   });
   allRows.sort(function(a,b){ if(a.sMin===null)return 1; if(b.sMin===null)return -1; return a.sMin-b.sMin; });
 
+  var bfHeaderAdded = false;
   allRows.forEach(function(rowData,rowIdx){
+    // Ajouter separateur BOUT FROID avant la premiere tache boutfroid
+    if (rowData.group === "boutfroid" && !bfHeaderAdded) {
+      bfHeaderAdded = true;
+      h += '<tr><td colspan="'+(5+slots)+'" style="background:'+BOUT_FROID_COLOR+';color:#fff;font-weight:700;font-size:12px;padding:7px 12px;letter-spacing:.5px;">BOUT FROID</td></tr>';
+    }
     var isSelA, isSelB, uid, bar="", color, start, end, s, e, rowCls;
     if(rowData.type==="fixed"){
       var task=rowData.task, t=rowData.t, idx=rowData.idx;
@@ -709,7 +798,7 @@ function renderGantt(date, machine, data) {
         if(s2!==null&&e2!==null&&e2>s2){ var lp2=((s2-minT)/total)*100,wp2=((e2-s2)/total)*100; bar+='<div class="gantt-bar" style="left:'+lp2+'%;width:'+wp2+'%;background:'+color+';opacity:.75;" data-uid="'+uid+'_2" data-label="'+task.machine+' (2)" data-qui="'+quiDisplay+'" data-start="'+start2+'" data-end="'+end2+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment2||"")+'"></div>'; }
       }
       isSelA=selectedIds[0]===uid; isSelB=selectedIds[1]===uid;
-      rowCls=isSelA?"sel-a":isSelB?"sel-b":rowIdx%2===0?"odd":"even";
+      rowCls=isSelA?"sel-a":isSelB?"sel-b":rowData.group==="boutfroid"?"boutfroid-row":rowIdx%2===0?"odd":"even";
       h+='<tr class="'+rowCls+'" data-uid="'+uid+'">'+
         '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
         '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+task.machine+'</td>'+
