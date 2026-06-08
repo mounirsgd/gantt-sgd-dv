@@ -9,7 +9,7 @@ const firebaseConfig = {
   projectId: "gantt-sgd",
   storageBucket: "gantt-sgd.firebasestorage.app",
   messagingSenderId: "363250513679",
-  appId: "1:363250513679:web:bdf947bd2800614d7a307a" 
+  appId: "1:363250513679:web:bdf947bd2800614d7a307a"
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
@@ -589,13 +589,20 @@ async function saveSession() {
   window._editingSessionId = null;
 
   showToast("Seance enregistree !", "#34c759");
-  renderGantt(date, machine, data);
-  setTimeout(function() { document.getElementById("gantt-section").scrollIntoView({behavior:"smooth"}); }, 100);
+
+  // Garder les donnees pour afficher le Gantt apres avoir vide le formulaire
+  var savedDate = date;
+  var savedMachine = machine;
+  var savedData = data;
 
   document.getElementById("f-machine-name").value = "";
   document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
   ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
   buildForm();
+
+  // Afficher le Gantt avec les donnees sauvegardees
+  renderGantt(savedDate, savedMachine, savedData);
+  setTimeout(function() { document.getElementById("gantt-section").scrollIntoView({behavior:"smooth"}); }, 100);
 }
 
 async function newSession() {
