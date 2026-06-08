@@ -257,3 +257,6 @@ table.gantt tr.sel-b td { background: #e8f5e9 !important; outline: 2px solid #22
 .justif-arrow-head { color: #d1d1d6; font-size: 12px; }
 .justif-del-btn { background: transparent; border: none; color: #ff3b30; cursor: pointer; font-size: 14px; font-weight: 700; padding: 2px 6px; }
 .justif-comment { font-size: 12px; color: #6c6c70; background: #f7f7f8; border-radius: 6px; padding: 6px 10px; font-style: italic; }
+
+/* ── BOUT FROID ───────────────────────────────────────────────── */
+table.gantt tr.boutfroid-row td { background: #eaf6fb !important; }
