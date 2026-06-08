@@ -26,7 +26,7 @@ const TASKS_RONDELLE = [
   {id:"ron_1", machine:"Nettoyage machine", qui:"Production"},
   {id:"ron_2", machine:"Changement cuvette", qui:"Feederman"},
   {id:"ron_3", machine:"Cote finisseur", qui:"Atelier IS"},
-  {id:"ron_4", machine:"Cote ebauche", qui:"Atelier IS"},
+  {id:"ron_4", machine:"Cote ebaucheur", qui:"Atelier IS"},
   {id:"ron_5", machine:"Entonnoir sous verre", qui:"Feederman"},
   {id:"ron_6", machine:"Distributeur sous verre", qui:"Feederman"},
   {id:"ron_7", machine:"Demarrage section sans flacon", qui:"Chef de section"},
