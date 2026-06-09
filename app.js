@@ -36,8 +36,8 @@ const TASKS_RONDELLE = [
 ];
 
 const TASKS_BOUT_FROID = [
-  {id:"bf_1", machine:"T0 : Duree nettoyage", qui:"Production", color:"#d35400"},
-  {id:"bf_2", machine:"T1 : Duree pre-reglage", qui:"Automation", color:"#27ae60"},
+  {id:"bf_1", machine:"T0 : Duree nettoyage", qui:"Production", color:"#f1c40f"},
+  {id:"bf_2", machine:"T1 : Duree pre-reglage", qui:"Automation", color:"#64748b"},
   {id:"bf_3", machine:"T2 : Monte en regime", qui:"Automation", color:"#795548"}
 ];
 
@@ -234,7 +234,7 @@ function buildForm() {
     btnBF.textContent = "Bout Froid";
     btnBF.style.cssText = "flex:1;padding:10px;background:"+BOUT_FROID_COLOR+";color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;";
     btnBF.addEventListener("click", function() {
-      var bfColors = ["#d35400","#27ae60","#795548"];
+      var bfColors = ["#f1c40f","#64748b","#795548"];
       var color = bfColors[tasksSec._extraFieldsBF ? tasksSec._extraFieldsBF.length % 3 : 0];
       appendExtraTaskRow(tasksSec, {group:"boutfroid"}, color, "boutfroid");
       popup.remove();
@@ -594,7 +594,7 @@ async function autoSaveExtras(sec) {
   var existing = Object.entries(allSessions).find(function(e) { return e[1].date===date && e[1].machine===machine; });
   if (!existing) return;
   var data = collectData();
-  await set(ref(db,"sessions/"+existing[0]+"/ganttData/extraTasks"), data.extraTasks||[]);
+  await set(ref(db,"sessions/"+existing[0]+"/ganttData"), data);
   showToast("Tache supprimee !", "#e74c3c");
 }
 
@@ -618,18 +618,15 @@ async function saveSession() {
 
   showToast("Seance enregistree !", "#34c759");
 
-  // Garder les donnees pour afficher le Gantt apres avoir vide le formulaire
-  var savedDate = date;
-  var savedMachine = machine;
-  var savedData = data;
-
-  document.getElementById("f-machine-name").value = "";
-  document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
-  ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
+  // Garder le formulaire charge avec les donnees pour modification
+  ganttData = data;
+  document.getElementById("f-date").value = date;
+  document.getElementById("f-machine-name").value = machine;
+  window._editingSessionId = sessId;
   buildForm();
 
-  // Afficher le Gantt avec les donnees sauvegardees
-  renderGantt(savedDate, savedMachine, savedData);
+  // Afficher le Gantt
+  renderGantt(date, machine, data);
   setTimeout(function() { document.getElementById("gantt-section").scrollIntoView({behavior:"smooth"}); }, 100);
 }
 
