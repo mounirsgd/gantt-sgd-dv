@@ -38,7 +38,7 @@ const TASKS_RONDELLE = [
 const TASKS_BOUT_FROID = [
   {id:"bf_1", machine:"T0 : Duree nettoyage", qui:"Production", color:"#f1c40f"},
   {id:"bf_2", machine:"T1 : Duree pre-reglage", qui:"Automation", color:"#64748b"},
-  {id:"bf_3", machine:"T2 : Monte en regime", qui:"Automation", color:"#795548"}
+  {id:"bf_3", machine:"T2 : Montee en regime", qui:"Automation", color:"#795548"}
 ];
 
 const BOUT_FROID_COLOR = "#2e86ab";
