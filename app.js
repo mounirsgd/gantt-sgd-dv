@@ -38,7 +38,7 @@ const TASKS_RONDELLE = [
 const TASKS_BOUT_FROID = [
   {id:"bf_1", machine:"T0 : Duree nettoyage", qui:"Production", color:"#f1c40f"},
   {id:"bf_2", machine:"T1 : Duree pre-reglage", qui:"Automation", color:"#64748b"},
-  {id:"bf_3", machine:"T2 : Montee en regime", qui:"Automation", color:"#795548"}
+  {id:"bf_3", machine:"T2 : Monte en regime", qui:"Automation", color:"#795548"}
 ];
 
 const BOUT_FROID_COLOR = "#2e86ab";
@@ -793,16 +793,29 @@ function renderGantt(date, machine, data) {
     var t=tasks[task.id]||{}, start=getTV(t.sh||"",t.sm||"");
     allRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:toMin(start),group:"rondelle"});
   });
-  TASKS_BOUT_FROID.forEach(function(task,idx){
-    var t=tasks[task.id]||{}, start=getTV(t.sh||"",t.sm||"");
-    allRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:null,group:"boutfroid"});
-  });
-  extras.forEach(function(et,idx){
+  // Extras separes par groupe
+  var extrasBoutChaud = extras.filter(function(et){ return (et.group||"boutchaud")==="boutchaud"; });
+  var extrasBoutFroid = extras.filter(function(et){ return et.group==="boutfroid"; });
+
+  // Bout chaud : taches fixes + extras tries chronologiquement
+  extrasBoutChaud.forEach(function(et,idx){
     var start=getTV(et.sh||"",et.sm||"");
-    var etGroup = et.group || "boutchaud";
-    allRows.push({type:"extra",et:et,idx:idx,sMin:etGroup==="boutfroid"?null:toMin(start),group:etGroup});
+    allRows.push({type:"extra",et:et,idx:idx,sMin:toMin(start),group:"boutchaud"});
   });
   allRows.sort(function(a,b){ if(a.sMin===null)return 1; if(b.sMin===null)return -1; return a.sMin-b.sMin; });
+
+  // Bout froid : taches fixes + extras fusionnes et tries chronologiquement entre eux
+  var bfRows = [];
+  TASKS_BOUT_FROID.forEach(function(task,idx){
+    var t=tasks[task.id]||{}, start=getTV(t.sh||"",t.sm||"");
+    bfRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:toMin(start),group:"boutfroid"});
+  });
+  extrasBoutFroid.forEach(function(et,idx){
+    var start=getTV(et.sh||"",et.sm||"");
+    bfRows.push({type:"extra",et:et,idx:idx,sMin:toMin(start),group:"boutfroid"});
+  });
+  bfRows.sort(function(a,b){ if(a.sMin===null)return 1; if(b.sMin===null)return -1; return a.sMin-b.sMin; });
+  bfRows.forEach(function(r){ allRows.push(r); });
 
   var bfHeaderAdded = false;
   allRows.forEach(function(rowData,rowIdx){
