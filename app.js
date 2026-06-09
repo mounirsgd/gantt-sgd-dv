@@ -36,9 +36,9 @@ const TASKS_RONDELLE = [
 ];
 
 const TASKS_BOUT_FROID = [
-  {id:"bf_1", machine:"Duree vide de ligne", qui:"x"},
-  {id:"bf_2", machine:"Duree reglage", qui:"y"},
-  {id:"bf_3", machine:"Ajustement", qui:"z"}
+  {id:"bf_1", machine:"T0 : Duree nettoyage", qui:"Production", color:"#d35400"},
+  {id:"bf_2", machine:"T1 : Duree pre-reglage", qui:"Automation", color:"#27ae60"},
+  {id:"bf_3", machine:"T2 : Monte en regime", qui:"Automation", color:"#795548"}
 ];
 
 const BOUT_FROID_COLOR = "#2e86ab";
@@ -203,8 +203,7 @@ function buildForm() {
 
   TASKS_BOUT_FROID.forEach(function(task, idx) {
     var tv = ganttData.tasks[task.id] || {};
-    var color = BOUT_FROID_COLOR;
-    appendTaskRowBF(tasksSec, task.id, task.machine, task.qui, tv, color);
+    appendTaskRowBF(tasksSec, task.id, task.machine, task.qui, tv, task.color);
   });
 
   (ganttData.extraTasks || []).forEach(function(et, idx) {
@@ -214,7 +213,35 @@ function buildForm() {
   var addBtn = document.createElement("button");
   addBtn.className = "btn-add-task"; addBtn.textContent = "+ Ajouter une tache";
   addBtn.addEventListener("click", function() {
-    appendExtraTaskRow(tasksSec, {}, TASK_COLORS[(TASKS_RONDELLE.length + tasksSec._extraFields.length) % TASK_COLORS.length]);
+    // Supprimer popup existante
+    var existingPopup = document.getElementById("add-task-popup");
+    if (existingPopup) { existingPopup.remove(); return; }
+
+    var popup = document.createElement("div");
+    popup.id = "add-task-popup";
+    popup.style.cssText = "background:#fff;border:1.5px solid #1a3a6b;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.15);padding:10px;margin:6px 0;display:flex;gap:10px;";
+
+    var btnBC = document.createElement("button");
+    btnBC.textContent = "Bout Chaud";
+    btnBC.style.cssText = "flex:1;padding:10px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;";
+    btnBC.addEventListener("click", function() {
+      var color = TASK_COLORS[(TASKS_RONDELLE.length + tasksSec._extraFields.length) % TASK_COLORS.length];
+      appendExtraTaskRow(tasksSec, {group:"boutchaud"}, color, "boutchaud");
+      popup.remove();
+    });
+
+    var btnBF = document.createElement("button");
+    btnBF.textContent = "Bout Froid";
+    btnBF.style.cssText = "flex:1;padding:10px;background:"+BOUT_FROID_COLOR+";color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;";
+    btnBF.addEventListener("click", function() {
+      var bfColors = ["#d35400","#27ae60","#795548"];
+      var color = bfColors[tasksSec._extraFieldsBF ? tasksSec._extraFieldsBF.length % 3 : 0];
+      appendExtraTaskRow(tasksSec, {group:"boutfroid"}, color, "boutfroid");
+      popup.remove();
+    });
+
+    popup.appendChild(btnBC); popup.appendChild(btnBF);
+    tasksSec.insertBefore(popup, addBtn);
   });
   tasksSec.appendChild(addBtn);
   container.appendChild(tasksSec);
@@ -375,7 +402,7 @@ function appendTaskRowBF(sec, taskId, machineName, quiDefault, tv, color) {
   sec.appendChild(row);
 }
 
-function appendExtraTaskRow(sec, et, color) {
+function appendExtraTaskRow(sec, et, color, group) {
   var row = document.createElement("div"); row.className = "task-row";
   var top = document.createElement("div"); top.className = "task-row-top";
   var colorBar = document.createElement("div"); colorBar.className = "task-color-bar"; colorBar.style.background = color;
@@ -434,7 +461,8 @@ function appendExtraTaskRow(sec, et, color) {
 
   row.appendChild(slotsWrap); row.appendChild(cmtWrap); row.appendChild(cmt2Wrap);
   row._nameInp = nameInp; row._whoInp = whoInp;
-  sec._extraFields.push({ sF:slot1._sF, eF:slot1._eF, cmtTA:cmtTA, cmt2TA:cmt2TA, color:color, row:row });
+  var etGroup = group || et.group || 'boutchaud';
+  sec._extraFields.push({ sF:slot1._sF, eF:slot1._eF, cmtTA:cmtTA, cmt2TA:cmt2TA, color:color, row:row, group:etGroup });
   sec.appendChild(row);
 }
 
@@ -547,7 +575,7 @@ function collectData() {
     tasksSec._extraFields.forEach(function(et) {
       var name = et.row._nameInp ? et.row._nameInp.value.trim() : "";
       if (!name) return;
-      var d = { machine:name, qui:et.row._whoInp?et.row._whoInp.value.trim():"", sh:et.sF._getH(), sm:et.sF._getM(), eh:et.eF._getH(), em:et.eF._getM(), comment:et.cmtTA.value };
+      var d = { machine:name, qui:et.row._whoInp?et.row._whoInp.value.trim():"", sh:et.sF._getH(), sm:et.sF._getM(), eh:et.eF._getH(), em:et.eF._getM(), comment:et.cmtTA.value, group:et.group||"boutchaud" };
       if (et.row._slot2) {
         d.sh2=et.row._slot2._sF._getH(); d.sm2=et.row._slot2._sF._getM();
         d.eh2=et.row._slot2._eF._getH(); d.em2=et.row._slot2._eF._getM();
@@ -774,7 +802,8 @@ function renderGantt(date, machine, data) {
   });
   extras.forEach(function(et,idx){
     var start=getTV(et.sh||"",et.sm||"");
-    allRows.push({type:"extra",et:et,idx:idx,sMin:toMin(start)});
+    var etGroup = et.group || "boutchaud";
+    allRows.push({type:"extra",et:et,idx:idx,sMin:etGroup==="boutfroid"?null:toMin(start),group:etGroup});
   });
   allRows.sort(function(a,b){ if(a.sMin===null)return 1; if(b.sMin===null)return -1; return a.sMin-b.sMin; });
 
@@ -788,7 +817,7 @@ function renderGantt(date, machine, data) {
     var isSelA, isSelB, uid, bar="", color, start, end, s, e, rowCls;
     if(rowData.type==="fixed"){
       var task=rowData.task, t=rowData.t, idx=rowData.idx;
-      color=TASK_COLORS[idx%TASK_COLORS.length];
+      color=rowData.group==="boutfroid" ? task.color : TASK_COLORS[idx%TASK_COLORS.length];
       uid="task_"+task.id;
       start=getTV(t.sh||"",t.sm||""); end=getTV(t.eh||"",t.em||"");
       s=toMin(start); e=toMin(end);
