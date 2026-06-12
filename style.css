@@ -260,3 +260,7 @@ table.gantt tr.sel-b td { background: #e8f5e9 !important; outline: 2px solid #22
 
 /* ── BOUT FROID ───────────────────────────────────────────────── */
 table.gantt tr.boutfroid-row td { background: #eaf6fb !important; }
+
+/* ── ETIQUETTES COMMENTAIRES FIXES ───────────────────────────── */
+.bar-cell { height: auto !important; min-height: 36px; padding-bottom: 0 !important; }
+.bar-inner { position: relative; width: 100%; min-height: 36px; padding-bottom: 22px; }
