@@ -264,3 +264,23 @@ table.gantt tr.boutfroid-row td { background: #eaf6fb !important; }
 /* ── ETIQUETTES COMMENTAIRES FIXES ───────────────────────────── */
 .bar-cell { height: auto !important; min-height: 36px; padding-bottom: 0 !important; }
 .bar-inner { position: relative; width: 100%; min-height: 36px; padding-bottom: 22px; }
+
+/* ── ETIQUETTES COMMENTAIRES FIXES ───────────────────────────── */
+.bar-cell { height: auto !important; }
+.bar-inner { position: relative; width: 100%; min-height: 36px; }
+.cmt-label {
+  position: absolute;
+  top: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 300px;
+  min-width: 80px;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  line-height: 1.5;
+  pointer-events: none;
+}
