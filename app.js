@@ -714,18 +714,19 @@ async function deleteAllHistory() { if (!confirm("Supprimer tout l historique ?"
 
 // ─── GANTT ───────────────────────────────────────────────────────────────────
 
+function cmtLabel(comment, left, color) {
+  if (!comment) return "";
+  var decoded = comment.replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\\n/g," ").replace(/\\n/g," ");
+  return '<div style="position:absolute;left:'+left+'%;top:100%;margin-top:3px;background:#fffde7;border:1.5px solid '+color+';border-radius:5px;padding:2px 7px;font-size:10px;color:#333;white-space:nowrap;z-index:10;max-width:220px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 6px rgba(0,0,0,.12);">'+decoded+'</div>';
+}
+
 function renderGantt(date, machine, data) {
   var container = document.getElementById("gantt-container");
   var targets = data.targets || {};
   var tasks = data.tasks || {};
 
   // Tri chronologique extras
-  var extras = (data.extraTasks||[]).slice().sort(function(a,b) {
-    var ha=parseInt(a.sh||""), ma=parseInt(a.sm||"0")||0;
-    var hb=parseInt(b.sh||""), mb=parseInt(b.sm||"0")||0;
-    var sa=isNaN(ha)?null:ha*60+ma, sb=isNaN(hb)?null:hb*60+mb;
-    if (sa===null) return 1; if (sb===null) return -1; return sa-sb;
-  });
+  var extras = (data.extraTasks||[]).slice();
 
   allTasks = {};
   var minT=Infinity, maxT=-Infinity;
@@ -774,7 +775,7 @@ function renderGantt(date, machine, data) {
     var bar="";
     if(s!==null&&e!==null&&e>s){
       var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
-      bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+td.color+'" data-uid="'+uid+'" data-label="'+td.label+'" data-qui="--" data-start="'+start+'" data-end="'+end+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment||"")+'">'+td.label.replace("TARGET ","")+'</div>';
+      bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+td.color+'" data-uid="'+uid+'" data-label="'+td.label+'" data-qui="--" data-start="'+start+'" data-end="'+end+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment||"")+'">'+td.label.replace("TARGET ","")+\'</div>\'+cmtLabel(encCmt(t.comment||""),lp,td.color);
     }
     var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
     h+='<tr class="target-section'+(isSelA?" sel-a":isSelB?" sel-b":"")+'" data-uid="'+uid+'" style="background:'+td.color+'22;">'+
