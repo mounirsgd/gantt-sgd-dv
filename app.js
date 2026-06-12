@@ -714,10 +714,12 @@ async function deleteAllHistory() { if (!confirm("Supprimer tout l historique ?"
 
 // ─── GANTT ───────────────────────────────────────────────────────────────────
 
-function cmtLabel(comment, left, color) {
+function cmtLabel(comment, left, width, color) {
   if (!comment) return "";
-  var decoded = comment.replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\\n/g," ").replace(/\\n/g," ");
-  return '<div style="position:absolute;left:'+left+'%;top:100%;margin-top:3px;background:#fffde7;border:1.5px solid '+color+';border-radius:5px;padding:2px 7px;font-size:10px;color:#333;white-space:nowrap;z-index:10;max-width:220px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 6px rgba(0,0,0,.12);">'+decoded+'</div>';
+  var decoded = comment.replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\\n/g,"\n");
+  var labelLeft = left + width;
+  if (labelLeft > 95) labelLeft = Math.max(0, left - 30);
+  return '<div class="cmt-label" style="left:'+labelLeft+'%;background:#fffde7;border:1.5px solid '+color+';color:#333;">'+decoded+'</div>';
 }
 
 function renderGantt(date, machine, data) {
@@ -775,7 +777,7 @@ function renderGantt(date, machine, data) {
     var bar="";
     if(s!==null&&e!==null&&e>s){
       var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
-      bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+td.color+'" data-uid="'+uid+'" data-label="'+td.label+'" data-qui="--" data-start="'+start+'" data-end="'+end+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment||"")+'">'+td.label.replace("TARGET ","")+'</div>'+cmtLabel(encCmt(t.comment||""),lp,td.color);
+      bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+td.color+'" data-uid="'+uid+'" data-label="'+td.label+'" data-qui="--" data-start="'+start+'" data-end="'+end+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment||"")+'">'+td.label.replace("TARGET ","")+'</div>'+cmtLabel(encCmt(t.comment||""),lp,wp,td.color);
     }
     var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
     h+='<tr class="target-section'+(isSelA?" sel-a":isSelB?" sel-b":"")+'" data-uid="'+uid+'" style="background:'+td.color+'22;">'+
@@ -836,13 +838,13 @@ function renderGantt(date, machine, data) {
       allTasks[uid]={machine:task.machine,qui:quiDisplay,start:start,end:end,color:color};
       if(s!==null&&e!==null&&e>s){
         var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
-        bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+color+'" data-uid="'+uid+'" data-label="'+task.machine+'" data-qui="'+quiDisplay+'" data-start="'+start+'" data-end="'+end+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment||"")+'">'+( t.comment?'<div class="gantt-comment-dot"></div>':"")+'</div>';
+        bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+color+'" data-uid="'+uid+'" data-label="'+task.machine+'" data-qui="'+quiDisplay+'" data-start="'+start+'" data-end="'+end+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment||"")+'">'+( t.comment?'<div class="gantt-comment-dot"></div>':"")+'</div>'+cmtLabel(encCmt(t.comment||""),lp,wp,color);
       }
       if(t.sh2||t.eh2){
         var start2=getTV(t.sh2||"",t.sm2||""), end2=getTV(t.eh2||"",t.em2||"");
         var s2=toMin(start2), e2=toMin(end2);
         if(s!==null&&e!==null&&s2!==null&&s2>e){ var gL=((e-minT)/total)*100,gW=((s2-e)/total)*100; bar+='<div style="position:absolute;top:8px;bottom:8px;left:'+gL+'%;width:'+gW+'%;background:'+color+';opacity:.25;border-radius:3px;"></div>'; }
-        if(s2!==null&&e2!==null&&e2>s2){ var lp2=((s2-minT)/total)*100,wp2=((e2-s2)/total)*100; bar+='<div class="gantt-bar" style="left:'+lp2+'%;width:'+wp2+'%;background:'+color+';opacity:.75;" data-uid="'+uid+'_2" data-label="'+task.machine+' (2)" data-qui="'+quiDisplay+'" data-start="'+start2+'" data-end="'+end2+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment2||"")+'"></div>'; }
+        if(s2!==null&&e2!==null&&e2>s2){ var lp2=((s2-minT)/total)*100,wp2=((e2-s2)/total)*100; bar+='<div class="gantt-bar" style="left:'+lp2+'%;width:'+wp2+'%;background:'+color+';opacity:.75;" data-uid="'+uid+'_2" data-label="'+task.machine+' (2)" data-qui="'+quiDisplay+'" data-start="'+start2+'" data-end="'+end2+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment2||"")+'"></div>'; }+cmtLabel(encCmt(t.comment2||""),lp2,wp2,color);
       }
       isSelA=selectedIds[0]===uid; isSelB=selectedIds[1]===uid;
       rowCls=isSelA?"sel-a":isSelB?"sel-b":rowData.group==="boutfroid"?"boutfroid-row":rowIdx%2===0?"odd":"even";
@@ -862,13 +864,13 @@ function renderGantt(date, machine, data) {
       allTasks[uid]={machine:et.machine||"Extra",qui:et.qui||"",start:start,end:end,color:color};
       if(s!==null&&e!==null&&e>s){
         var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
-        bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+color+'" data-uid="'+uid+'" data-label="'+(et.machine||"Extra")+'" data-qui="'+(et.qui||"")+'" data-start="'+start+'" data-end="'+end+'" data-color="'+color+'" data-cmt="'+encCmt(et.comment||"")+'">'+( et.comment?'<div class="gantt-comment-dot"></div>':"")+'</div>';
+        bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+color+'" data-uid="'+uid+'" data-label="'+(et.machine||"Extra")+'" data-qui="'+(et.qui||"")+'" data-start="'+start+'" data-end="'+end+'" data-color="'+color+'" data-cmt="'+encCmt(et.comment||"")+'">'+( et.comment?'<div class="gantt-comment-dot"></div>':"")+'</div>'+cmtLabel(encCmt(et.comment||""),lp,wp,color);
       }
       if(et.sh2||et.eh2){
         var start2=getTV(et.sh2||"",et.sm2||""), end2=getTV(et.eh2||"",et.em2||"");
         var s2=toMin(start2), e2=toMin(end2);
         if(s!==null&&e!==null&&s2!==null&&s2>e){ var gL=((e-minT)/total)*100,gW=((s2-e)/total)*100; bar+='<div style="position:absolute;top:8px;bottom:8px;left:'+gL+'%;width:'+gW+'%;background:'+color+';opacity:.25;border-radius:3px;"></div>'; }
-        if(s2!==null&&e2!==null&&e2>s2){ var lp2=((s2-minT)/total)*100,wp2=((e2-s2)/total)*100; bar+='<div class="gantt-bar" style="left:'+lp2+'%;width:'+wp2+'%;background:'+color+';opacity:.75;" data-uid="'+uid+'_2" data-label="'+(et.machine||"Extra")+' (2)" data-qui="'+(et.qui||"")+'" data-start="'+start2+'" data-end="'+end2+'" data-color="'+color+'" data-cmt="'+encCmt(et.comment2||"")+'"></div>'; }
+        if(s2!==null&&e2!==null&&e2>s2){ var lp2=((s2-minT)/total)*100,wp2=((e2-s2)/total)*100; bar+='<div class="gantt-bar" style="left:'+lp2+'%;width:'+wp2+'%;background:'+color+';opacity:.75;" data-uid="'+uid+'_2" data-label="'+(et.machine||"Extra")+' (2)" data-qui="'+(et.qui||"")+'" data-start="'+start2+'" data-end="'+end2+'" data-color="'+color+'" data-cmt="'+encCmt(et.comment2||"")+'"></div>'; }+cmtLabel(encCmt(et.comment2||""),lp2,wp2,color);
       }
       isSelA=selectedIds[0]===uid; isSelB=selectedIds[1]===uid;
       rowCls=isSelA?"sel-a":isSelB?"sel-b":rowIdx%2===0?"odd":"even";
