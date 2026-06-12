@@ -775,7 +775,7 @@ function renderGantt(date, machine, data) {
     var bar="";
     if(s!==null&&e!==null&&e>s){
       var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
-      bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+td.color+'" data-uid="'+uid+'" data-label="'+td.label+'" data-qui="--" data-start="'+start+'" data-end="'+end+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment||"")+'">'+td.label.replace("TARGET ","")+\'</div>\'+cmtLabel(encCmt(t.comment||""),lp,td.color);
+      bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+td.color+'" data-uid="'+uid+'" data-label="'+td.label+'" data-qui="--" data-start="'+start+'" data-end="'+end+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment||"")+'">'+td.label.replace("TARGET ","")+'</div>'+cmtLabel(encCmt(t.comment||""),lp,td.color);
     }
     var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
     h+='<tr class="target-section'+(isSelA?" sel-a":isSelB?" sel-b":"")+'" data-uid="'+uid+'" style="background:'+td.color+'22;">'+
