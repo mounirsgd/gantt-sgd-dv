@@ -23,14 +23,14 @@ const TASK_COLORS = [
 ];
 
 const TASKS_RONDELLE = [
-  {id:"ron_1", machine:"Nettoyage machine", qui:"Production"},
-  {id:"ron_2", machine:"Changement cuvette", qui:"Feederman"},
-  {id:"ron_3", machine:"Cote finisseur", qui:"Atelier IS"},
-  {id:"ron_4", machine:"Cote ebauche", qui:"Atelier IS"},
+  {id:"ron_1", machine:"Nettoyage de machine", qui:"Production"},
+  {id:"ron_2", machine:"Changement rondelle (cuvette)", qui:"Feederman"},
+  {id:"ron_3", machine:"Cote Finisseur", qui:"Atelier IS"},
+  {id:"ron_4", machine:"Cote Ebaucheur", qui:"Atelier IS"},
   {id:"ron_5", machine:"Entonnoir sous verre", qui:"Feederman"},
   {id:"ron_6", machine:"Distributeur sous verre", qui:"Feederman"},
   {id:"ron_7", machine:"Demarrage section sans flacon", qui:"Chef de section"},
-  {id:"ron_8", machine:"Demarrage section avec flacon", qui:"Chef de section"},
+  {id:"ron_8", machine:"Debut section avec flacon", qui:"Chef de section"},
   {id:"ron_9", machine:"Machine complete avec flacon", qui:"Chef de section"},
   {id:"ron_10", machine:"Mise a l arche", qui:"Chef de section"}
 ];
@@ -269,12 +269,59 @@ function buildTargetSection(key, label, color, saved) {
   var eLbl = document.createElement("label"); eLbl.textContent = "Fin"; eLbl.style.cssText = "font-size:13px;color:#6c6c70;";
   body.appendChild(sLbl); body.appendChild(sF); body.appendChild(eLbl); body.appendChild(eF); body.appendChild(prev);
 
+  // Bouton + slot 2
+  sec._slot2 = null;
+  var addSlotBtn = document.createElement("button");
+  addSlotBtn.className = "btn-add-slot"; addSlotBtn.textContent = "+";
+  addSlotBtn.title = "Ajouter un 2eme creneau";
+  body.appendChild(addSlotBtn);
+
   var cmtTA = makeTextarea("Commentaire...", saved.comment||"");
   cmtTA.style.cssText = "width:100%;border:1px solid #e0e0e5;border-radius:8px;background:#f7f7f8;font-size:13px;padding:6px 10px;outline:none;font-family:Arial,sans-serif;resize:none;margin-top:6px;";
   var cmtWrap = document.createElement("div"); cmtWrap.style.cssText = "padding:0 12px 10px;";
   cmtWrap.appendChild(cmtTA);
-  sec.appendChild(body); sec.appendChild(cmtWrap);
+
+  // Slot 2 si deja rempli
+  var body2 = document.createElement("div");
+  body2.style.cssText = "padding:0 12px 10px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;";
+  var sF2 = makeTimeField(saved.sh2||"", saved.sm2||"");
+  var eF2 = makeTimeField(saved.eh2||"", saved.em2||"");
+  var prev2 = document.createElement("span"); prev2.className = "time-preview";
+  function updPrev2() {
+    var s=getTV(sF2._getH(),sF2._getM()), e=getTV(eF2._getH(),eF2._getM());
+    prev2.textContent = s&&e ? s+" -> "+e : s ? s+" -> ?" : "";
+  }
+  sF2.addEventListener("input",updPrev2); eF2.addEventListener("input",updPrev2); updPrev2();
+  var sLbl2 = document.createElement("label"); sLbl2.textContent = "Debut 2"; sLbl2.style.cssText = "font-size:13px;color:#6c6c70;";
+  var eLbl2 = document.createElement("label"); eLbl2.textContent = "Fin 2"; eLbl2.style.cssText = "font-size:13px;color:#6c6c70;";
+  var removeSlotBtn = document.createElement("button");
+  removeSlotBtn.className = "btn-add-slot"; removeSlotBtn.textContent = "-"; removeSlotBtn.style.background = "#e74c3c";
+  body2.appendChild(sLbl2); body2.appendChild(sF2); body2.appendChild(eLbl2); body2.appendChild(eF2); body2.appendChild(prev2); body2.appendChild(removeSlotBtn);
+
+  var cmt2TA = makeTextarea("Commentaire 2eme creneau...", saved.comment2||"");
+  cmt2TA.style.cssText = "width:100%;border:1px solid #e0e0e5;border-radius:8px;background:#f7f7f8;font-size:13px;padding:6px 10px;outline:none;font-family:Arial,sans-serif;resize:none;margin-top:6px;";
+  var cmt2Wrap = document.createElement("div"); cmt2Wrap.style.cssText = "padding:0 12px 10px;";
+  cmt2Wrap.appendChild(cmt2TA);
+
+  if (!(saved.sh2||saved.eh2)) { body2.style.display="none"; cmt2Wrap.style.display="none"; addSlotBtn.style.display=""; }
+  else { addSlotBtn.style.display="none"; }
+
+  addSlotBtn.addEventListener("click", function() {
+    body2.style.display="flex"; cmt2Wrap.style.display="block"; addSlotBtn.style.display="none";
+    sec._slot2 = {sF:sF2, eF:eF2, cmt2TA:cmt2TA};
+  });
+  removeSlotBtn.addEventListener("click", function() {
+    body2.style.display="none"; cmt2Wrap.style.display="none"; addSlotBtn.style.display="";
+    sF2._getH = function(){return "";}; sF2._getM = function(){return "";}; 
+    eF2._getH = function(){return "";}; eF2._getM = function(){return "";}; 
+    sec._slot2 = null;
+  });
+
+  if (saved.sh2||saved.eh2) sec._slot2 = {sF:sF2, eF:eF2, cmt2TA:cmt2TA};
+
+  sec.appendChild(body); sec.appendChild(cmtWrap); sec.appendChild(body2); sec.appendChild(cmt2Wrap);
   sec._sF = sF; sec._eF = eF; sec._cmt = cmtTA;
+  sec._sF2 = sF2; sec._eF2 = eF2; sec._cmt2 = cmt2TA;
   sec.dataset.targetKey = key;
   return sec;
 }
@@ -547,7 +594,13 @@ function collectData() {
   ["grand_t1","petit_t1","rondelle"].forEach(function(key) {
     var sec = container.querySelector('[data-target-key="'+key+'"]');
     if (!sec) return;
-    out.targets[key] = { sh:sec._sF._getH(), sm:sec._sF._getM(), eh:sec._eF._getH(), em:sec._eF._getM(), comment:sec._cmt.value };
+    var td = { sh:sec._sF._getH(), sm:sec._sF._getM(), eh:sec._eF._getH(), em:sec._eF._getM(), comment:sec._cmt.value };
+    if (sec._slot2) {
+      td.sh2=sec._sF2._getH(); td.sm2=sec._sF2._getM();
+      td.eh2=sec._eF2._getH(); td.em2=sec._eF2._getM();
+      td.comment2=sec._cmt2.value;
+    }
+    out.targets[key] = td;
   });
 
   var tasksSec = container._tasksSec;
@@ -778,6 +831,14 @@ function renderGantt(date, machine, data) {
     if(s!==null&&e!==null&&e>s){
       var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
       bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+td.color+'" data-uid="'+uid+'" data-label="'+td.label+'" data-qui="--" data-start="'+start+'" data-end="'+end+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment||"")+'">'+td.label.replace("TARGET ","")+'</div>'+cmtLabel(encCmt(t.comment||""),lp,wp,td.color);
+    }
+    if(t.sh2||t.eh2){
+      var start2t=getTV(t.sh2||"",t.sm2||""), end2t=getTV(t.eh2||"",t.em2||"");
+      var s2t=toMin(start2t), e2t=toMin(end2t);
+      if(s2t!==null&&e2t!==null&&e2t>s2t){
+        var lp2t=((s2t-minT)/total)*100, wp2t=((e2t-s2t)/total)*100;
+        bar+='<div class="gantt-bar" style="left:'+lp2t+'%;width:'+wp2t+'%;background:'+td.color+';opacity:.75;" data-uid="'+uid+'_2" data-label="'+td.label+' (2)" data-qui="--" data-start="'+start2t+'" data-end="'+end2t+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment2||"")+'"></div>'+cmtLabel(encCmt(t.comment2||""),lp2t,wp2t,td.color);
+      }
     }
     var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
     h+='<tr class="target-section'+(isSelA?" sel-a":isSelB?" sel-b":"")+'" data-uid="'+uid+'" style="background:'+td.color+'22;">'+
