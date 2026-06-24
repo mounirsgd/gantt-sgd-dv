@@ -303,8 +303,8 @@ td.cmt-col {
   word-break: break-word;
 }
 .cmt-col-text2 {
-  color: #666;
-  font-style: italic;
+  color: #333;
+  font-style: normal;
 }
 .cmt-col-sep {
   height: 4px;
