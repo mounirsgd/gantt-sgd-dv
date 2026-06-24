@@ -283,14 +283,16 @@ function buildTargetSection(key, label, color, saved) {
   } else {
     cmt2Wrap.style.display = "none";
     var addSlotBtn = document.createElement("button");
-    addSlotBtn.className = "btn-add-slot"; addSlotBtn.textContent = "+";
+    addSlotBtn.className = "btn-add-slot slot-add-btn"; addSlotBtn.textContent = "+";
     addSlotBtn.addEventListener("click", function() {
+      var n = countSlots(slotsWrap);
+      if (n >= 4) return;
       var sep = makeSep();
       var s2 = makeSlotRow("","","","");
       slotsWrap.insertBefore(sep, addSlotBtn);
       slotsWrap.insertBefore(s2, addSlotBtn);
       sec._slot2 = s2;
-      addSlotBtn.style.display = "none";
+      if (countSlots(slotsWrap) >= 4) addSlotBtn.style.display = "none";
       cmt2Wrap.style.display = "block";
       addRemoveSlotBtnTarget(slotsWrap, sec, cmt2Wrap);
     });
@@ -308,24 +310,14 @@ function addRemoveSlotBtnTarget(slotsWrap, sec, cmt2Wrap) {
   removeBtn.className = "btn-add-slot"; removeBtn.textContent = "-";
   removeBtn.style.background = "#e74c3c";
   removeBtn.addEventListener("click", function() {
-    var sep = slotsWrap.querySelector("span");
-    if (sep) sep.remove();
+    var seps = slotsWrap.querySelectorAll("span.slot-sep");
+    var lastSep = seps[seps.length-1];
+    if (lastSep) lastSep.remove();
     if (sec._slot2) { sec._slot2.remove(); sec._slot2 = null; }
     removeBtn.remove();
-    cmt2Wrap.style.display = "none";
-    var addSlotBtn = document.createElement("button");
-    addSlotBtn.className = "btn-add-slot"; addSlotBtn.textContent = "+";
-    addSlotBtn.addEventListener("click", function() {
-      var sep2 = makeSep();
-      var s2 = makeSlotRow("","","","");
-      slotsWrap.insertBefore(sep2, addSlotBtn);
-      slotsWrap.insertBefore(s2, addSlotBtn);
-      sec._slot2 = s2;
-      addSlotBtn.style.display = "none";
-      cmt2Wrap.style.display = "block";
-      addRemoveSlotBtnTarget(slotsWrap, sec, cmt2Wrap);
-    });
-    slotsWrap.appendChild(addSlotBtn);
+    if (countSlots(slotsWrap) <= 1) cmt2Wrap.style.display = "none";
+    var addBtn = slotsWrap.querySelector(".slot-add-btn");
+    if (addBtn) addBtn.style.display = "";
   });
   slotsWrap.appendChild(removeBtn);
 }
@@ -358,19 +350,7 @@ function appendTaskRow(sec, taskId, machineName, quiDefault, tv, color) {
     addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
   } else {
     cmt2Wrap.style.display = "none";
-    var addSlotBtn = document.createElement("button");
-    addSlotBtn.className = "btn-add-slot"; addSlotBtn.textContent = "+";
-    addSlotBtn.addEventListener("click", function() {
-      var sep = makeSep();
-      var s2 = makeSlotRow("","","","");
-      slotsWrap.insertBefore(sep, addSlotBtn);
-      slotsWrap.insertBefore(s2, addSlotBtn);
-      row._slot2 = s2;
-      addSlotBtn.style.display = "none";
-      cmt2Wrap.style.display = "block";
-      addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
-    });
-    slotsWrap.appendChild(addSlotBtn);
+    addPlusBtn(slotsWrap, row, cmt2Wrap);
   }
 
   row.appendChild(slotsWrap); row.appendChild(cmtWrap); row.appendChild(cmt2Wrap);
@@ -378,40 +358,43 @@ function appendTaskRow(sec, taskId, machineName, quiDefault, tv, color) {
   sec.appendChild(row);
 }
 
+function countSlots(slotsWrap) {
+  return slotsWrap.querySelectorAll("span.slot-sep").length + 1;
+}
+
+function addPlusBtn(slotsWrap, row, cmt2Wrap) {
+  var addBtn = document.createElement("button");
+  addBtn.className = "btn-add-slot slot-add-btn"; addBtn.textContent = "+";
+  addBtn.addEventListener("click", function() {
+    var n = countSlots(slotsWrap);
+    if (n >= 4) return;
+    var sep = makeSep(); sep.className += " slot-sep";
+    var s2 = makeSlotRow("","","","");
+    slotsWrap.insertBefore(sep, addBtn);
+    slotsWrap.insertBefore(s2, addBtn);
+    row._slot2 = s2;
+    cmt2Wrap.style.display = "block";
+    if (countSlots(slotsWrap) >= 4) addBtn.style.display = "none";
+    addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
+  });
+  slotsWrap.appendChild(addBtn);
+  return addBtn;
+}
+
 function addRemoveSlotBtn(slotsWrap, row, cmt2Wrap) {
-  // Compter les creneaux existants
-  var slotCount = slotsWrap.querySelectorAll(".task-row-times > div, .task-row-times > div[style]").length;
   var removeBtn = document.createElement("button");
   removeBtn.className = "btn-add-slot"; removeBtn.textContent = "-";
   removeBtn.style.background = "#e74c3c";
   removeBtn.addEventListener("click", function() {
-    // Supprimer le dernier sep et slot
-    var seps = slotsWrap.querySelectorAll("span");
+    var seps = slotsWrap.querySelectorAll("span.slot-sep");
     var lastSep = seps[seps.length-1];
     if (lastSep) lastSep.remove();
     if (row._slot2) { row._slot2.remove(); row._slot2 = null; }
     removeBtn.remove();
-    cmt2Wrap.style.display = "none";
-    // Reafficher le bouton + si moins de 4 creneaux
-    var currentCount = slotsWrap.querySelectorAll("div[style*='display:flex']").length;
-    var existingAdd = slotsWrap.querySelector(".btn-add-slot:not([style*='e74c3c'])");
-    if (!existingAdd) {
-      var addSlotBtn = document.createElement("button");
-      addSlotBtn.className = "btn-add-slot"; addSlotBtn.textContent = "+";
-      addSlotBtn.addEventListener("click", function() {
-        var sep2 = makeSep();
-        var s2 = makeSlotRow("","","","");
-        slotsWrap.insertBefore(sep2, addSlotBtn);
-        slotsWrap.insertBefore(s2, addSlotBtn);
-        row._slot2 = s2;
-        cmt2Wrap.style.display = "block";
-        // Cacher + si 4 creneaux atteints
-        var total = slotsWrap.querySelectorAll("span").length + 1;
-        if (total >= 4) addSlotBtn.style.display = "none";
-        addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
-      });
-      slotsWrap.appendChild(addSlotBtn);
-    }
+    if (countSlots(slotsWrap) <= 1) cmt2Wrap.style.display = "none";
+    // Reafficher + si cache
+    var addBtn = slotsWrap.querySelector(".slot-add-btn");
+    if (addBtn) addBtn.style.display = "";
   });
   slotsWrap.appendChild(removeBtn);
 }
@@ -506,19 +489,7 @@ function appendExtraTaskRow(sec, et, color, group) {
     addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
   } else {
     cmt2Wrap.style.display = "none";
-    var addSlotBtn = document.createElement("button");
-    addSlotBtn.className = "btn-add-slot"; addSlotBtn.textContent = "+";
-    addSlotBtn.addEventListener("click", function() {
-      var sep = makeSep();
-      var s2 = makeSlotRow("","","","");
-      slotsWrap.insertBefore(sep, addSlotBtn);
-      slotsWrap.insertBefore(s2, addSlotBtn);
-      row._slot2 = s2;
-      addSlotBtn.style.display = "none";
-      cmt2Wrap.style.display = "block";
-      addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
-    });
-    slotsWrap.appendChild(addSlotBtn);
+    addPlusBtn(slotsWrap, row, cmt2Wrap);
   }
 
   row.appendChild(slotsWrap); row.appendChild(cmtWrap); row.appendChild(cmt2Wrap);
@@ -530,6 +501,7 @@ function appendExtraTaskRow(sec, et, color, group) {
 
 function makeSep() {
   var sep = document.createElement("span");
+  sep.className = "slot-sep";
   sep.style.cssText = "font-size:11px;color:#6c6c70;margin:0 4px;";
   sep.textContent = "puis";
   return sep;
@@ -844,7 +816,7 @@ function renderGantt(date, machine, data) {
     h+='<th style="width:'+slotW+'px;font-size:10px;color:#555;font-weight:400">'+(mm2==="00"?hh+"h":mm2)+'</th>';
   }
   h+='</tr><tr><td colspan="'+(6+slots)+'" style="background:#1a3a6b;color:#fff;font-weight:700;font-size:13px;padding:7px 10px;text-align:center;">'+machine+(dateStr?" - "+dateStr:"")+'</td></tr>';
-  h+='<th style="width:320px;text-align:left;padding-left:8px;background:#e8edf5;color:#1a3a6b;">COMMENTAIRE</th>';
+  h+='';
 
   // TARGET (toujours en haut)
   targetDefs.forEach(function(td) {
