@@ -379,28 +379,39 @@ function appendTaskRow(sec, taskId, machineName, quiDefault, tv, color) {
 }
 
 function addRemoveSlotBtn(slotsWrap, row, cmt2Wrap) {
+  // Compter les creneaux existants
+  var slotCount = slotsWrap.querySelectorAll(".task-row-times > div, .task-row-times > div[style]").length;
   var removeBtn = document.createElement("button");
   removeBtn.className = "btn-add-slot"; removeBtn.textContent = "-";
   removeBtn.style.background = "#e74c3c";
   removeBtn.addEventListener("click", function() {
-    var sep = slotsWrap.querySelector("span");
-    if (sep) sep.remove();
+    // Supprimer le dernier sep et slot
+    var seps = slotsWrap.querySelectorAll("span");
+    var lastSep = seps[seps.length-1];
+    if (lastSep) lastSep.remove();
     if (row._slot2) { row._slot2.remove(); row._slot2 = null; }
     removeBtn.remove();
     cmt2Wrap.style.display = "none";
-    var addSlotBtn = document.createElement("button");
-    addSlotBtn.className = "btn-add-slot"; addSlotBtn.textContent = "+";
-    addSlotBtn.addEventListener("click", function() {
-      var sep2 = makeSep();
-      var s2 = makeSlotRow("","","","");
-      slotsWrap.insertBefore(sep2, addSlotBtn);
-      slotsWrap.insertBefore(s2, addSlotBtn);
-      row._slot2 = s2;
-      addSlotBtn.style.display = "none";
-      cmt2Wrap.style.display = "block";
-      addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
-    });
-    slotsWrap.appendChild(addSlotBtn);
+    // Reafficher le bouton + si moins de 4 creneaux
+    var currentCount = slotsWrap.querySelectorAll("div[style*='display:flex']").length;
+    var existingAdd = slotsWrap.querySelector(".btn-add-slot:not([style*='e74c3c'])");
+    if (!existingAdd) {
+      var addSlotBtn = document.createElement("button");
+      addSlotBtn.className = "btn-add-slot"; addSlotBtn.textContent = "+";
+      addSlotBtn.addEventListener("click", function() {
+        var sep2 = makeSep();
+        var s2 = makeSlotRow("","","","");
+        slotsWrap.insertBefore(sep2, addSlotBtn);
+        slotsWrap.insertBefore(s2, addSlotBtn);
+        row._slot2 = s2;
+        cmt2Wrap.style.display = "block";
+        // Cacher + si 4 creneaux atteints
+        var total = slotsWrap.querySelectorAll("span").length + 1;
+        if (total >= 4) addSlotBtn.style.display = "none";
+        addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
+      });
+      slotsWrap.appendChild(addSlotBtn);
+    }
   });
   slotsWrap.appendChild(removeBtn);
 }
@@ -809,7 +820,7 @@ function renderGantt(date, machine, data) {
   TASKS_BOUT_FROID.forEach(function(task){ var t=tasks[task.id]||{}; regT(t.sh||"",t.sm||"",t.eh||"",t.em||""); if(t.sh2||t.eh2) regT(t.sh2||"",t.sm2||"",t.eh2||"",t.em2||""); });
   extras.forEach(function(et){ regT(et.sh||"",et.sm||"",et.eh||"",et.em||""); if(et.sh2||et.eh2) regT(et.sh2||"",et.sm2||"",et.eh2||"",et.em2||""); });
 
-  if (!isFinite(minT)) minT=240; if (!isFinite(maxT)) maxT=minT+120;
+  if (!isFinite(minT)) minT=360; if (!isFinite(maxT)) maxT=minT+120;
   minT=Math.max(360,minT-10); maxT=maxT+10;
   minT=Math.floor(minT/60)*60; maxT=Math.ceil(maxT/60)*60;
   var total=maxT-minT, slotMin=10, slots=total/slotMin;
@@ -827,7 +838,7 @@ function renderGantt(date, machine, data) {
 
   var h='<table class="gantt"><tr><th colspan="5"></th>';
   for(var m=minT;m<maxT;m+=60) h+='<th colspan="'+(60/slotMin)+'" style="background:#1a3a6b;color:#fff">60 min</th>';
-  h+='</tr><tr><th class="chk-cell"></th><th style="width:150px;text-align:left;padding-left:8px">MACHINE / SECTEUR<br><span style="font-weight:400;color:#1a5fa8;font-size:10px;">'+machine+'</span></th><th style="width:80px">WHO</th><th style="width:52px">START</th><th style="width:48px">FINAL</th><th style="width:220px;text-align:left;padding-left:8px;background:#e8edf5;color:#1a3a6b;">COMMENTAIRE</th>';
+  h+='</tr><tr><th class="chk-cell"></th><th style="width:150px;text-align:left;padding-left:8px">MACHINE / SECTEUR<br><span style="font-weight:400;color:#1a5fa8;font-size:10px;">'+machine+'</span></th><th style="width:80px">WHO</th><th style="width:52px">START</th><th style="width:48px">FINAL</th><th style="width:320px;text-align:left;padding-left:8px;background:#e8edf5;color:#1a3a6b;">COMMENTAIRE</th>';
   for(var m=minT;m<maxT;m+=slotMin){
     var hh=Math.floor(m/60).toString().padStart(2,"0"),mm2=(m%60).toString().padStart(2,"0");
     h+='<th style="width:'+slotW+'px;font-size:10px;color:#555;font-weight:400">'+(mm2==="00"?hh+"h":mm2)+'</th>';
@@ -851,7 +862,7 @@ function renderGantt(date, machine, data) {
       var s2t=toMin(start2t), e2t=toMin(end2t);
       if(s2t!==null&&e2t!==null&&e2t>s2t){
         var lp2t=((s2t-minT)/total)*100, wp2t=((e2t-s2t)/total)*100;
-        bar+='<div class="gantt-bar" style="left:'+lp2t+'%;width:'+wp2t+'%;background:'+td.color+';opacity:.75;" data-uid="'+uid+'_2" data-label="'+td.label+' (2)" data-qui="--" data-start="'+start2t+'" data-end="'+end2t+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment2||"")+'"></div>;'
+        bar+='<div class="gantt-bar" style="left:'+lp2t+'%;width:'+wp2t+'%;background:'+td.color+" data-uid="'+uid+'_2" data-label="'+td.label+' (2)" data-qui="--" data-start="'+start2t+'" data-end="'+end2t+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment2||"")+'"></div>';
       }
     }
     var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
