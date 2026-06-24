@@ -311,3 +311,10 @@ td.cmt-col {
   border-top: 1px dashed #ccc;
   margin: 4px 0;
 }
+
+/* ── UPDATE COLONNE COMMENTAIRE 320px ────────────────────────── */
+td.cmt-col {
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+}
