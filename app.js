@@ -787,7 +787,7 @@ function renderGantt(date, machine, data) {
     if(s!==null&&s>0) minT=Math.min(minT,s);
     if(e!==null&&e>0) maxT=Math.max(maxT,e);
   }
-  ["grand_t1","petit_t1","rondelle"].forEach(function(k){ var t=targets[k]||{}; regT(t.sh||"",t.sm||"",t.eh||"",t.em||""); });
+  ["grand_t1","petit_t1","rondelle"].forEach(function(k){ var t=targets[k]||{}; regT(t.sh||"",t.sm||"",t.eh||"",t.em||""); if(t.sh2||t.eh2) regT(t.sh2||"",t.sm2||"",t.eh2||"",t.em2||""); });
   TASKS_RONDELLE.forEach(function(task){ var t=tasks[task.id]||{}; regT(t.sh||"",t.sm||"",t.eh||"",t.em||""); if(t.sh2||t.eh2) regT(t.sh2||"",t.sm2||"",t.eh2||"",t.em2||""); });
   TASKS_BOUT_FROID.forEach(function(task){ var t=tasks[task.id]||{}; regT(t.sh||"",t.sm||"",t.eh||"",t.em||""); if(t.sh2||t.eh2) regT(t.sh2||"",t.sm2||"",t.eh2||"",t.em2||""); });
   extras.forEach(function(et){ regT(et.sh||"",et.sm||"",et.eh||"",et.em||""); if(et.sh2||et.eh2) regT(et.sh2||"",et.sm2||"",et.eh2||"",et.em2||""); });
