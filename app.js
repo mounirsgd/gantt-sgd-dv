@@ -862,7 +862,7 @@ function renderGantt(date, machine, data) {
       var s2t=toMin(start2t), e2t=toMin(end2t);
       if(s2t!==null&&e2t!==null&&e2t>s2t){
         var lp2t=((s2t-minT)/total)*100, wp2t=((e2t-s2t)/total)*100;
-        bar+='<div class="gantt-bar" style="left:'+lp2t+'%;width:'+wp2t+'%;background:'+td.color+" data-uid="'+uid+'_2" data-label="'+td.label+' (2)" data-qui="--" data-start="'+start2t+'" data-end="'+end2t+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment2||"")+'"></div>';
+        bar+='<div class="gantt-bar" style="left:'+lp2t+'%;width:'+wp2t+'%;background:'+td.color+' data-uid="'+uid+'_2" data-label="'+td.label+' (2)" data-qui="--" data-start="'+start2t+'" data-end="'+end2t+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment2||"")+'"></div>';
       }
     }
     var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
