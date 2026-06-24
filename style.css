@@ -314,7 +314,7 @@ td.cmt-col {
 
 /* ── UPDATE COLONNE COMMENTAIRE 320px ────────────────────────── */
 td.cmt-col {
-  width: 320px !important;
-  min-width: 320px !important;
-  max-width: 320px !important;
+  width: 250px !important;
+  min-width: 250px !important;
+  max-width: 250px !important;
 }
