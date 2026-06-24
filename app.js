@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getDatabase, ref, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
+ 
 const firebaseConfig = {
   apiKey: "AIzaSyDi9y4PmgvUHvnxDNu4kwpRvB9b-h7Dquk",
   authDomain: "gantt-sgd.firebaseapp.com",
@@ -11,17 +11,17 @@ const firebaseConfig = {
   messagingSenderId: "363250513679",
   appId: "1:363250513679:web:bdf947bd2800614d7a307a"
 };
-
+ 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getDatabase(firebaseApp);
-
+ 
 const TASK_COLORS = [
   "#3b82f6","#8b5cf6","#06b6d4","#22c55e","#f97316",
   "#ec4899","#14b8a6","#a855f7","#0ea5e9","#84cc16",
   "#6366f1","#10b981","#eab308","#64748b","#d946ef"
 ];
-
+ 
 const TASKS_RONDELLE = [
   {id:"ron_1", machine:"Nettoyage de machine", qui:"Production"},
   {id:"ron_2", machine:"Changement rondelle (cuvette)", qui:"Feederman"},
@@ -34,15 +34,15 @@ const TASKS_RONDELLE = [
   {id:"ron_9", machine:"Machine complete avec flacon", qui:"Chef de section"},
   {id:"ron_10", machine:"Mise a l arche", qui:"Chef de section"}
 ];
-
+ 
 const TASKS_BOUT_FROID = [
   {id:"bf_1", machine:"T0 : Duree nettoyage", qui:"Production", color:"#f1c40f"},
   {id:"bf_2", machine:"T1 : Duree pre-reglage", qui:"Automation", color:"#64748b"},
   {id:"bf_3", machine:"T2 : Monte en regime", qui:"Automation", color:"#795548"}
 ];
-
+ 
 const BOUT_FROID_COLOR = "#2e86ab";
-
+ 
 let allSessions = {};
 let ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
 let selectedIds = [];
@@ -52,9 +52,9 @@ let ganttQuiOverrides = {};
 let justifications = [];
 let appReady = false;
 const HISTORY_PAGE_SIZE = 5;
-
+ 
 // ─── AUTH ───────────────────────────────────────────────────────────────────
-
+ 
 document.getElementById("login-btn").addEventListener("click", async function() {
   var email = document.getElementById("login-email").value.trim();
   var password = document.getElementById("login-pass").value.trim();
@@ -69,13 +69,13 @@ document.getElementById("login-btn").addEventListener("click", async function() 
     showLoginError(translateAuthError(err.code));
   }
 });
-
+ 
 ["login-email","login-pass"].forEach(function(id) {
   document.getElementById(id).addEventListener("keydown", function(e) {
     if (e.key === "Enter") document.getElementById("login-btn").click();
   });
 });
-
+ 
 document.getElementById("logout-btn").addEventListener("click", function() {
   signOut(auth); appReady = false;
   document.getElementById("app").style.display = "none";
@@ -84,7 +84,7 @@ document.getElementById("logout-btn").addEventListener("click", function() {
   btn.textContent = "Se connecter"; btn.disabled = false;
   document.getElementById("login-error").style.display = "none";
 });
-
+ 
 onAuthStateChanged(auth, function(user) {
   if (user && document.getElementById("app").style.display !== "block") afficherApp(user);
   else if (!user) {
@@ -92,19 +92,19 @@ onAuthStateChanged(auth, function(user) {
     document.getElementById("app").style.display = "none";
   }
 });
-
+ 
 function afficherApp(user) {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app").style.display = "block";
   document.getElementById("user-label").textContent = user.email;
   if (!appReady) { appReady = true; initApp(); }
 }
-
+ 
 function showLoginError(msg) {
   var el = document.getElementById("login-error");
   el.textContent = msg; el.style.display = "block";
 }
-
+ 
 function translateAuthError(code) {
   var m = {
     "auth/invalid-email": "Identifiant invalide.",
@@ -116,30 +116,30 @@ function translateAuthError(code) {
   };
   return m[code] || "Erreur : " + code;
 }
-
+ 
 // ─── INIT ────────────────────────────────────────────────────────────────────
-
+ 
 function initApp() {
   ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
   selectedIds = []; ganttQuiOverrides = {}; justifications = [];
-
+ 
   var dateField = document.getElementById("f-date");
   if (dateField && !dateField.value) dateField.value = new Date().toISOString().slice(0,10);
   setInterval(function() {
     var d = document.getElementById("f-date");
     if (d && !d.value) d.value = new Date().toISOString().slice(0,10);
   }, 60000);
-
+ 
   document.getElementById("f-machine-name").value = "";
   document.getElementById("gantt-container").innerHTML = '<div class="empty-gantt">Remplissez le formulaire et enregistrez pour afficher le Gantt</div>';
-
+ 
   buildForm();
-
+ 
   onValue(ref(db, "sessions"), function(snap) {
     allSessions = snap.val() || {};
     renderHistory(allSessions);
     document.getElementById("sync-status").textContent = "Connecte";
-
+ 
     // Synchro temps reel — met a jour le Gantt seulement s il est deja visible
     var gs = document.getElementById("gantt-section");
     if (gs && gs.style.display !== "none") {
@@ -149,7 +149,7 @@ function initApp() {
       }
     }
   });
-
+ 
   document.getElementById("save-btn").addEventListener("click", saveSession);
   document.getElementById("new-session-btn").addEventListener("click", newSession);
   document.getElementById("del-all-btn").addEventListener("click", deleteAllHistory);
@@ -157,7 +157,7 @@ function initApp() {
   document.getElementById("close-compare-btn").addEventListener("click", closeCompare);
   document.getElementById("do-justif-btn").addEventListener("click", openJustifDialog);
   initExportButtons();
-
+ 
   var TT = document.getElementById("tooltip");
   document.addEventListener("mousemove", function(e) {
     if (!TT.classList.contains("visible")) return;
@@ -167,20 +167,20 @@ function initApp() {
     TT.style.left = x+"px"; TT.style.top = y+"px";
   });
 }
-
+ 
 // ─── FORMULAIRE ──────────────────────────────────────────────────────────────
-
+ 
 function buildForm() {
   var container = document.getElementById("form-sections");
   container.innerHTML = "";
-
+ 
   var targetsGroup = document.createElement("div");
   targetsGroup.style.cssText = "background:#f0f2f5;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;margin-bottom:4px;";
   targetsGroup.appendChild(buildTargetSection("grand_t1","TARGET (Grand T1)","#c0392b",ganttData.targets.grand_t1));
   targetsGroup.appendChild(buildTargetSection("petit_t1","TARGET (Petit t1)","#e07b54",ganttData.targets.petit_t1));
   targetsGroup.appendChild(buildTargetSection("rondelle","TARGET (Rondelle)","#7d3c98",ganttData.targets.rondelle));
   container.appendChild(targetsGroup);
-
+ 
   var tasksSec = document.createElement("div");
   tasksSec.className = "tasks-sec"; tasksSec.style.borderColor = "#1a3a6b";
   var tasksHd = document.createElement("div");
@@ -189,38 +189,38 @@ function buildForm() {
   tasksSec.appendChild(tasksHd);
   tasksSec._taskFields = {};
   tasksSec._extraFields = [];
-
+ 
   TASKS_RONDELLE.forEach(function(task, idx) {
     var tv = ganttData.tasks[task.id] || {};
     appendTaskRow(tasksSec, task.id, task.machine, task.qui, tv, TASK_COLORS[idx % TASK_COLORS.length]);
   });
-
+ 
   // Separateur Bout Froid
   var bfSep = document.createElement("div");
   bfSep.style.cssText = "background:"+BOUT_FROID_COLOR+";color:#fff;font-size:12px;font-weight:700;padding:8px 12px;margin:0;letter-spacing:.5px;";
   bfSep.textContent = "BOUT FROID";
   tasksSec.appendChild(bfSep);
-
+ 
   TASKS_BOUT_FROID.forEach(function(task, idx) {
     var tv = ganttData.tasks[task.id] || {};
     appendTaskRowBF(tasksSec, task.id, task.machine, task.qui, tv, task.color);
   });
-
+ 
   (ganttData.extraTasks || []).forEach(function(et, idx) {
     appendExtraTaskRow(tasksSec, et, TASK_COLORS[(TASKS_RONDELLE.length + idx) % TASK_COLORS.length]);
   });
-
+ 
   var addBtn = document.createElement("button");
   addBtn.className = "btn-add-task"; addBtn.textContent = "+ Ajouter une tache";
   addBtn.addEventListener("click", function() {
     // Supprimer popup existante
     var existingPopup = document.getElementById("add-task-popup");
     if (existingPopup) { existingPopup.remove(); return; }
-
+ 
     var popup = document.createElement("div");
     popup.id = "add-task-popup";
     popup.style.cssText = "background:#fff;border:1.5px solid #1a3a6b;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.15);padding:10px;margin:6px 0;display:flex;gap:10px;";
-
+ 
     var btnBC = document.createElement("button");
     btnBC.textContent = "Bout Chaud";
     btnBC.style.cssText = "flex:1;padding:10px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;";
@@ -229,7 +229,7 @@ function buildForm() {
       appendExtraTaskRow(tasksSec, {group:"boutchaud"}, color, "boutchaud");
       popup.remove();
     });
-
+ 
     var btnBF = document.createElement("button");
     btnBF.textContent = "Bout Froid";
     btnBF.style.cssText = "flex:1;padding:10px;background:"+BOUT_FROID_COLOR+";color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;";
@@ -239,7 +239,7 @@ function buildForm() {
       appendExtraTaskRow(tasksSec, {group:"boutfroid"}, color, "boutfroid");
       popup.remove();
     });
-
+ 
     popup.appendChild(btnBC); popup.appendChild(btnBF);
     tasksSec.insertBefore(popup, addBtn);
   });
@@ -247,32 +247,32 @@ function buildForm() {
   container.appendChild(tasksSec);
   container._tasksSec = tasksSec;
 }
-
+ 
 function buildTargetSection(key, label, color, saved) {
   saved = saved || {};
   var sec = document.createElement("div"); sec.className = "tasks-sec"; sec.style.borderColor = color;
   var hd = document.createElement("div"); hd.className = "tasks-sec-hd"; hd.style.background = color;
   hd.textContent = label; sec.appendChild(hd);
-
+ 
   // Ligne des horaires — identique aux taches detaillees
   var slotsWrap = document.createElement("div");
   slotsWrap.className = "task-row-times";
   slotsWrap.style.cssText = "padding:10px 12px;";
-
+ 
   var slot1 = makeSlotRow(saved.sh||"", saved.sm||"", saved.eh||"", saved.em||"");
   slotsWrap.appendChild(slot1);
   sec._slot2 = null;
-
+ 
   // Commentaire slot 1
   var cmtTA = makeTextarea("Commentaire...", saved.comment||"");
   var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap";
   cmtWrap.appendChild(cmtTA);
-
+ 
   // Commentaire slot 2
   var cmt2TA = makeTextarea("Commentaire 2eme creneau...", saved.comment2||"");
   var cmt2Wrap = document.createElement("div"); cmt2Wrap.className = "task-comment-wrap";
   cmt2Wrap.appendChild(cmt2TA);
-
+ 
   // Slot 2 si deja rempli
   if (saved.sh2 || saved.eh2) {
     var sep = makeSep();
@@ -296,13 +296,13 @@ function buildTargetSection(key, label, color, saved) {
     });
     slotsWrap.appendChild(addSlotBtn);
   }
-
+ 
   sec.appendChild(slotsWrap); sec.appendChild(cmtWrap); sec.appendChild(cmt2Wrap);
   sec._sF = slot1._sF; sec._eF = slot1._eF; sec._cmt = cmtTA; sec._cmt2 = cmt2TA;
   sec.dataset.targetKey = key;
   return sec;
 }
-
+ 
 function addRemoveSlotBtnTarget(slotsWrap, sec, cmt2Wrap) {
   var removeBtn = document.createElement("button");
   removeBtn.className = "btn-add-slot"; removeBtn.textContent = "-";
@@ -329,7 +329,7 @@ function addRemoveSlotBtnTarget(slotsWrap, sec, cmt2Wrap) {
   });
   slotsWrap.appendChild(removeBtn);
 }
-
+ 
 function appendTaskRow(sec, taskId, machineName, quiDefault, tv, color) {
   var row = document.createElement("div"); row.className = "task-row";
   var top = document.createElement("div"); top.className = "task-row-top";
@@ -338,18 +338,18 @@ function appendTaskRow(sec, taskId, machineName, quiDefault, tv, color) {
   var who = document.createElement("span"); who.className = "task-row-who"; who.textContent = quiDefault;
   top.appendChild(colorBar); top.appendChild(lbl); top.appendChild(who);
   row.appendChild(top);
-
+ 
   var slotsWrap = document.createElement("div"); slotsWrap.className = "task-row-times";
   var slot1 = makeSlotRow(tv.sh||"",tv.sm||"",tv.eh||"",tv.em||"");
   slotsWrap.appendChild(slot1);
   row._slot1 = slot1; row._slot2 = null;
-
+ 
   var cmtTA = makeTextarea("Commentaire...", tv.comment||"");
   var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap"; cmtWrap.appendChild(cmtTA);
-
+ 
   var cmt2TA = makeTextarea("Commentaire 2eme creneau...", tv.comment2||"");
   var cmt2Wrap = document.createElement("div"); cmt2Wrap.className = "task-comment-wrap"; cmt2Wrap.appendChild(cmt2TA);
-
+ 
   if (tv.sh2 || tv.eh2) {
     var sep = makeSep();
     var s2 = makeSlotRow(tv.sh2||"",tv.sm2||"",tv.eh2||"",tv.em2||"");
@@ -372,12 +372,12 @@ function appendTaskRow(sec, taskId, machineName, quiDefault, tv, color) {
     });
     slotsWrap.appendChild(addSlotBtn);
   }
-
+ 
   row.appendChild(slotsWrap); row.appendChild(cmtWrap); row.appendChild(cmt2Wrap);
   sec._taskFields[taskId] = { sF:slot1._sF, eF:slot1._eF, cmtTA:cmtTA, cmt2TA:cmt2TA, color:color, row:row };
   sec.appendChild(row);
 }
-
+ 
 function addRemoveSlotBtn(slotsWrap, row, cmt2Wrap) {
   // Compter les creneaux existants
   var slotCount = slotsWrap.querySelectorAll(".task-row-times > div, .task-row-times > div[style]").length;
@@ -415,7 +415,7 @@ function addRemoveSlotBtn(slotsWrap, row, cmt2Wrap) {
   });
   slotsWrap.appendChild(removeBtn);
 }
-
+ 
 function appendTaskRowBF(sec, taskId, machineName, quiDefault, tv, color) {
   var row = document.createElement("div");
   row.className = "task-row";
@@ -426,17 +426,17 @@ function appendTaskRowBF(sec, taskId, machineName, quiDefault, tv, color) {
   var who = document.createElement("span"); who.className = "task-row-who"; who.textContent = quiDefault;
   top.appendChild(colorBar); top.appendChild(lbl); top.appendChild(who);
   row.appendChild(top);
-
+ 
   var slotsWrap = document.createElement("div"); slotsWrap.className = "task-row-times";
   var slot1 = makeSlotRow(tv.sh||"",tv.sm||"",tv.eh||"",tv.em||"");
   slotsWrap.appendChild(slot1);
   row._slot1 = slot1; row._slot2 = null;
-
+ 
   var cmtTA = makeTextarea("Commentaire...", tv.comment||"");
   var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap"; cmtWrap.appendChild(cmtTA);
   var cmt2TA = makeTextarea("Commentaire 2eme creneau...", tv.comment2||"");
   var cmt2Wrap = document.createElement("div"); cmt2Wrap.className = "task-comment-wrap"; cmt2Wrap.appendChild(cmt2TA);
-
+ 
   if (tv.sh2 || tv.eh2) {
     var sep = makeSep();
     var s2 = makeSlotRow(tv.sh2||"",tv.sm2||"",tv.eh2||"",tv.em2||"");
@@ -458,46 +458,46 @@ function appendTaskRowBF(sec, taskId, machineName, quiDefault, tv, color) {
     });
     slotsWrap.appendChild(addSlotBtn);
   }
-
+ 
   row.appendChild(slotsWrap); row.appendChild(cmtWrap); row.appendChild(cmt2Wrap);
   sec._taskFields[taskId] = { sF:slot1._sF, eF:slot1._eF, cmtTA:cmtTA, cmt2TA:cmt2TA, color:color, row:row };
   sec.appendChild(row);
 }
-
+ 
 function appendExtraTaskRow(sec, et, color, group) {
   var row = document.createElement("div"); row.className = "task-row";
   var top = document.createElement("div"); top.className = "task-row-top";
   var colorBar = document.createElement("div"); colorBar.className = "task-color-bar"; colorBar.style.background = color;
-
+ 
   var nameInp = document.createElement("input"); nameInp.type = "text"; nameInp.value = et.machine||"";
   nameInp.placeholder = "Nom de la tache";
   nameInp.style.cssText = "flex:1;border:none;background:transparent;font-size:13px;font-weight:700;color:#1c1c1e;font-family:Arial,sans-serif;outline:none;";
-
+ 
   var whoInp = document.createElement("input"); whoInp.type = "text"; whoInp.value = et.qui||"";
   whoInp.placeholder = "Qui";
   whoInp.style.cssText = "font-size:11px;color:#6c6c70;background:#f7f7f8;padding:2px 8px;border-radius:6px;border:1px solid #e0e0e5;width:100px;outline:none;font-family:Arial,sans-serif;";
-
+ 
   var delBtn = document.createElement("button"); delBtn.className = "btn-del-task"; delBtn.textContent = "Supprimer";
   delBtn.addEventListener("click", function() {
     row.remove();
     sec._extraFields = sec._extraFields.filter(function(f) { return f.row !== row; });
     autoSaveExtras(sec);
   });
-
+ 
   top.appendChild(colorBar); top.appendChild(nameInp); top.appendChild(whoInp); top.appendChild(delBtn);
   row.appendChild(top);
-
+ 
   var slotsWrap = document.createElement("div"); slotsWrap.className = "task-row-times";
   var slot1 = makeSlotRow(et.sh||"",et.sm||"",et.eh||"",et.em||"");
   slotsWrap.appendChild(slot1);
   row._slot1 = slot1; row._slot2 = null;
-
+ 
   var cmtTA = makeTextarea("Commentaire...", et.comment||"");
   var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap"; cmtWrap.appendChild(cmtTA);
-
+ 
   var cmt2TA = makeTextarea("Commentaire 2eme creneau...", et.comment2||"");
   var cmt2Wrap = document.createElement("div"); cmt2Wrap.className = "task-comment-wrap"; cmt2Wrap.appendChild(cmt2TA);
-
+ 
   if (et.sh2 || et.eh2) {
     var sep = makeSep();
     var s2 = makeSlotRow(et.sh2||"",et.sm2||"",et.eh2||"",et.em2||"");
@@ -520,21 +520,21 @@ function appendExtraTaskRow(sec, et, color, group) {
     });
     slotsWrap.appendChild(addSlotBtn);
   }
-
+ 
   row.appendChild(slotsWrap); row.appendChild(cmtWrap); row.appendChild(cmt2Wrap);
   row._nameInp = nameInp; row._whoInp = whoInp;
   var etGroup = group || et.group || 'boutchaud';
   sec._extraFields.push({ sF:slot1._sF, eF:slot1._eF, cmtTA:cmtTA, cmt2TA:cmt2TA, color:color, row:row, group:etGroup });
   sec.appendChild(row);
 }
-
+ 
 function makeSep() {
   var sep = document.createElement("span");
   sep.style.cssText = "font-size:11px;color:#6c6c70;margin:0 4px;";
   sep.textContent = "puis";
   return sep;
 }
-
+ 
 function makeSlotRow(sh, sm, eh, em) {
   var wrap = document.createElement("div"); wrap.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;";
   var sGrp = document.createElement("div"); sGrp.className = "time-group";
@@ -555,7 +555,7 @@ function makeSlotRow(sh, sm, eh, em) {
   wrap._sF = sF; wrap._eF = eF;
   return wrap;
 }
-
+ 
 function makeTimeField(hVal, mVal) {
   var wrap = document.createElement("div"); wrap.className = "time-field";
   var hInp = document.createElement("input"); hInp.className = "h-inp"; hInp.inputMode = "numeric"; hInp.maxLength = 2; hInp.placeholder = "H"; hInp.value = hVal||"";
@@ -580,7 +580,7 @@ function makeTimeField(hVal, mVal) {
   wrap._getM = function() { return mInp.value; };
   return wrap;
 }
-
+ 
 function makeTextarea(placeholder, value) {
   var ta = document.createElement("textarea");
   ta.placeholder = placeholder; ta.value = value||""; ta.rows = 1;
@@ -588,24 +588,24 @@ function makeTextarea(placeholder, value) {
   ta.addEventListener("input", resize); setTimeout(resize, 0);
   return ta;
 }
-
+ 
 function getTV(h, m) {
   if (!h) return "";
   var hv=parseInt(h), mv=parseInt(m)||0;
   if (isNaN(hv)||hv<0||hv>23||mv<0||mv>59) return "";
   return hv+":"+(mv<10?"0"+mv:mv);
 }
-
+ 
 function toMin(s) { if(!s||!s.includes(":")) return null; var p=s.split(":").map(Number); return p[0]*60+(p[1]||0); }
 function fmtDur(s,e) { var d=e-s; if(d<=0) return "--"; var h=Math.floor(d/60),m=d%60; return h&&m?h+"h "+m+"min":h?h+"h":m+"min"; }
 function encCmt(str) { if(!str) return ""; return str.replace(/\\/g,"\\\\").replace(/'/g,"&#39;").replace(/"/g,"&quot;").replace(/\n/g,"\\n"); }
-
+ 
 // ─── COLLECTE ────────────────────────────────────────────────────────────────
-
+ 
 function collectData() {
   var container = document.getElementById("form-sections");
   var out = { targets:{}, tasks:{}, extraTasks:[] };
-
+ 
   ["grand_t1","petit_t1","rondelle"].forEach(function(key) {
     var sec = container.querySelector('[data-target-key="'+key+'"]');
     if (!sec) return;
@@ -617,7 +617,7 @@ function collectData() {
     }
     out.targets[key] = td;
   });
-
+ 
   var tasksSec = container._tasksSec;
   if (tasksSec) {
     TASKS_RONDELLE.forEach(function(task) {
@@ -654,7 +654,7 @@ function collectData() {
   }
   return out;
 }
-
+ 
 async function autoSaveExtras(sec) {
   var date = document.getElementById("f-date").value;
   var machine = document.getElementById("f-machine-name").value.trim();
@@ -665,15 +665,15 @@ async function autoSaveExtras(sec) {
   await set(ref(db,"sessions/"+existing[0]+"/ganttData"), data);
   showToast("Tache supprimee !", "#e74c3c");
 }
-
+ 
 // ─── SAUVEGARDE ──────────────────────────────────────────────────────────────
-
+ 
 async function saveSession() {
   var data = collectData();
   var date = document.getElementById("f-date").value;
   var machine = document.getElementById("f-machine-name").value.trim();
   if (!date || !machine) { alert("Veuillez remplir la date et la machine."); return; }
-
+ 
   var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
   var existingId = window._editingSessionId;
   if (!existingId) {
@@ -683,21 +683,21 @@ async function saveSession() {
   var sessId = existingId || "sess_"+Date.now();
   await set(ref(db,"sessions/"+sessId), { date:date, machine:machine, ganttData:data, title:machine+" - "+dl, savedAt:Date.now() });
   window._editingSessionId = null;
-
+ 
   showToast("Seance enregistree !", "#34c759");
-
+ 
   // Garder le formulaire charge avec les donnees pour modification
   ganttData = data;
   document.getElementById("f-date").value = date;
   document.getElementById("f-machine-name").value = machine;
   window._editingSessionId = sessId;
   buildForm();
-
+ 
   // Afficher le Gantt
   renderGantt(date, machine, data);
   setTimeout(function() { document.getElementById("gantt-section").scrollIntoView({behavior:"smooth"}); }, 100);
 }
-
+ 
 async function newSession() {
   if (!confirm("Repartir a zero ?")) return;
   justifications = [];
@@ -708,20 +708,20 @@ async function newSession() {
   document.getElementById("gantt-container").innerHTML = '<div class="empty-gantt">Remplissez le formulaire et enregistrez pour afficher le Gantt</div>';
   document.getElementById("gantt-section").style.display = "none";
 }
-
+ 
 // ─── HISTORIQUE ───────────────────────────────────────────────────────────────
-
+ 
 function renderHistory(sessions) {
   var list = document.getElementById("history-list");
   var arr = Object.entries(sessions).sort(function(a,b) { var da=a[1].date||"", db=b[1].date||""; if(db!==da) return db>da?1:-1; return (b[1].savedAt||0)-(a[1].savedAt||0); });
   document.getElementById("history-count").textContent = arr.length ? arr.length+" seance(s)" : "";
   if (!arr.length) { list.innerHTML = '<div class="history-empty">Aucune seance enregistree</div>'; return; }
-
+ 
   var totalPages = Math.ceil(arr.length/HISTORY_PAGE_SIZE);
   if (historyPage >= totalPages) historyPage = totalPages-1;
   if (historyPage < 0) historyPage = 0;
   var pageArr = arr.slice(historyPage*HISTORY_PAGE_SIZE, (historyPage+1)*HISTORY_PAGE_SIZE);
-
+ 
   var html = pageArr.map(function(entry) {
     var id=entry[0], s=entry[1];
     var dl = s.date ? new Date(s.date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"}) : "";
@@ -736,7 +736,7 @@ function renderHistory(sessions) {
       '<span class="history-del-btn" data-del="'+id+'">Supprimer</span>'+
       '</div></div>';
   }).join("");
-
+ 
   if (totalPages > 1) {
     html += '<div class="history-pagination">'+
       '<button class="history-page-btn" id="hist-prev" '+(historyPage===0?'disabled':'')+'>Precedent</button>'+
@@ -745,7 +745,7 @@ function renderHistory(sessions) {
       '</div>';
   }
   list.innerHTML = html;
-
+ 
   list.querySelectorAll("[data-load]").forEach(function(el) { el.addEventListener("click", function() { loadHistorySession(el.dataset.load); }); });
   list.querySelectorAll("[data-edit]").forEach(function(el) { el.addEventListener("click", function() { editHistorySession(el.dataset.edit); }); });
   list.querySelectorAll("[data-del]").forEach(function(el) { el.addEventListener("click", function() { deleteSession(el.dataset.del); }); });
@@ -753,7 +753,7 @@ function renderHistory(sessions) {
   if (pb) pb.addEventListener("click", function() { historyPage--; renderHistory(allSessions); });
   if (nb) nb.addEventListener("click", function() { historyPage++; renderHistory(allSessions); });
 }
-
+ 
 async function loadHistorySession(id) {
   var snap = await get(ref(db,"sessions/"+id));
   var d = snap.val(); if (!d) return;
@@ -764,7 +764,7 @@ async function loadHistorySession(id) {
   renderGantt(d.date, d.machine, d.ganttData||{});
   setTimeout(function() { document.getElementById("gantt-section").scrollIntoView({behavior:"smooth"}); }, 200);
 }
-
+ 
 async function editHistorySession(id) {
   var snap = await get(ref(db,"sessions/"+id));
   var d = snap.val(); if (!d) return;
@@ -776,18 +776,18 @@ async function editHistorySession(id) {
   document.querySelector(".info-sec").scrollIntoView({behavior:"smooth"});
   showToast("Seance chargee - modifiez puis enregistrez", "#1a3a6b");
 }
-
+ 
 async function deleteSession(id) { if (!confirm("Supprimer ?")) return; await remove(ref(db,"sessions/"+id)); }
 async function deleteAllHistory() { if (!confirm("Supprimer tout l historique ?")) return; await remove(ref(db,"sessions")); }
-
+ 
 // ─── GANTT ───────────────────────────────────────────────────────────────────
-
+ 
 function fmtCmtCell(comment, color) {
   if (!comment) return '<td class="info cmt-col"></td>';
   var decoded = comment.replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\\n/g,"\n");
   return '<td class="info cmt-col" style="border-left:3px solid '+color+';"><div class="cmt-col-text">'+decoded.replace(/\n/g,"<br>")+'</div></td>';
 }
-
+ 
 function fmtCmtCellDouble(c1, c2, color) {
   var d1 = c1 ? c1.replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\\n/g,"\n") : "";
   var d2 = c2 ? c2.replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\\n/g,"\n") : "";
@@ -799,15 +799,15 @@ function fmtCmtCellDouble(c1, c2, color) {
   html += '</td>';
   return html;
 }
-
+ 
 function renderGantt(date, machine, data) {
   var container = document.getElementById("gantt-container");
   var targets = data.targets || {};
   var tasks = data.tasks || {};
-
+ 
   // Tri chronologique extras
   var extras = (data.extraTasks||[]).slice();
-
+ 
   allTasks = {};
   var minT=Infinity, maxT=-Infinity;
   function regT(h,m,h2,m2) {
@@ -819,23 +819,23 @@ function renderGantt(date, machine, data) {
   TASKS_RONDELLE.forEach(function(task){ var t=tasks[task.id]||{}; regT(t.sh||"",t.sm||"",t.eh||"",t.em||""); if(t.sh2||t.eh2) regT(t.sh2||"",t.sm2||"",t.eh2||"",t.em2||""); });
   TASKS_BOUT_FROID.forEach(function(task){ var t=tasks[task.id]||{}; regT(t.sh||"",t.sm||"",t.eh||"",t.em||""); if(t.sh2||t.eh2) regT(t.sh2||"",t.sm2||"",t.eh2||"",t.em2||""); });
   extras.forEach(function(et){ regT(et.sh||"",et.sm||"",et.eh||"",et.em||""); if(et.sh2||et.eh2) regT(et.sh2||"",et.sm2||"",et.eh2||"",et.em2||""); });
-
+ 
   if (!isFinite(minT)) minT=360; if (!isFinite(maxT)) maxT=minT+120;
   minT=Math.max(360,minT-10); maxT=maxT+10;
   minT=Math.floor(minT/60)*60; maxT=Math.ceil(maxT/60)*60;
   var total=maxT-minT, slotMin=10, slots=total/slotMin;
   var slotW=Math.max(35,Math.min(90,900/slots));
-
+ 
   var dateStr=date?new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"}):"";
   document.getElementById("gantt-machine-title").textContent = machine||"Changement - Temp/Machine";
   document.getElementById("gantt-subtitle").textContent = "SGD Pharma - Sucy-en-Brie"+(dateStr?" - "+dateStr:"");
-
+ 
   var targetDefs=[
     {key:"grand_t1",label:"TARGET (Grand T1)",color:"#c0392b"},
     {key:"petit_t1",label:"TARGET (Petit t1)",color:"#c0392b"},
     {key:"rondelle",label:"TARGET (Rondelle)",color:"#c0392b"}
   ];
-
+ 
   var h='<table class="gantt"><tr><th colspan="5"></th>';
   for(var m=minT;m<maxT;m+=60) h+='<th colspan="'+(60/slotMin)+'" style="background:#1a3a6b;color:#fff">60 min</th>';
   h+='</tr><tr><th class="chk-cell"></th><th style="width:150px;text-align:left;padding-left:8px">MACHINE / SECTEUR<br><span style="font-weight:400;color:#1a5fa8;font-size:10px;">'+machine+'</span></th><th style="width:80px">WHO</th><th style="width:52px">START</th><th style="width:48px">FINAL</th>';
@@ -845,7 +845,7 @@ function renderGantt(date, machine, data) {
   }
   h+='</tr><tr><td colspan="'+(6+slots)+'" style="background:#1a3a6b;color:#fff;font-weight:700;font-size:13px;padding:7px 10px;text-align:center;">'+machine+(dateStr?" - "+dateStr:"")+'</td></tr>';
   h+='<th style="width:320px;text-align:left;padding-left:8px;background:#e8edf5;color:#1a3a6b;">COMMENTAIRE</th>';
-
+ 
   // TARGET (toujours en haut)
   targetDefs.forEach(function(td) {
     var t=targets[td.key]||{};
@@ -876,7 +876,7 @@ function renderGantt(date, machine, data) {
       '<td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td>'+fmtCmtCell(encCmt(t.comment||""),td.color)+'</tr>';
   });
   h+='<tr><td colspan="'+(6+slots)+'" style="background:#e8edf5;height:4px;"></td></tr>';
-
+ 
   // Taches fixes + extras triees ensemble
   var allRows=[];
   TASKS_RONDELLE.forEach(function(task,idx){
@@ -886,14 +886,14 @@ function renderGantt(date, machine, data) {
   // Extras separes par groupe
   var extrasBoutChaud = extras.filter(function(et){ return (et.group||"boutchaud")==="boutchaud"; });
   var extrasBoutFroid = extras.filter(function(et){ return et.group==="boutfroid"; });
-
+ 
   // Bout chaud : taches fixes + extras tries chronologiquement
   extrasBoutChaud.forEach(function(et,idx){
     var start=getTV(et.sh||"",et.sm||"");
     allRows.push({type:"extra",et:et,idx:idx,sMin:toMin(start),group:"boutchaud"});
   });
   allRows.sort(function(a,b){ if(a.sMin===null)return 1; if(b.sMin===null)return -1; return a.sMin-b.sMin; });
-
+ 
   // Bout froid : taches fixes + extras fusionnes et tries chronologiquement entre eux
   var bfRows = [];
   TASKS_BOUT_FROID.forEach(function(task,idx){
@@ -906,7 +906,7 @@ function renderGantt(date, machine, data) {
   });
   bfRows.sort(function(a,b){ if(a.sMin===null)return 1; if(b.sMin===null)return -1; return a.sMin-b.sMin; });
   bfRows.forEach(function(r){ allRows.push(r); });
-
+ 
   var bfHeaderAdded = false;
   allRows.forEach(function(rowData,rowIdx){
     // Ajouter separateur BOUT FROID avant la premiere tache boutfroid
@@ -970,10 +970,10 @@ function renderGantt(date, machine, data) {
         '<td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td>'+fmtCmtCellDouble(encCmt(et.comment||""),encCmt(et.comment2||""),color)+'</tr>';
     }
   });
-
+ 
   h+='</table>';
   container.innerHTML=h;
-
+ 
   container.querySelectorAll(".gantt-bar").forEach(function(el){
     el.addEventListener("mouseenter",function(e){ showTT(e,el.dataset.label,el.dataset.qui,el.dataset.start,el.dataset.end,el.dataset.color,el.dataset.cmt); });
     el.addEventListener("mouseleave",hideTT);
@@ -985,14 +985,14 @@ function renderGantt(date, machine, data) {
     var cell=e.target.closest(".who-editable"); if(!cell) return;
     showQuiEditor(cell,cell.dataset.uid,cell.textContent.replace(" [mod]","").trim());
   });
-
+ 
   document.getElementById("gantt-section").style.display="block";
   updateCmpBar();
   renderJustifications();
 }
-
+ 
 // ─── TOOLTIP ─────────────────────────────────────────────────────────────────
-
+ 
 function showTT(e,label,qui,start,end,color,comment){
   var TT=document.getElementById("tooltip");
   document.getElementById("tt-dot").style.background=color||"#3b82f6";
@@ -1019,9 +1019,9 @@ function showTT(e,label,qui,start,end,color,comment){
   }
 }
 function hideTT(){ document.getElementById("tooltip").classList.remove("visible"); }
-
+ 
 // ─── SELECTION / COMPARAISON ──────────────────────────────────────────────────
-
+ 
 function toggleSelect(id){
   var idx=selectedIds.indexOf(id);
   if(idx>-1) selectedIds.splice(idx,1);
@@ -1032,7 +1032,7 @@ function toggleSelect(id){
     if(chk){ chk.checked=selectedIds.includes(uid); tr.classList.toggle("sel-a",selectedIds[0]===uid); tr.classList.toggle("sel-b",selectedIds[1]===uid); }
   });
 }
-
+ 
 function updateCmpBar(){
   var bar=document.getElementById("cmp-bar");
   var jc=document.getElementById("justif-btn-container");
@@ -1046,7 +1046,7 @@ function updateCmpBar(){
     var d=document.getElementById("justif-dialog"); if(d) d.remove();
   }
 }
-
+ 
 function doCompare(){
   if(selectedIds.length!==2) return;
   var A=allTasks[selectedIds[0]], B=allTasks[selectedIds[1]]; if(!A||!B) return;
@@ -1065,9 +1065,9 @@ function doCompare(){
   document.getElementById("cmp-result").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 function closeCompare(){ document.getElementById("cmp-result").classList.remove("visible"); }
-
+ 
 // ─── JUSTIFICATION ───────────────────────────────────────────────────────────
-
+ 
 function openJustifDialog(){
   if(selectedIds.length<1) return;
   var existing=document.getElementById("justif-dialog"); if(existing){existing.remove();return;}
@@ -1094,7 +1094,7 @@ function openJustifDialog(){
     showToast("Justification enregistree !","#f59e0b");
   });
 }
-
+ 
 function renderJustifications(){
   var container=document.getElementById("justif-container"); if(!container) return;
   container.innerHTML=""; if(!justifications.length) return;
@@ -1113,9 +1113,9 @@ function renderJustifications(){
     card.appendChild(row); card.appendChild(comment); container.appendChild(card);
   });
 }
-
+ 
 // ─── QUI EDITABLE ─────────────────────────────────────────────────────────────
-
+ 
 function showQuiEditor(cell,uid,current){
   var existing=document.getElementById("qui-editor"); if(existing) existing.remove();
   var editor=document.createElement("div"); editor.id="qui-editor"; editor.className="qui-editor";
@@ -1146,9 +1146,9 @@ function showQuiEditor(cell,uid,current){
   input.addEventListener("keydown",function(e){if(e.key==="Enter")applyEdit();if(e.key==="Escape")editor.remove();});
   cancelBtn.addEventListener("click",function(){editor.remove();});
 }
-
+ 
 // ─── EXPORT ───────────────────────────────────────────────────────────────────
-
+ 
 function initExportButtons(){
   document.getElementById("export-toggle-btn").addEventListener("click",function(e){
     e.stopPropagation();
@@ -1176,7 +1176,7 @@ function initExportButtons(){
     exportToExcel(from,to); document.getElementById("export-menu").style.display="none"; document.getElementById("export-date-range").style.display="none";
   });
 }
-
+ 
 function exportToExcel(dateFrom,dateTo){
   var sessions=Object.values(allSessions);
   var filtered=dateFrom&&dateTo?sessions.filter(function(s){return s.date>=dateFrom&&s.date<=dateTo;}):sessions;
@@ -1209,9 +1209,9 @@ function exportToExcel(dateFrom,dateTo){
   a.href=url; a.download="SGD_Pharma_Gantt_"+new Date().toLocaleDateString("fr-FR").replace(/\//g,"-")+".csv";
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
-
+ 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
-
+ 
 function showToast(message,color){
   var ex=document.getElementById("toast-notif"); if(ex) ex.remove();
   var toast=document.createElement("div"); toast.id="toast-notif"; toast.textContent=message;
