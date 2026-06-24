@@ -809,7 +809,7 @@ function renderGantt(date, machine, data) {
   TASKS_BOUT_FROID.forEach(function(task){ var t=tasks[task.id]||{}; regT(t.sh||"",t.sm||"",t.eh||"",t.em||""); if(t.sh2||t.eh2) regT(t.sh2||"",t.sm2||"",t.eh2||"",t.em2||""); });
   extras.forEach(function(et){ regT(et.sh||"",et.sm||"",et.eh||"",et.em||""); if(et.sh2||et.eh2) regT(et.sh2||"",et.sm2||"",et.eh2||"",et.em2||""); });
 
-  if (!isFinite(minT)) minT=360; if (!isFinite(maxT)) maxT=minT+120;
+  if (!isFinite(minT)) minT=240; if (!isFinite(maxT)) maxT=minT+120;
   minT=Math.max(360,minT-10); maxT=maxT+10;
   minT=Math.floor(minT/60)*60; maxT=Math.ceil(maxT/60)*60;
   var total=maxT-minT, slotMin=10, slots=total/slotMin;
