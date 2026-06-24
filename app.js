@@ -838,12 +838,13 @@ function renderGantt(date, machine, data) {
 
   var h='<table class="gantt"><tr><th colspan="5"></th>';
   for(var m=minT;m<maxT;m+=60) h+='<th colspan="'+(60/slotMin)+'" style="background:#1a3a6b;color:#fff">60 min</th>';
-  h+='</tr><tr><th class="chk-cell"></th><th style="width:150px;text-align:left;padding-left:8px">MACHINE / SECTEUR<br><span style="font-weight:400;color:#1a5fa8;font-size:10px;">'+machine+'</span></th><th style="width:80px">WHO</th><th style="width:52px">START</th><th style="width:48px">FINAL</th><th style="width:320px;text-align:left;padding-left:8px;background:#e8edf5;color:#1a3a6b;">COMMENTAIRE</th>';
+  h+='</tr><tr><th class="chk-cell"></th><th style="width:150px;text-align:left;padding-left:8px">MACHINE / SECTEUR<br><span style="font-weight:400;color:#1a5fa8;font-size:10px;">'+machine+'</span></th><th style="width:80px">WHO</th><th style="width:52px">START</th><th style="width:48px">FINAL</th>';
   for(var m=minT;m<maxT;m+=slotMin){
     var hh=Math.floor(m/60).toString().padStart(2,"0"),mm2=(m%60).toString().padStart(2,"0");
     h+='<th style="width:'+slotW+'px;font-size:10px;color:#555;font-weight:400">'+(mm2==="00"?hh+"h":mm2)+'</th>';
   }
-  h+='</tr><tr><td colspan="'+(5+slots)+'" style="background:#1a3a6b;color:#fff;font-weight:700;font-size:13px;padding:7px 10px;text-align:center;">'+machine+(dateStr?" - "+dateStr:"")+'</td></tr>';
+  h+='</tr><tr><td colspan="'+(6+slots)+'" style="background:#1a3a6b;color:#fff;font-weight:700;font-size:13px;padding:7px 10px;text-align:center;">'+machine+(dateStr?" - "+dateStr:"")+'</td></tr>';
+  h+='<th style="width:320px;text-align:left;padding-left:8px;background:#e8edf5;color:#1a3a6b;">COMMENTAIRE</th>';
 
   // TARGET (toujours en haut)
   targetDefs.forEach(function(td) {
@@ -874,7 +875,7 @@ function renderGantt(date, machine, data) {
       '<td class="info time-cell">'+(end||"--")+'</td>'+
       '<td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td>'+fmtCmtCell(encCmt(t.comment||""),td.color)+'</tr>';
   });
-  h+='<tr><td colspan="'+(5+slots)+'" style="background:#e8edf5;height:4px;"></td></tr>';
+  h+='<tr><td colspan="'+(6+slots)+'" style="background:#e8edf5;height:4px;"></td></tr>';
 
   // Taches fixes + extras triees ensemble
   var allRows=[];
@@ -911,7 +912,7 @@ function renderGantt(date, machine, data) {
     // Ajouter separateur BOUT FROID avant la premiere tache boutfroid
     if (rowData.group === "boutfroid" && !bfHeaderAdded) {
       bfHeaderAdded = true;
-      h += '<tr><td colspan="'+(5+slots)+'" style="background:'+BOUT_FROID_COLOR+';color:#fff;font-weight:700;font-size:12px;padding:7px 12px;letter-spacing:.5px;">BOUT FROID</td></tr>';
+      h += '<tr><td colspan="'+(6+slots)+'" style="background:'+BOUT_FROID_COLOR+';color:#fff;font-weight:700;font-size:12px;padding:7px 12px;letter-spacing:.5px;">BOUT FROID</td></tr>';
     }
     var isSelA, isSelB, uid, bar="", color, start, end, s, e, rowCls;
     if(rowData.type==="fixed"){
