@@ -318,3 +318,12 @@ td.cmt-col {
   min-width: 250px !important;
   max-width: 250px !important;
 }
+
+/* ── FIX BOUTON SLOT VISIBLE ─────────────────────────────────── */
+.task-row-times .btn-add-slot {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+}
