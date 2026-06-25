@@ -36,9 +36,10 @@ const TASKS_RONDELLE = [
 ];
 
 const TASKS_BOUT_FROID = [
-  {id:"bf_1", machine:"T0 : Duree nettoyage", qui:"Production", color:"#f1c40f"},
-  {id:"bf_2", machine:"T1 : Duree pre-reglage", qui:"Automation", color:"#64748b"},
-  {id:"bf_3", machine:"T2 : Monte en regime", qui:"Automation", color:"#795548"}
+  {id:"bf_1", machine:"T0 : Duree nettoyage", qui:"Production", color:"#f1c40f", labelDebut:"H. arret BF", labelFin:"H. validation vide de ligne"},
+  {id:"bf_2", machine:"T1 : Duree pre-reglage", qui:"Automation", color:"#64748b", labelDebut:"Debut reglage automation", labelFin:"Fin reglage de base machine"},
+  {id:"bf_3", machine:"T2 : Monte en regime", qui:"Automation", color:"#795548", labelDebut:"Top qualite", labelFin:"Validation de deux lots bon"},
+  {id:"bf_4", machine:"T1’ : Arrivee 2eme section controlable", qui:"Automation", color:"#2e86ab", labelDebut:"Debut", labelFin:"Fin"}
 ];
 
 const BOUT_FROID_COLOR = "#2e86ab";
@@ -171,7 +172,7 @@ function initApp() {
 // Chaque row/sec a row._slots = [{slotEl, cmtTA}]
 // slotEl._sF._getH(), slotEl._sF._getM(), slotEl._eF._getH(), slotEl._eF._getM()
 
-function buildSlotSystem(holder, container, savedSlots) {
+function buildSlotSystem(holder, container, savedSlots, labelDebut, labelFin) {
   // holder = row ou sec (l'element parent)
   // container = div ou holder lui-meme pour les commentaires
   // savedSlots = [{sh,sm,eh,em,comment}, ...]
@@ -203,7 +204,7 @@ function buildSlotSystem(holder, container, savedSlots) {
       sep.textContent = "puis";
       slotsWrap.insertBefore(sep, addBtn);
     }
-    var slotEl = makeSlotRow(sh||"", sm||"", eh||"", em||"");
+    var slotEl = makeSlotRow(sh||"", sm||"", eh||"", em||"", n===0?labelDebut:null, n===0?labelFin:null);
     slotsWrap.insertBefore(slotEl, addBtn);
 
     var cmtTA = makeTextarea("Commentaire creneau "+(n+1)+"...", comment||"");
@@ -299,6 +300,8 @@ function buildForm() {
 
   TASKS_BOUT_FROID.forEach(function(task) {
     var tv = ganttData.tasks[task.id] || {};
+    tv._labelDebut = task.labelDebut;
+    tv._labelFin = task.labelFin;
     appendTaskRow(tasksSec, task.id, task.machine, task.qui, tv, task.color);
   });
 
@@ -364,7 +367,7 @@ function appendTaskRow(sec, taskId, machineName, quiDefault, tv, color) {
   row.appendChild(top);
 
   var cmtContainer = document.createElement("div");
-  var slotsWrap = buildSlotSystem(row, cmtContainer, getSavedSlots(tv));
+  var slotsWrap = buildSlotSystem(row, cmtContainer, getSavedSlots(tv), tv._labelDebut, tv._labelFin);
   row.appendChild(slotsWrap); row.appendChild(cmtContainer);
   sec._taskFields[taskId] = {color:color, row:row};
   sec.appendChild(row);
@@ -400,14 +403,14 @@ function appendExtraTaskRow(sec, et, color) {
 
 // ── CHAMPS TEMPS ──────────────────────────────────────────────────────────────
 
-function makeSlotRow(sh, sm, eh, em) {
+function makeSlotRow(sh, sm, eh, em, labelDebut, labelFin) {
   var wrap = document.createElement("div"); wrap.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;";
   var sGrp = document.createElement("div"); sGrp.className = "time-group";
-  var sLbl = document.createElement("label"); sLbl.textContent = "Debut";
+  var sLbl = document.createElement("label"); sLbl.textContent = labelDebut||"Debut";
   var sF = makeTimeField(sh, sm);
   sGrp.appendChild(sLbl); sGrp.appendChild(sF);
   var eGrp = document.createElement("div"); eGrp.className = "time-group";
-  var eLbl = document.createElement("label"); eLbl.textContent = "Fin";
+  var eLbl = document.createElement("label"); eLbl.textContent = labelFin||"Fin";
   var eF = makeTimeField(eh, em);
   eGrp.appendChild(eLbl); eGrp.appendChild(eF);
   var prev = document.createElement("span"); prev.className = "time-preview";
@@ -668,7 +671,7 @@ function renderGantt(date, machine, data) {
   extras.forEach(function(et){ regObj(et); });
 
   if (!isFinite(minT)) minT=360; if (!isFinite(maxT)) maxT=minT+120;
-  minT=Math.max(300,minT-10); maxT=maxT+10;
+  minT=Math.max(240,minT-10); maxT=maxT+10;
   minT=Math.floor(minT/60)*60; maxT=Math.ceil(maxT/60)*60;
 
   var total=maxT-minT, slotMin=10, slots=total/slotMin;
