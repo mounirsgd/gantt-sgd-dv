@@ -767,7 +767,7 @@ function renderGantt(date, machine, data) {
       '<td class="info time-cell">'+(start||"--")+'</td>'+
       '<td class="info time-cell">'+(end||"--")+'</td>'+
       '<td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td>'+
-      fmtCmtCell([t.comment,t.comment2,t.comment3],td.color)+
+      fmtCmtCell([t.comment,t.comment2,t.comment3,t.comment4],td.color)+
       '</tr>';
   });
   h+='<tr><td colspan="'+(5+slots+1)+'" style="background:#e8edf5;height:4px;"></td></tr>';
