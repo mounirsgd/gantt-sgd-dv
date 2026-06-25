@@ -668,7 +668,7 @@ function renderGantt(date, machine, data) {
   extras.forEach(function(et){ regObj(et); });
 
   if (!isFinite(minT)) minT=360; if (!isFinite(maxT)) maxT=minT+120;
-  minT=Math.max(240,minT-10); maxT=maxT+10;
+  minT=Math.max(300,minT-10); maxT=maxT+10;
   minT=Math.floor(minT/60)*60; maxT=Math.ceil(maxT/60)*60;
 
   var total=maxT-minT, slotMin=10, slots=total/slotMin;
