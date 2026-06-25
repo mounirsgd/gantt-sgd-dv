@@ -373,9 +373,19 @@ function addPlusBtn(slotsWrap, row, cmt2Wrap) {
     slotsWrap.insertBefore(sep, addBtn);
     slotsWrap.insertBefore(s2, addBtn);
     row._slot2 = s2;
+    // Creer un nouveau textarea de commentaire pour ce creneau
+    var newCmtTA = makeTextarea("Commentaire creneau "+(n+1)+"...", "");
+    var newCmtWrap = document.createElement("div"); newCmtWrap.className = "task-comment-wrap extra-cmt-wrap";
+    newCmtWrap.appendChild(newCmtTA);
+    // Inserer apres le dernier cmt-wrap
+    var allCmtWraps = row.querySelectorAll(".task-comment-wrap");
+    var lastCmt = allCmtWraps[allCmtWraps.length-1];
+    if (lastCmt) lastCmt.insertAdjacentElement("afterend", newCmtWrap);
+    else row.appendChild(newCmtWrap);
+    // Mettre a jour cmt2Wrap reference
     cmt2Wrap.style.display = "block";
     if (countSlots(slotsWrap) >= 4) addBtn.style.display = "none";
-    addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
+    addRemoveSlotBtn(slotsWrap, row, newCmtWrap);
   });
   slotsWrap.appendChild(addBtn);
   return addBtn;
