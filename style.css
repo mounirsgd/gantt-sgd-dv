@@ -327,3 +327,22 @@ td.cmt-col {
   min-width: 28px;
   height: 28px;
 }
+
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  td.cmt-col { width: 180px !important; min-width: 180px !important; max-width: 180px !important; }
+  .cmt-col-text { font-size: 10px; }
+}
+@media (max-width: 900px) {
+  td.cmt-col { display: none !important; }
+  th[style*="COMMENTAIRE"] { display: none !important; }
+  .form-wrap { padding: 6px; }
+  .task-row-times { flex-direction: column; gap: 4px; }
+  .time-group label { min-width: 28px; font-size: 10px; }
+}
+@media (max-width: 600px) {
+  .hdr-text h1 { font-size: 13px; }
+  .gantt-title h2 { font-size: 14px; }
+  table.gantt td.machine-name { min-width: 100px; font-size: 11px; }
+  table.gantt td.who-cell { display: none; }
+}
