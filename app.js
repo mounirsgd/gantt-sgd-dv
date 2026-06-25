@@ -254,75 +254,20 @@ function buildTargetSection(key, label, color, saved) {
   var hd = document.createElement("div"); hd.className = "tasks-sec-hd"; hd.style.background = color;
   hd.textContent = label; sec.appendChild(hd);
 
-  // Ligne des horaires — identique aux taches detaillees
-  var slotsWrap = document.createElement("div");
-  slotsWrap.className = "task-row-times";
-  slotsWrap.style.cssText = "padding:10px 12px;";
+  var savedSlotsT = [{sh:saved.sh, sm:saved.sm, eh:saved.eh, em:saved.em, comment:saved.comment||""}];
+  if (saved.sh2||saved.eh2) savedSlotsT.push({sh:saved.sh2, sm:saved.sm2, eh:saved.eh2, em:saved.em2, comment:saved.comment2||""});
 
-  var slot1 = makeSlotRow(saved.sh||"", saved.sm||"", saved.eh||"", saved.em||"");
-  slotsWrap.appendChild(slot1);
-  sec._slot2 = null;
+  // sec joue le role de row pour buildSlotSystem
+  sec._slots = [];
+  var cmtContainerT = document.createElement("div");
+  var slotsWrapT = buildSlotSystem(sec, cmtContainerT, savedSlotsT);
+  slotsWrapT.style.cssText = "padding:10px 12px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;";
 
-  // Commentaire slot 1
-  var cmtTA = makeTextarea("Commentaire...", saved.comment||"");
-  var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap";
-  cmtWrap.appendChild(cmtTA);
-
-  // Commentaire slot 2
-  var cmt2TA = makeTextarea("Commentaire 2eme creneau...", saved.comment2||"");
-  var cmt2Wrap = document.createElement("div"); cmt2Wrap.className = "task-comment-wrap";
-  cmt2Wrap.appendChild(cmt2TA);
-
-  // Slot 2 si deja rempli
-  if (saved.sh2 || saved.eh2) {
-    var sep = makeSep();
-    var s2 = makeSlotRow(saved.sh2||"", saved.sm2||"", saved.eh2||"", saved.em2||"");
-    slotsWrap.appendChild(sep); slotsWrap.appendChild(s2);
-    sec._slot2 = s2;
-    addRemoveSlotBtn(slotsWrap, {_slot2: sec._slot2}, cmt2Wrap);
-  } else {
-    cmt2Wrap.style.display = "none";
-    var addSlotBtn = document.createElement("button");
-    addSlotBtn.className = "btn-add-slot slot-add-btn"; addSlotBtn.textContent = "+";
-    addSlotBtn.addEventListener("click", function() {
-      var n = countSlots(slotsWrap);
-      if (n >= 4) return;
-      var sep = makeSep();
-      var s2 = makeSlotRow("","","","");
-      slotsWrap.insertBefore(sep, addSlotBtn);
-      slotsWrap.insertBefore(s2, addSlotBtn);
-      sec._slot2 = s2;
-      if (countSlots(slotsWrap) >= 4) addSlotBtn.style.display = "none";
-      cmt2Wrap.style.display = "block";
-      addRemoveSlotBtnTarget(slotsWrap, sec, cmt2Wrap);
-    });
-    slotsWrap.appendChild(addSlotBtn);
-  }
-
-  sec.appendChild(slotsWrap); sec.appendChild(cmtWrap); sec.appendChild(cmt2Wrap);
-  sec._sF = slot1._sF; sec._eF = slot1._eF; sec._cmt = cmtTA; sec._cmt2 = cmt2TA;
+  sec.appendChild(slotsWrapT); sec.appendChild(cmtContainerT);
   sec.dataset.targetKey = key;
   return sec;
 }
 
-function addRemoveSlotBtnTarget(slotsWrap, sec, cmt2Wrap) {
-  var removeBtn = document.createElement("button");
-  removeBtn.className = "btn-add-slot"; removeBtn.textContent = "-";
-  removeBtn.style.background = "#e74c3c";
-  removeBtn.addEventListener("click", function() {
-    var seps = slotsWrap.querySelectorAll("span.slot-sep");
-    var lastSep = seps[seps.length-1];
-    if (lastSep) lastSep.remove();
-    if (sec._slot2) { sec._slot2.remove(); sec._slot2 = null; }
-    removeBtn.remove();
-    if (countSlots(slotsWrap) <= 1) cmt2Wrap.style.display = "none";
-    var addBtn = slotsWrap.querySelector(".slot-add-btn");
-    if (addBtn) addBtn.style.display = "";
-  });
-  slotsWrap.appendChild(removeBtn);
-}
-
-function appendTaskRow(sec, taskId, machineName, quiDefault, tv, color) {
   var row = document.createElement("div"); row.className = "task-row";
   var top = document.createElement("div"); top.className = "task-row-top";
   var colorBar = document.createElement("div"); colorBar.className = "task-color-bar"; colorBar.style.background = color;
@@ -331,82 +276,78 @@ function appendTaskRow(sec, taskId, machineName, quiDefault, tv, color) {
   top.appendChild(colorBar); top.appendChild(lbl); top.appendChild(who);
   row.appendChild(top);
 
-  var slotsWrap = document.createElement("div"); slotsWrap.className = "task-row-times";
-  var slot1 = makeSlotRow(tv.sh||"",tv.sm||"",tv.eh||"",tv.em||"");
-  slotsWrap.appendChild(slot1);
-  row._slot1 = slot1; row._slot2 = null;
+  // Construire les slots sauvegardes
+  var savedSlots = [{sh:tv.sh, sm:tv.sm, eh:tv.eh, em:tv.em, comment:tv.comment||""}];
+  if (tv.sh2||tv.eh2) savedSlots.push({sh:tv.sh2, sm:tv.sm2, eh:tv.eh2, em:tv.em2, comment:tv.comment2||""});
 
-  var cmtTA = makeTextarea("Commentaire...", tv.comment||"");
-  var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap"; cmtWrap.appendChild(cmtTA);
+  var cmtContainer = document.createElement("div");
+  var slotsWrap = buildSlotSystem(row, cmtContainer, savedSlots);
+  row.appendChild(slotsWrap); row.appendChild(cmtContainer);
 
-  var cmt2TA = makeTextarea("Commentaire 2eme creneau...", tv.comment2||"");
-  var cmt2Wrap = document.createElement("div"); cmt2Wrap.className = "task-comment-wrap"; cmt2Wrap.appendChild(cmt2TA);
-
-  if (tv.sh2 || tv.eh2) {
-    var sep = makeSep();
-    var s2 = makeSlotRow(tv.sh2||"",tv.sm2||"",tv.eh2||"",tv.em2||"");
-    slotsWrap.appendChild(sep); slotsWrap.appendChild(s2);
-    row._slot2 = s2;
-    addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
-  } else {
-    cmt2Wrap.style.display = "none";
-    addPlusBtn(slotsWrap, row, cmt2Wrap);
-  }
-
-  row.appendChild(slotsWrap); row.appendChild(cmtWrap); row.appendChild(cmt2Wrap);
-  sec._taskFields[taskId] = { sF:slot1._sF, eF:slot1._eF, cmtTA:cmtTA, cmt2TA:cmt2TA, color:color, row:row };
+  sec._taskFields[taskId] = { color:color, row:row };
   sec.appendChild(row);
 }
 
-function countSlots(slotsWrap) {
-  return slotsWrap.querySelectorAll("span.slot-sep").length + 1;
-}
+// ── GESTION DES CRENEAUX MULTIPLES (max 4) ───────────────────
+// row._slots = [{slotEl, cmtWrap}] - tableau de tous les creneaux
 
-function addPlusBtn(slotsWrap, row, cmt2Wrap) {
+function buildSlotSystem(row, cmtContainer, savedSlots) {
+  // savedSlots = [{sh,sm,eh,em,comment}, ...]
+  var slotsWrap = document.createElement("div"); slotsWrap.className = "task-row-times";
+  row._slots = [];
+
+  function addSlot(sh, sm, eh, em, comment) {
+    var n = row._slots.length;
+    if (n > 0) {
+      var sep = makeSep();
+      slotsWrap.insertBefore(sep, addBtn);
+    }
+    var slotEl = makeSlotRow(sh||"", sm||"", eh||"", em||"");
+    slotsWrap.insertBefore(slotEl, addBtn);
+
+    var cmtTA = makeTextarea("Commentaire creneau "+(n+1)+"...", comment||"");
+    var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap";
+    cmtWrap.appendChild(cmtTA);
+    cmtContainer.appendChild(cmtWrap);
+
+    row._slots.push({slotEl: slotEl, cmtWrap: cmtWrap, cmtTA: cmtTA});
+
+    if (row._slots.length >= 4) addBtn.style.display = "none";
+    if (removeBtn) removeBtn.style.display = "";
+    return slotEl;
+  }
+
+  function removeLastSlot() {
+    if (row._slots.length <= 1) return;
+    var last = row._slots.pop();
+    last.slotEl.remove();
+    last.cmtWrap.remove();
+    // Supprimer le sep correspondant
+    var seps = slotsWrap.querySelectorAll("span");
+    if (seps.length > 0) seps[seps.length-1].remove();
+    if (row._slots.length < 4) addBtn.style.display = "";
+    if (row._slots.length <= 1) removeBtn.style.display = "none";
+  }
+
   var addBtn = document.createElement("button");
   addBtn.className = "btn-add-slot slot-add-btn"; addBtn.textContent = "+";
-  addBtn.addEventListener("click", function() {
-    var n = countSlots(slotsWrap);
-    if (n >= 4) return;
-    var sep = makeSep(); sep.className += " slot-sep";
-    var s2 = makeSlotRow("","","","");
-    slotsWrap.insertBefore(sep, addBtn);
-    slotsWrap.insertBefore(s2, addBtn);
-    row._slot2 = s2;
-    // Creer un nouveau textarea de commentaire pour ce creneau
-    var newCmtTA = makeTextarea("Commentaire creneau "+(n+1)+"...", "");
-    var newCmtWrap = document.createElement("div"); newCmtWrap.className = "task-comment-wrap extra-cmt-wrap";
-    newCmtWrap.appendChild(newCmtTA);
-    // Inserer apres le dernier cmt-wrap
-    var allCmtWraps = row.querySelectorAll(".task-comment-wrap");
-    var lastCmt = allCmtWraps[allCmtWraps.length-1];
-    if (lastCmt) lastCmt.insertAdjacentElement("afterend", newCmtWrap);
-    else row.appendChild(newCmtWrap);
-    // Mettre a jour cmt2Wrap reference
-    cmt2Wrap.style.display = "block";
-    if (countSlots(slotsWrap) >= 4) addBtn.style.display = "none";
-    addRemoveSlotBtn(slotsWrap, row, newCmtWrap);
-  });
+  addBtn.addEventListener("click", function() { addSlot("","","",""); });
   slotsWrap.appendChild(addBtn);
-  return addBtn;
-}
 
-function addRemoveSlotBtn(slotsWrap, row, cmt2Wrap) {
   var removeBtn = document.createElement("button");
   removeBtn.className = "btn-add-slot"; removeBtn.textContent = "-";
-  removeBtn.style.background = "#e74c3c";
-  removeBtn.addEventListener("click", function() {
-    var seps = slotsWrap.querySelectorAll("span.slot-sep");
-    var lastSep = seps[seps.length-1];
-    if (lastSep) lastSep.remove();
-    if (row._slot2) { row._slot2.remove(); row._slot2 = null; }
-    removeBtn.remove();
-    if (countSlots(slotsWrap) <= 1) cmt2Wrap.style.display = "none";
-    // Reafficher + si cache
-    var addBtn = slotsWrap.querySelector(".slot-add-btn");
-    if (addBtn) addBtn.style.display = "";
-  });
+  removeBtn.style.background = "#e74c3c"; removeBtn.style.display = "none";
+  removeBtn.addEventListener("click", removeLastSlot);
   slotsWrap.appendChild(removeBtn);
+
+  // Ajouter les slots sauvegardes
+  if (savedSlots && savedSlots.length > 0) {
+    savedSlots.forEach(function(s) { addSlot(s.sh, s.sm, s.eh, s.em, s.comment); });
+  } else {
+    addSlot("","","","");
+  }
+
+  return slotsWrap;
 }
 
 function appendTaskRowBF(sec, taskId, machineName, quiDefault, tv, color) {
@@ -420,40 +361,13 @@ function appendTaskRowBF(sec, taskId, machineName, quiDefault, tv, color) {
   top.appendChild(colorBar); top.appendChild(lbl); top.appendChild(who);
   row.appendChild(top);
 
-  var slotsWrap = document.createElement("div"); slotsWrap.className = "task-row-times";
-  var slot1 = makeSlotRow(tv.sh||"",tv.sm||"",tv.eh||"",tv.em||"");
-  slotsWrap.appendChild(slot1);
-  row._slot1 = slot1; row._slot2 = null;
+  var savedSlotsBF = [{sh:tv.sh, sm:tv.sm, eh:tv.eh, em:tv.em, comment:tv.comment||""}];
+  if (tv.sh2||tv.eh2) savedSlotsBF.push({sh:tv.sh2, sm:tv.sm2, eh:tv.eh2, em:tv.em2, comment:tv.comment2||""});
 
-  var cmtTA = makeTextarea("Commentaire...", tv.comment||"");
-  var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap"; cmtWrap.appendChild(cmtTA);
-  var cmt2TA = makeTextarea("Commentaire 2eme creneau...", tv.comment2||"");
-  var cmt2Wrap = document.createElement("div"); cmt2Wrap.className = "task-comment-wrap"; cmt2Wrap.appendChild(cmt2TA);
-
-  if (tv.sh2 || tv.eh2) {
-    var sep = makeSep();
-    var s2 = makeSlotRow(tv.sh2||"",tv.sm2||"",tv.eh2||"",tv.em2||"");
-    slotsWrap.appendChild(sep); slotsWrap.appendChild(s2);
-    row._slot2 = s2;
-    addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
-  } else {
-    cmt2Wrap.style.display = "none";
-    var addSlotBtn = document.createElement("button");
-    addSlotBtn.className = "btn-add-slot"; addSlotBtn.textContent = "+";
-    addSlotBtn.addEventListener("click", function() {
-      var sep = makeSep();
-      var s2 = makeSlotRow("","","","");
-      slotsWrap.insertBefore(sep, addSlotBtn);
-      slotsWrap.insertBefore(s2, addSlotBtn);
-      row._slot2 = s2; addSlotBtn.style.display = "none";
-      cmt2Wrap.style.display = "block";
-      addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
-    });
-    slotsWrap.appendChild(addSlotBtn);
-  }
-
-  row.appendChild(slotsWrap); row.appendChild(cmtWrap); row.appendChild(cmt2Wrap);
-  sec._taskFields[taskId] = { sF:slot1._sF, eF:slot1._eF, cmtTA:cmtTA, cmt2TA:cmt2TA, color:color, row:row };
+  var cmtContainerBF = document.createElement("div");
+  var slotsWrapBF = buildSlotSystem(row, cmtContainerBF, savedSlotsBF);
+  row.appendChild(slotsWrapBF); row.appendChild(cmtContainerBF);
+  sec._taskFields[taskId] = { color:color, row:row };
   sec.appendChild(row);
 }
 
@@ -480,32 +394,15 @@ function appendExtraTaskRow(sec, et, color, group) {
   top.appendChild(colorBar); top.appendChild(nameInp); top.appendChild(whoInp); top.appendChild(delBtn);
   row.appendChild(top);
 
-  var slotsWrap = document.createElement("div"); slotsWrap.className = "task-row-times";
-  var slot1 = makeSlotRow(et.sh||"",et.sm||"",et.eh||"",et.em||"");
-  slotsWrap.appendChild(slot1);
-  row._slot1 = slot1; row._slot2 = null;
+  var savedSlotsEx = [{sh:et.sh, sm:et.sm, eh:et.eh, em:et.em, comment:et.comment||""}];
+  if (et.sh2||et.eh2) savedSlotsEx.push({sh:et.sh2, sm:et.sm2, eh:et.eh2, em:et.em2, comment:et.comment2||""});
 
-  var cmtTA = makeTextarea("Commentaire...", et.comment||"");
-  var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap"; cmtWrap.appendChild(cmtTA);
-
-  var cmt2TA = makeTextarea("Commentaire 2eme creneau...", et.comment2||"");
-  var cmt2Wrap = document.createElement("div"); cmt2Wrap.className = "task-comment-wrap"; cmt2Wrap.appendChild(cmt2TA);
-
-  if (et.sh2 || et.eh2) {
-    var sep = makeSep();
-    var s2 = makeSlotRow(et.sh2||"",et.sm2||"",et.eh2||"",et.em2||"");
-    slotsWrap.appendChild(sep); slotsWrap.appendChild(s2);
-    row._slot2 = s2;
-    addRemoveSlotBtn(slotsWrap, row, cmt2Wrap);
-  } else {
-    cmt2Wrap.style.display = "none";
-    addPlusBtn(slotsWrap, row, cmt2Wrap);
-  }
-
-  row.appendChild(slotsWrap); row.appendChild(cmtWrap); row.appendChild(cmt2Wrap);
+  var cmtContainerEx = document.createElement("div");
+  var slotsWrapEx = buildSlotSystem(row, cmtContainerEx, savedSlotsEx);
+  row.appendChild(slotsWrapEx); row.appendChild(cmtContainerEx);
   row._nameInp = nameInp; row._whoInp = whoInp;
   var etGroup = group || et.group || 'boutchaud';
-  sec._extraFields.push({ sF:slot1._sF, eF:slot1._eF, cmtTA:cmtTA, cmt2TA:cmt2TA, color:color, row:row, group:etGroup });
+  sec._extraFields.push({ color:color, row:row, group:etGroup });
   sec.appendChild(row);
 }
 
@@ -591,46 +488,54 @@ function collectData() {
   ["grand_t1","petit_t1","rondelle"].forEach(function(key) {
     var sec = container.querySelector('[data-target-key="'+key+'"]');
     if (!sec) return;
-    var td = { sh:sec._sF._getH(), sm:sec._sF._getM(), eh:sec._eF._getH(), em:sec._eF._getM(), comment:sec._cmt.value };
-    if (sec._slot2) {
-      td.sh2=sec._slot2._sF._getH(); td.sm2=sec._slot2._sF._getM();
-      td.eh2=sec._slot2._eF._getH(); td.em2=sec._slot2._eF._getM();
-      td.comment2=sec._cmt2 ? sec._cmt2.value : "";
+    var td = {};
+    if (sec._slots && sec._slots.length > 0) {
+      var s0 = sec._slots[0];
+      td.sh=s0.slotEl._sF._getH(); td.sm=s0.slotEl._sF._getM();
+      td.eh=s0.slotEl._eF._getH(); td.em=s0.slotEl._eF._getM();
+      td.comment=s0.cmtTA.value;
+      if (sec._slots.length > 1) {
+        var s1=sec._slots[1];
+        td.sh2=s1.slotEl._sF._getH(); td.sm2=s1.slotEl._sF._getM();
+        td.eh2=s1.slotEl._eF._getH(); td.em2=s1.slotEl._eF._getM();
+        td.comment2=s1.cmtTA.value;
+      }
     }
     out.targets[key] = td;
-  });
 
   var tasksSec = container._tasksSec;
   if (tasksSec) {
+    function collectSlots(row) {
+      var d = {};
+      if (!row._slots || row._slots.length === 0) return d;
+      var s0 = row._slots[0];
+      d.sh=s0.slotEl._sF._getH(); d.sm=s0.slotEl._sF._getM();
+      d.eh=s0.slotEl._eF._getH(); d.em=s0.slotEl._eF._getM();
+      d.comment=s0.cmtTA.value;
+      if (row._slots.length > 1) {
+        var s1=row._slots[1];
+        d.sh2=s1.slotEl._sF._getH(); d.sm2=s1.slotEl._sF._getM();
+        d.eh2=s1.slotEl._eF._getH(); d.em2=s1.slotEl._eF._getM();
+        d.comment2=s1.cmtTA.value;
+      }
+      return d;
+    }
+
     TASKS_RONDELLE.forEach(function(task) {
       var f = tasksSec._taskFields[task.id]; if (!f) return;
-      var d = { sh:f.sF._getH(), sm:f.sF._getM(), eh:f.eF._getH(), em:f.eF._getM(), comment:f.cmtTA.value };
-      if (f.row._slot2) {
-        d.sh2=f.row._slot2._sF._getH(); d.sm2=f.row._slot2._sF._getM();
-        d.eh2=f.row._slot2._eF._getH(); d.em2=f.row._slot2._eF._getM();
-        d.comment2 = f.cmt2TA ? f.cmt2TA.value : "";
-      }
-      out.tasks[task.id] = d;
+      out.tasks[task.id] = collectSlots(f.row);
     });
     TASKS_BOUT_FROID.forEach(function(task) {
       var f = tasksSec._taskFields[task.id]; if (!f) return;
-      var d = { sh:f.sF._getH(), sm:f.sF._getM(), eh:f.eF._getH(), em:f.eF._getM(), comment:f.cmtTA.value };
-      if (f.row._slot2) {
-        d.sh2=f.row._slot2._sF._getH(); d.sm2=f.row._slot2._sF._getM();
-        d.eh2=f.row._slot2._eF._getH(); d.em2=f.row._slot2._eF._getM();
-        d.comment2 = f.cmt2TA ? f.cmt2TA.value : "";
-      }
-      out.tasks[task.id] = d;
+      out.tasks[task.id] = collectSlots(f.row);
     });
     tasksSec._extraFields.forEach(function(et) {
       var name = et.row._nameInp ? et.row._nameInp.value.trim() : "";
       if (!name) return;
-      var d = { machine:name, qui:et.row._whoInp?et.row._whoInp.value.trim():"", sh:et.sF._getH(), sm:et.sF._getM(), eh:et.eF._getH(), em:et.eF._getM(), comment:et.cmtTA.value, group:et.group||"boutchaud" };
-      if (et.row._slot2) {
-        d.sh2=et.row._slot2._sF._getH(); d.sm2=et.row._slot2._sF._getM();
-        d.eh2=et.row._slot2._eF._getH(); d.em2=et.row._slot2._eF._getM();
-        d.comment2 = et.cmt2TA ? et.cmt2TA.value : "";
-      }
+      var d = collectSlots(et.row);
+      d.machine = name;
+      d.qui = et.row._whoInp ? et.row._whoInp.value.trim() : "";
+      d.group = et.group || "boutchaud";
       out.extraTasks.push(d);
     });
   }
