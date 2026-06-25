@@ -39,7 +39,7 @@ const TASKS_BOUT_FROID = [
   {id:"bf_1", machine:"T0 : Duree nettoyage", qui:"Production", color:"#f1c40f", labelDebut:"H. arret BF", labelFin:"H. validation vide de ligne"},
   {id:"bf_2", machine:"T1 : Duree pre-reglage", qui:"Automation", color:"#64748b", labelDebut:"Debut reglage automation", labelFin:"Fin reglage de base machine"},
   {id:"bf_3", machine:"T2 : Monte en regime", qui:"Automation", color:"#795548", labelDebut:"Top qualite", labelFin:"Validation de deux lots bon"},
-  {id:"bf_4", machine:"T1’ : Arrivee 2eme section controlable", qui:"Automation", color:"#2e86ab", labelDebut:"Debut", labelFin:"Fin"}
+  {id:"bf_4", machine:"T1’ : Arrivee 2 section controlable", qui:"Automation", color:"#2e86ab", labelDebut:"Debut", labelFin:"Fin"}
 ];
 
 const BOUT_FROID_COLOR = "#2e86ab";
