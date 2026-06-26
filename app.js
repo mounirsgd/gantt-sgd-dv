@@ -36,10 +36,10 @@ const TASKS_RONDELLE = [
 ];
 
 const TASKS_BOUT_FROID = [
-  {id:"bf_1", machine:"T0 : Duree nettoyage", qui:"Production", color:"#f1c40f", labelDebut:"Heur arret BF", labelFin:"Heur validation vide de ligne"},
+  {id:"bf_1", machine:"T0 : Duree nettoyage", qui:"Production", color:"#f1c40f", labelDebut:"Aligneur vide", labelFin:"Heur valid. vide de ligne"},
   {id:"bf_2", machine:"T1 : Duree pre-reglage", qui:"Automation", color:"#64748b", labelDebut:"Debut reglage automation", labelFin:"Fin reglage de base machine"},
-  {id:"bf_3", machine:"T2 : Monte en regime", qui:"Automation", color:"#795548", labelDebut:"Top qualite", labelFin:"Validation de deux lots bon"},
-  {id:"bf_4", machine:"T1’ : Arrivee 2 section controlable", qui:"Automation", color:"#2e86ab", labelDebut:"Debut", labelFin:"Fin"}
+  {id:"bf_3", machine:"T2 : Monte en regime", qui:"Automation", color:"#795548", labelDebut:"Top qualite", labelFin:"Val. 2 lots commercialisable"},
+  {id:"bf_4", machine:"T1’ : Arrivee 2 section controlable", qui:"Automation", color:"#2e86ab", labelDebut:"Arrivee deux sections", labelFin:"Arrivee toutes sections"}
 ];
 
 const BOUT_FROID_COLOR = "#2e86ab";
@@ -839,7 +839,7 @@ function renderGantt(date, machine, data) {
       if(rowData.group==="boutfroid") rowCls+=" boutfroid-row";
       h+='<tr class="'+rowCls+'" data-uid="'+uid+'">'+
         '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
-        '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+task.machine+'</td>'+
+        '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+task.machine+(task.labelDebut?'<div style="font-size:10px;color:#6c6c70;font-weight:400;margin-top:2px;">'+task.labelDebut+' — '+task.labelFin+'</div>':'')+'</td>'+
         '<td class="info who-cell who-editable" data-uid="'+uid+'" title="Modifier">'+quiDisplay+' [mod]</td>'+
         '<td class="info time-cell">'+(start||"--")+'</td>'+
         '<td class="info time-cell">'+(end||"--")+'</td>'+
