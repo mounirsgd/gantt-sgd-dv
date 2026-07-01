@@ -519,14 +519,63 @@ async function saveSession() {
     if (existing) existingId = existing[0];
   }
   var sessId = existingId || "sess_"+Date.now();
-  await set(ref(db,"sessions/"+sessId), { date:date, machine:machine, ganttData:data, title:machine+" - "+dl, savedAt:Date.now() });
+
+  // Fusionner avec les donnees existantes pour eviter d ecraser les champs non remplis
+  var mergedData = data;
+  if (existingId && allSessions[existingId] && allSessions[existingId].ganttData) {
+    var existing_data = allSessions[existingId].ganttData;
+    mergedData = mergeGanttData(existing_data, data);
+  }
+
+  await set(ref(db,"sessions/"+sessId), { date:date, machine:machine, ganttData:mergedData, title:machine+" - "+dl, savedAt:Date.now() });
   window._editingSessionId = sessId;
+  ganttData = mergedData;
 
   showToast("Seance enregistree !", "#34c759");
-  renderGantt(date, machine, data);
+  renderGantt(date, machine, mergedData);
   setTimeout(function() { document.getElementById("gantt-section").scrollIntoView({behavior:"smooth"}); }, 100);
   document.getElementById("f-machine-name").value = machine;
   document.getElementById("f-date").value = date;
+}
+
+function mergeGanttData(existing, newData) {
+  // Fusionne les donnees : garde les valeurs existantes si les nouvelles sont vides
+  var merged = JSON.parse(JSON.stringify(existing));
+
+  // Fusionner targets
+  ["grand_t1","petit_t1","rondelle"].forEach(function(key) {
+    if (newData.targets && newData.targets[key]) {
+      var nd = newData.targets[key];
+      // Si la nouvelle donnee a des horaires remplis, on prend la nouvelle
+      if (nd.sh || nd.eh) {
+        merged.targets[key] = nd;
+      }
+      // Sinon on garde l ancienne
+    }
+  });
+
+  // Fusionner tasks - prendre la plus complete
+  if (newData.tasks) {
+    Object.keys(newData.tasks).forEach(function(taskId) {
+      var nd = newData.tasks[taskId];
+      var ed = merged.tasks[taskId] || {};
+      // Si la nouvelle tache a des horaires, on la prend
+      if (nd.sh || nd.eh) {
+        merged.tasks[taskId] = nd;
+      } else if (!ed.sh && !ed.eh) {
+        // Ni nouvelle ni ancienne n ont d horaires - garder nouvelle (vide)
+        merged.tasks[taskId] = nd;
+      }
+      // Sinon garder l ancienne qui a des horaires
+    });
+  }
+
+  // Fusionner extraTasks - prendre la liste la plus longue
+  if (newData.extraTasks && newData.extraTasks.length > 0) {
+    merged.extraTasks = newData.extraTasks;
+  }
+
+  return merged;
 }
 
 async function autoSaveExtras(sec) {
