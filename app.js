@@ -569,15 +569,31 @@ async function saveSession() {
   var data = collectData();
   var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
 
+  // Lire les taches deja enregistrees dans Firebase AVANT de sauvegarder
+  // Pour ne pas ecraser ce qu un autre PC a deja rempli
+  var snapBefore = await get(ref(db,"sessions/"+sessId+"/ganttData/tasks"));
+  var existingTasks = snapBefore.val() || {};
+
   // Sauvegarder les targets
   for (var tkey of ["grand_t1","petit_t1","rondelle"]) {
     await set(ref(db,"sessions/"+sessId+"/ganttData/targets/"+tkey), data.targets[tkey]||{});
   }
 
-  // Sauvegarder chaque tache individuellement
+  // Sauvegarder uniquement les taches qui ont ete modifiees par ce PC
+  // Une tache est consideree modifiee si elle a des horaires remplis dans le formulaire actuel
   var allTaskIds = TASKS_RONDELLE.map(function(t){return t.id;}).concat(TASKS_BOUT_FROID.map(function(t){return t.id;}));
   for (var taskId of allTaskIds) {
-    await set(ref(db,"sessions/"+sessId+"/ganttData/tasks/"+taskId), data.tasks[taskId]||{});
+    var localTask = data.tasks[taskId] || {};
+    var remoteTask = existingTasks[taskId] || {};
+
+    if (localTask.sh || localTask.eh) {
+      // Ce PC a rempli cette tache -> sauvegarder
+      await set(ref(db,"sessions/"+sessId+"/ganttData/tasks/"+taskId), localTask);
+    } else if (!remoteTask.sh && !remoteTask.eh) {
+      // Ni local ni remote n ont d horaires -> sauvegarder le vide (effacement voulu)
+      await set(ref(db,"sessions/"+sessId+"/ganttData/tasks/"+taskId), localTask);
+    }
+    // Sinon : remote a des horaires mais local est vide -> garder remote (autre PC a rempli)
   }
 
   // Sauvegarder les extras
