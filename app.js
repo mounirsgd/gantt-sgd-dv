@@ -2,6 +2,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getDatabase, ref, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+// ================================================================
+// 1. CONFIGURATION FIREBASE
+// ================================================================
 const firebaseConfig = {
   apiKey: "AIzaSyDi9y4PmgvUHvnxDNu4kwpRvB9b-h7Dquk",
   authDomain: "gantt-sgd.firebaseapp.com",
@@ -11,11 +14,13 @@ const firebaseConfig = {
   messagingSenderId: "363250513679",
   appId: "1:363250513679:web:bdf947bd2800614d7a307a"
 };
-
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getDatabase(firebaseApp);
 
+// ================================================================
+// 2. CONSTANTES
+// ================================================================
 const TASK_COLORS = [
   "#3b82f6","#8b5cf6","#06b6d4","#22c55e","#f97316",
   "#ec4899","#14b8a6","#a855f7","#0ea5e9","#84cc16",
@@ -39,11 +44,16 @@ const TASKS_BOUT_FROID = [
   {id:"bf_1", machine:"T0 : Duree nettoyage", qui:"Production", color:"#f1c40f", labelDebut:"Aligneur vide", labelFin:"Heur valid. vide de ligne"},
   {id:"bf_2", machine:"T1 : Duree pre-reglage", qui:"Automation", color:"#64748b", labelDebut:"Debut reglage automation", labelFin:"Fin reglage de base machine"},
   {id:"bf_3", machine:"T2 : Monte en regime", qui:"Automation", color:"#795548", labelDebut:"Top qualite", labelFin:"Val. 2 lots commercialisable"},
-  {id:"bf_4", machine:"T1’ : Arrivee 2 section controlable", qui:"Automation", color:"#2e86ab", labelDebut:"Arrivee deux sections", labelFin:"Arrivee toutes sections"}
+  {id:"bf_4", machine:"T1\u2019 : Arrivee 2 section controlable", qui:"Automation", color:"#2e86ab", labelDebut:"Arrivee deux sections", labelFin:"Arrivee toutes sections"}
 ];
 
 const BOUT_FROID_COLOR = "#2e86ab";
+const MAX_SLOTS = 4;
+const HISTORY_PAGE_SIZE = 5;
 
+// ================================================================
+// 3. VARIABLES GLOBALES
+// ================================================================
 let allSessions = {};
 let ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
 let selectedIds = [];
@@ -52,11 +62,10 @@ let historyPage = 0;
 let ganttQuiOverrides = {};
 let justifications = [];
 let appReady = false;
-const HISTORY_PAGE_SIZE = 5;
-const MAX_SLOTS = 4;
 
-// ── AUTH ──────────────────────────────────────────────────────────────────────
-
+// ================================================================
+// 4. AUTH
+// ================================================================
 document.getElementById("login-btn").addEventListener("click", async function() {
   var email = document.getElementById("login-email").value.trim();
   var password = document.getElementById("login-pass").value.trim();
@@ -119,8 +128,9 @@ function translateAuthError(code) {
   return m[code] || "Erreur : " + code;
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-
+// ================================================================
+// 5. INIT
+// ================================================================
 function initApp() {
   ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
   selectedIds = []; ganttQuiOverrides = {}; justifications = [];
@@ -143,29 +153,42 @@ function initApp() {
     document.getElementById("sync-status").textContent = "Connecte";
     var gs = document.getElementById("gantt-section");
     if (gs && gs.style.display !== "none") {
-      var arr = Object.values(allSessions).sort(function(a,b){ return (b.savedAt||0)-(a.savedAt||0); });
-      if (arr.length > 0 && arr[0] && arr[0].ganttData) {
-        renderGantt(arr[0].date, arr[0].machine, arr[0].ganttData);
+      var sessId = window._editingSessionId;
+      if (sessId && allSessions[sessId] && allSessions[sessId].ganttData) {
+        var s = allSessions[sessId];
+        renderGantt(s.date, s.machine, s.ganttData);
       }
     }
   });
 
   document.getElementById("save-btn").addEventListener("click", saveSession);
-
-  // Creer la session automatiquement quand machine est remplie
-  document.getElementById("f-machine-name").addEventListener("blur", async function() {
-    var machine = this.value.trim();
-    var date = document.getElementById("f-date").value;
-    if (machine && date) {
-      await getOrCreateSession();
-    }
-  });
   document.getElementById("new-session-btn").addEventListener("click", newSession);
   document.getElementById("del-all-btn").addEventListener("click", deleteAllHistory);
   document.getElementById("do-compare-btn").addEventListener("click", doCompare);
   document.getElementById("close-compare-btn").addEventListener("click", closeCompare);
   document.getElementById("do-justif-btn").addEventListener("click", openJustifDialog);
   initExportButtons();
+
+  // Creer session automatiquement quand machine est remplie
+  document.getElementById("f-machine-name").addEventListener("blur", async function() {
+    var machine = this.value.trim();
+    var date = document.getElementById("f-date").value;
+    if (machine && date && !window._editingSessionId) {
+      var existing = Object.entries(allSessions).find(function(e) { return e[1].date===date && e[1].machine===machine; });
+      if (existing) {
+        window._editingSessionId = existing[0];
+      } else {
+        var sessId = "sess_"+Date.now();
+        var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
+        await set(ref(db,"sessions/"+sessId), {
+          date:date, machine:machine,
+          ganttData:{ targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] },
+          title:machine+" - "+dl, savedAt:Date.now()
+        });
+        window._editingSessionId = sessId;
+      }
+    }
+  });
 
   var TT = document.getElementById("tooltip");
   document.addEventListener("mousemove", function(e) {
@@ -177,106 +200,9 @@ function initApp() {
   });
 }
 
-// ── SYSTEME DE CRENEAUX (max 3) ───────────────────────────────────────────────
-// Chaque row/sec a row._slots = [{slotEl, cmtTA}]
-// slotEl._sF._getH(), slotEl._sF._getM(), slotEl._eF._getH(), slotEl._eF._getM()
-
-function buildSlotSystem(holder, container, savedSlots, labelDebut, labelFin) {
-  // holder = row ou sec (l'element parent)
-  // container = div ou holder lui-meme pour les commentaires
-  // savedSlots = [{sh,sm,eh,em,comment}, ...]
-  holder._slots = [];
-
-  var slotsWrap = document.createElement("div");
-  slotsWrap.className = "task-row-times";
-
-  var addBtn = document.createElement("button");
-  addBtn.className = "btn-add-slot"; addBtn.textContent = "+";
-
-  var removeBtn = document.createElement("button");
-  removeBtn.className = "btn-add-slot"; removeBtn.textContent = "-";
-  removeBtn.style.background = "#e74c3c";
-  removeBtn.style.display = "none";
-
-  function refreshBtns() {
-    var n = holder._slots.length;
-    addBtn.style.display = n >= MAX_SLOTS ? "none" : "";
-    removeBtn.style.display = n <= 1 ? "none" : "";
-  }
-
-  function addSlot(sh, sm, eh, em, comment) {
-    var n = holder._slots.length;
-    if (n > 0) {
-      var sep = document.createElement("span");
-      sep.className = "slot-sep";
-      sep.style.cssText = "font-size:11px;color:#6c6c70;margin:0 4px;";
-      sep.textContent = "puis";
-      slotsWrap.insertBefore(sep, addBtn);
-    }
-    var slotEl = makeSlotRow(sh||"", sm||"", eh||"", em||"", n===0?labelDebut:null, n===0?labelFin:null);
-    slotsWrap.insertBefore(slotEl, addBtn);
-
-    var cmtTA = makeTextarea("Commentaire creneau "+(n+1)+"...", comment||"");
-    var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap";
-    cmtWrap.appendChild(cmtTA);
-    container.appendChild(cmtWrap);
-
-    holder._slots.push({slotEl:slotEl, cmtTA:cmtTA, cmtWrap:cmtWrap});
-    refreshBtns();
-  }
-
-  function removeLastSlot() {
-    if (holder._slots.length <= 1) return;
-    var last = holder._slots.pop();
-    last.slotEl.remove();
-    last.cmtWrap.remove();
-    var seps = slotsWrap.querySelectorAll("span.slot-sep");
-    if (seps.length > 0) seps[seps.length-1].remove();
-    refreshBtns();
-  }
-
-  addBtn.addEventListener("click", function() { addSlot("","","",""); });
-  removeBtn.addEventListener("click", removeLastSlot);
-
-  slotsWrap.appendChild(addBtn);
-  slotsWrap.appendChild(removeBtn);
-
-  if (savedSlots && savedSlots.length > 0) {
-    savedSlots.forEach(function(s) { addSlot(s.sh, s.sm, s.eh, s.em, s.comment); });
-  } else {
-    addSlot("","","","");
-  }
-
-  return slotsWrap;
-}
-
-function readSlots(holder) {
-  var d = {};
-  if (!holder._slots) return d;
-  var keys = [["sh","sm","eh","em","comment"],["sh2","sm2","eh2","em2","comment2"],["sh3","sm3","eh3","em3","comment3"],["sh4","sm4","eh4","em4","comment4"]];
-  holder._slots.forEach(function(s, i) {
-    if (i >= keys.length) return;
-    var k = keys[i];
-    d[k[0]] = s.slotEl._sF._getH();
-    d[k[1]] = s.slotEl._sF._getM();
-    d[k[2]] = s.slotEl._eF._getH();
-    d[k[3]] = s.slotEl._eF._getM();
-    d[k[4]] = s.cmtTA.value;
-  });
-  return d;
-}
-
-function getSavedSlots(obj) {
-  // Reconstruit le tableau de slots depuis les donnees Firebase
-  var slots = [{sh:obj.sh, sm:obj.sm, eh:obj.eh, em:obj.em, comment:obj.comment||""}];
-  if (obj.sh2||obj.eh2) slots.push({sh:obj.sh2, sm:obj.sm2, eh:obj.eh2, em:obj.em2, comment:obj.comment2||""});
-  if (obj.sh3||obj.eh3) slots.push({sh:obj.sh3, sm:obj.sm3, eh:obj.eh3, em:obj.em3, comment:obj.comment3||""});
-  if (obj.sh4||obj.eh4) slots.push({sh:obj.sh4, sm:obj.sm4, eh:obj.eh4, em:obj.em4, comment:obj.comment4||""});
-  return slots;
-}
-
-// ── FORMULAIRE ────────────────────────────────────────────────────────────────
-
+// ================================================================
+// 6. FORMULAIRE
+// ================================================================
 function buildForm() {
   var container = document.getElementById("form-sections");
   container.innerHTML = "";
@@ -309,8 +235,7 @@ function buildForm() {
 
   TASKS_BOUT_FROID.forEach(function(task) {
     var tv = ganttData.tasks[task.id] || {};
-    tv._labelDebut = task.labelDebut;
-    tv._labelFin = task.labelFin;
+    tv._labelDebut = task.labelDebut; tv._labelFin = task.labelFin;
     appendTaskRow(tasksSec, task.id, task.machine, task.qui, tv, task.color);
   });
 
@@ -340,9 +265,9 @@ function buildForm() {
     btnBF.textContent = "Bout Froid";
     btnBF.style.cssText = "flex:1;padding:10px;background:"+BOUT_FROID_COLOR+";color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;";
     btnBF.addEventListener("click", function() {
-      var bfColors = ["#f1c40f","#64748b","#795548"];
+      var bfColors = ["#f1c40f","#64748b","#795548","#2e86ab"];
       var idx = tasksSec._extraFields.filter(function(f){return f.group==="boutfroid";}).length;
-      appendExtraTaskRow(tasksSec, {group:"boutfroid"}, bfColors[idx%3]);
+      appendExtraTaskRow(tasksSec, {group:"boutfroid"}, bfColors[idx%4]);
       popup.remove();
     });
     popup.appendChild(btnBC); popup.appendChild(btnBF);
@@ -357,7 +282,6 @@ function buildTargetSection(key, label, color, saved) {
   var sec = document.createElement("div"); sec.className = "tasks-sec"; sec.style.borderColor = color;
   var hd = document.createElement("div"); hd.className = "tasks-sec-hd"; hd.style.background = color;
   hd.textContent = label; sec.appendChild(hd);
-
   var cmtContainer = document.createElement("div");
   var slotsWrap = buildSlotSystem(sec, cmtContainer, getSavedSlots(saved));
   slotsWrap.style.padding = "10px 12px";
@@ -374,7 +298,6 @@ function appendTaskRow(sec, taskId, machineName, quiDefault, tv, color) {
   var who = document.createElement("span"); who.className = "task-row-who"; who.textContent = quiDefault;
   top.appendChild(colorBar); top.appendChild(lbl); top.appendChild(who);
   row.appendChild(top);
-
   var cmtContainer = document.createElement("div");
   var slotsWrap = buildSlotSystem(row, cmtContainer, getSavedSlots(tv), tv._labelDebut, tv._labelFin);
   row.appendChild(slotsWrap); row.appendChild(cmtContainer);
@@ -396,22 +319,114 @@ function appendExtraTaskRow(sec, et, color) {
   delBtn.addEventListener("click", function() {
     row.remove();
     sec._extraFields = sec._extraFields.filter(function(f) { return f.row !== row; });
-    autoSaveExtras(sec);
+    autoSaveExtras();
   });
   top.appendChild(colorBar); top.appendChild(nameInp); top.appendChild(whoInp); top.appendChild(delBtn);
   row.appendChild(top);
-
   var cmtContainer = document.createElement("div");
   var slotsWrap = buildSlotSystem(row, cmtContainer, getSavedSlots(et));
   row.appendChild(slotsWrap); row.appendChild(cmtContainer);
   row._nameInp = nameInp; row._whoInp = whoInp;
-  var etGroup = et.group || "boutchaud";
-  sec._extraFields.push({color:color, row:row, group:etGroup});
+  sec._extraFields.push({color:color, row:row, group:et.group||"boutchaud"});
   sec.appendChild(row);
 }
 
-// ── CHAMPS TEMPS ──────────────────────────────────────────────────────────────
+// ================================================================
+// 7. SYSTEME DE CRENEAUX
+// ================================================================
+function buildSlotSystem(holder, container, savedSlots, labelDebut, labelFin) {
+  holder._slots = [];
+  var slotsWrap = document.createElement("div");
+  slotsWrap.className = "task-row-times";
 
+  var addBtn = document.createElement("button");
+  addBtn.className = "btn-add-slot"; addBtn.textContent = "+";
+
+  var removeBtn = document.createElement("button");
+  removeBtn.className = "btn-add-slot"; removeBtn.textContent = "-";
+  removeBtn.style.background = "#e74c3c";
+  removeBtn.style.display = "none";
+
+  function refreshBtns() {
+    var n = holder._slots.length;
+    addBtn.style.display = n >= MAX_SLOTS ? "none" : "";
+    removeBtn.style.display = n <= 1 ? "none" : "";
+  }
+
+  function addSlot(sh, sm, eh, em, comment) {
+    var n = holder._slots.length;
+    if (n > 0) {
+      var sep = document.createElement("span");
+      sep.className = "slot-sep";
+      sep.style.cssText = "font-size:11px;color:#6c6c70;margin:0 4px;";
+      sep.textContent = "puis";
+      slotsWrap.insertBefore(sep, addBtn);
+    }
+    var slotEl = makeSlotRow(sh||"", sm||"", eh||"", em||"", n===0?labelDebut:null, n===0?labelFin:null);
+    slotsWrap.insertBefore(slotEl, addBtn);
+    var cmtTA = makeTextarea("Commentaire creneau "+(n+1)+"...", comment||"");
+    var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap";
+    cmtWrap.appendChild(cmtTA);
+    container.appendChild(cmtWrap);
+    holder._slots.push({slotEl:slotEl, cmtTA:cmtTA, cmtWrap:cmtWrap});
+    refreshBtns();
+  }
+
+  function removeLastSlot() {
+    if (holder._slots.length <= 1) return;
+    var last = holder._slots.pop();
+    last.slotEl.remove(); last.cmtWrap.remove();
+    var seps = slotsWrap.querySelectorAll("span.slot-sep");
+    if (seps.length > 0) seps[seps.length-1].remove();
+    refreshBtns();
+  }
+
+  addBtn.addEventListener("click", function() { addSlot("","","",""); });
+  removeBtn.addEventListener("click", removeLastSlot);
+  slotsWrap.appendChild(addBtn);
+  slotsWrap.appendChild(removeBtn);
+
+  if (savedSlots && savedSlots.length > 0) {
+    savedSlots.forEach(function(s) { addSlot(s.sh, s.sm, s.eh, s.em, s.comment); });
+  } else {
+    addSlot("","","","");
+  }
+
+  return slotsWrap;
+}
+
+function readSlots(holder) {
+  var d = {};
+  if (!holder._slots) return d;
+  var keys = [
+    ["sh","sm","eh","em","comment"],
+    ["sh2","sm2","eh2","em2","comment2"],
+    ["sh3","sm3","eh3","em3","comment3"],
+    ["sh4","sm4","eh4","em4","comment4"]
+  ];
+  holder._slots.forEach(function(s, i) {
+    if (i >= keys.length) return;
+    var k = keys[i];
+    d[k[0]] = s.slotEl._sF._getH();
+    d[k[1]] = s.slotEl._sF._getM();
+    d[k[2]] = s.slotEl._eF._getH();
+    d[k[3]] = s.slotEl._eF._getM();
+    d[k[4]] = s.cmtTA.value;
+  });
+  return d;
+}
+
+function getSavedSlots(obj) {
+  var slots = [{sh:obj.sh, sm:obj.sm, eh:obj.eh, em:obj.em, comment:obj.comment||""}];
+  if (obj.sh2||obj.eh2) slots.push({sh:obj.sh2, sm:obj.sm2, eh:obj.eh2, em:obj.em2, comment:obj.comment2||""});
+  if (obj.sh3||obj.eh3) slots.push({sh:obj.sh3, sm:obj.sm3, eh:obj.eh3, em:obj.em3, comment:obj.comment3||""});
+  if (obj.sh4||obj.eh4) slots.push({sh:obj.sh4, sm:obj.sm4, eh:obj.eh4, em:obj.em4, comment:obj.comment4||""});
+  return slots;
+}
+
+// ================================================================
+// 8. CHAMPS TEMPS
+// ================================================================
 function makeSlotRow(sh, sm, eh, em, labelDebut, labelFin) {
   var wrap = document.createElement("div"); wrap.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;";
   var sGrp = document.createElement("div"); sGrp.className = "time-group";
@@ -477,8 +492,9 @@ function toMin(s) { if(!s||!s.includes(":")) return null; var p=s.split(":").map
 function fmtDur(s,e) { var d=e-s; if(d<=0) return "--"; var h=Math.floor(d/60),m=d%60; return h&&m?h+"h "+m+"min":h?h+"h":m+"min"; }
 function encCmt(str) { if(!str) return ""; return str.replace(/\\/g,"\\\\").replace(/'/g,"&#39;").replace(/"/g,"&quot;").replace(/\n/g,"\\n"); }
 
-// ── COLLECTE ──────────────────────────────────────────────────────────────────
-
+// ================================================================
+// 9. COLLECTE
+// ================================================================
 function collectData() {
   var container = document.getElementById("form-sections");
   var out = { targets:{}, tasks:{}, extraTasks:[] };
@@ -513,84 +529,80 @@ function collectData() {
   return out;
 }
 
-// ── SAUVEGARDE ────────────────────────────────────────────────────────────────
-
-// ── GESTION SESSION ──────────────────────────────────────────────────────────
-
-async function getOrCreateSession() {
-  // Recupere ou cree la session pour la date+machine actuelle
+// ================================================================
+// 10. SAUVEGARDE — Par tache individuelle pour eviter ecrasement
+// ================================================================
+async function getSessionId() {
   var date = document.getElementById("f-date").value;
   var machine = document.getElementById("f-machine-name").value.trim();
   if (!date || !machine) return null;
 
-  var existingId = window._editingSessionId;
-  if (!existingId) {
-    var existing = Object.entries(allSessions).find(function(e) { return e[1].date===date && e[1].machine===machine; });
-    if (existing) existingId = existing[0];
+  if (window._editingSessionId) return window._editingSessionId;
+
+  var existing = Object.entries(allSessions).find(function(e) {
+    return e[1].date===date && e[1].machine===machine;
+  });
+  if (existing) {
+    window._editingSessionId = existing[0];
+    return existing[0];
   }
 
-  if (!existingId) {
-    // Creer la session vide
-    var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
-    existingId = "sess_"+Date.now();
-    await set(ref(db,"sessions/"+existingId), {
-      date:date, machine:machine,
-      ganttData:{ targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] },
-      title:machine+" - "+dl, savedAt:Date.now()
-    });
-    window._editingSessionId = existingId;
-  }
-
-  return existingId;
-}
-
-async function saveField(path, value) {
-  // Sauvegarde un champ specifique dans Firebase
-  var sessId = await getOrCreateSession();
-  if (!sessId) return;
-  await set(ref(db,"sessions/"+sessId+"/ganttData/"+path), value);
+  var sessId = "sess_"+Date.now();
+  var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
+  await set(ref(db,"sessions/"+sessId), {
+    date:date, machine:machine,
+    ganttData:{ targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] },
+    title:machine+" - "+dl, savedAt:Date.now()
+  });
+  window._editingSessionId = sessId;
+  return sessId;
 }
 
 async function saveSession() {
-  // Sauvegarde tous les champs et affiche le Gantt
   var date = document.getElementById("f-date").value;
   var machine = document.getElementById("f-machine-name").value.trim();
   if (!date || !machine) { alert("Veuillez remplir la date et la machine."); return; }
 
-  var sessId = await getOrCreateSession();
+  var sessId = await getSessionId();
   if (!sessId) return;
 
   var data = collectData();
   var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
 
-  // Sauvegarder chaque section independamment pour ne pas ecraser les autres
-  await set(ref(db,"sessions/"+sessId+"/ganttData/targets"), data.targets);
-  await set(ref(db,"sessions/"+sessId+"/ganttData/tasks"), data.tasks);
+  // Sauvegarder les targets
+  for (var tkey of ["grand_t1","petit_t1","rondelle"]) {
+    await set(ref(db,"sessions/"+sessId+"/ganttData/targets/"+tkey), data.targets[tkey]||{});
+  }
+
+  // Sauvegarder chaque tache individuellement
+  var allTaskIds = TASKS_RONDELLE.map(function(t){return t.id;}).concat(TASKS_BOUT_FROID.map(function(t){return t.id;}));
+  for (var taskId of allTaskIds) {
+    await set(ref(db,"sessions/"+sessId+"/ganttData/tasks/"+taskId), data.tasks[taskId]||{});
+  }
+
+  // Sauvegarder les extras
   await set(ref(db,"sessions/"+sessId+"/ganttData/extraTasks"), data.extraTasks||[]);
-  await set(ref(db,"sessions/"+sessId+"/savedAt"), Date.now());
+
+  // Mettre a jour les metadonnees
   await set(ref(db,"sessions/"+sessId+"/machine"), machine);
   await set(ref(db,"sessions/"+sessId+"/date"), date);
   await set(ref(db,"sessions/"+sessId+"/title"), machine+" - "+dl);
-
-  window._editingSessionId = sessId;
+  await set(ref(db,"sessions/"+sessId+"/savedAt"), Date.now());
 
   showToast("Seance enregistree !", "#34c759");
-  renderGantt(date, machine, data);
+
+  // Afficher le Gantt avec les donnees completes depuis Firebase
+  var snap = await get(ref(db,"sessions/"+sessId));
+  var sessionData = snap.val();
+  if (sessionData && sessionData.ganttData) {
+    renderGantt(date, machine, sessionData.ganttData);
+  }
   setTimeout(function() { document.getElementById("gantt-section").scrollIntoView({behavior:"smooth"}); }, 100);
-  document.getElementById("f-machine-name").value = machine;
-  document.getElementById("f-date").value = date;
 }
 
-async function autoSaveExtras(sec) {
+async function autoSaveExtras() {
   var sessId = window._editingSessionId;
-  if (!sessId) {
-    var date = document.getElementById("f-date").value;
-    var machine = document.getElementById("f-machine-name").value.trim();
-    if (!date || !machine) return;
-    var existing = Object.entries(allSessions).find(function(e) { return e[1].date===date && e[1].machine===machine; });
-    if (!existing) return;
-    sessId = existing[0];
-  }
+  if (!sessId) return;
   var data = collectData();
   await set(ref(db,"sessions/"+sessId+"/ganttData/extraTasks"), data.extraTasks||[]);
   showToast("Tache supprimee !", "#e74c3c");
@@ -607,8 +619,9 @@ async function newSession() {
   document.getElementById("gantt-section").style.display = "none";
 }
 
-// ── HISTORIQUE ────────────────────────────────────────────────────────────────
-
+// ================================================================
+// 11. HISTORIQUE
+// ================================================================
 function renderHistory(sessions) {
   var list = document.getElementById("history-list");
   var arr = Object.entries(sessions).sort(function(a,b) {
@@ -683,8 +696,9 @@ async function editHistorySession(id) {
 async function deleteSession(id) { if (!confirm("Supprimer cette seance ?")) return; await remove(ref(db,"sessions/"+id)); }
 async function deleteAllHistory() { if (!confirm("Supprimer tout l historique ?")) return; await remove(ref(db,"sessions")); }
 
-// ── GANTT ─────────────────────────────────────────────────────────────────────
-
+// ================================================================
+// 12. GANTT
+// ================================================================
 function fmtCmtCell(cmts, color) {
   var valid = cmts.filter(function(c){return c&&c.trim();});
   if (!valid.length) return '<td class="info cmt-col"></td>';
@@ -701,7 +715,6 @@ function renderGantt(date, machine, data) {
   var container = document.getElementById("gantt-container");
   var targets = data.targets || {};
   var tasks = data.tasks || {};
-
   var extras = (data.extraTasks||[]).slice();
   var extrasBoutChaud = extras.filter(function(et){ return (et.group||"boutchaud")==="boutchaud"; });
   var extrasBoutFroid = extras.filter(function(et){ return et.group==="boutfroid"; });
@@ -728,7 +741,7 @@ function renderGantt(date, machine, data) {
   extras.forEach(function(et){ regObj(et); });
 
   if (!isFinite(minT)) minT=360; if (!isFinite(maxT)) maxT=minT+120;
-  minT=Math.max(240,minT-10); maxT=maxT+10;
+  minT=Math.max(280,minT-10); maxT=maxT+10;
   minT=Math.floor(minT/60)*60; maxT=Math.ceil(maxT/60)*60;
 
   var total=maxT-minT, slotMin=10, slots=total/slotMin;
@@ -737,29 +750,6 @@ function renderGantt(date, machine, data) {
   var dateStr=date?new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"}):"";
   document.getElementById("gantt-machine-title").textContent = machine||"Changement - Temp/Machine";
   document.getElementById("gantt-subtitle").textContent = "SGD Pharma - Sucy-en-Brie"+(dateStr?" - "+dateStr:"");
-
-  function makeBars(obj, uid, color, slotColors) {
-    // slotColors = [color1, color2, color3]
-    var bar = "";
-    var slots_data = [
-      {sh:obj.sh,sm:obj.sm,eh:obj.eh,em:obj.em,cmt:obj.comment||""},
-      {sh:obj.sh2,sm:obj.sm2,eh:obj.eh2,em:obj.em2,cmt:obj.comment2||""},
-      {sh:obj.sh3,sm:obj.sm3,eh:obj.eh3,em:obj.em3,cmt:obj.comment3||""}
-    ];
-    slots_data.forEach(function(sd, i) {
-      if (!sd.sh && !sd.eh) return;
-      var s=toMin(getTV(sd.sh||"",sd.sm||"")), e=toMin(getTV(sd.eh||"",sd.em||""));
-      if (s===null||e===null||e<=s) return;
-      var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
-      var c = slotColors ? slotColors[i] : color;
-      var op = i===0 ? "" : ";opacity:.85";
-      bar += '<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+c+op+'" '+
-        'data-uid="'+uid+(i>0?"_"+(i+1):"")+'" data-label="'+uid+'" data-qui="" '+
-        'data-start="'+getTV(sd.sh||"",sd.sm||"")+'" data-end="'+getTV(sd.eh||"",sd.em||"")+'" '+
-        'data-color="'+c+'" data-cmt="'+encCmt(sd.cmt)+'"></div>';
-    });
-    return bar;
-  }
 
   var targetDefs=[
     {key:"grand_t1",label:"TARGET (Grand T1)",color:"#c0392b"},
@@ -784,37 +774,21 @@ function renderGantt(date, machine, data) {
     var start=getTV(t.sh||"",t.sm||""), end=getTV(t.eh||"",t.em||"");
     var uid="target_"+td.key;
     allTasks[uid]={machine:td.label,qui:"--",start:start,end:end,color:td.color};
-    var slotColors=[td.color,"#fa8072","#fa8072"];
-    var bar=makeBars(t, uid, td.color, slotColors);
-    if (start||end) {
-      // Ajouter label dans la barre principale
-      var s=toMin(start),e=toMin(end);
-      if(s!==null&&e!==null&&e>s){
-        var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
-        bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+td.color+'" data-uid="'+uid+'" data-label="'+td.label+'" data-qui="--" data-start="'+start+'" data-end="'+end+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment||"")+'">'+td.label.replace("TARGET ","")+'</div>';
-        if(t.sh2||t.eh2){
-          var s2=toMin(getTV(t.sh2||"",t.sm2||"")), e2=toMin(getTV(t.eh2||"",t.em2||""));
-          if(s2!==null&&e2!==null&&e2>s2){
-            var lp2=((s2-minT)/total)*100, wp2=((e2-s2)/total)*100;
-            bar+='<div class="gantt-bar" style="left:'+lp2+'%;width:'+wp2+'%;background:#fa8072;" data-uid="'+uid+'_2" data-label="'+td.label+' (2)" data-qui="--" data-start="'+getTV(t.sh2||"",t.sm2||"")+'" data-end="'+getTV(t.eh2||"",t.em2||"")+'" data-color="#fa8072" data-cmt="'+encCmt(t.comment2||"")+'"></div>';
-          }
-        }
-        if(t.sh3||t.eh3){
-          var s3=toMin(getTV(t.sh3||"",t.sm3||"")), e3=toMin(getTV(t.eh3||"",t.em3||""));
-          if(s3!==null&&e3!==null&&e3>s3){
-            var lp3=((s3-minT)/total)*100, wp3=((e3-s3)/total)*100;
-            bar+='<div class="gantt-bar" style="left:'+lp3+'%;width:'+wp3+'%;background:#fa8072;opacity:.7;" data-uid="'+uid+'_3" data-label="'+td.label+' (3)" data-qui="--" data-start="'+getTV(t.sh3||"",t.sm3||"")+'" data-end="'+getTV(t.eh3||"",t.em3||"")+'" data-color="#fa8072" data-cmt="'+encCmt(t.comment3||"")+'"></div>';
-          }
-        }
-        if(t.sh4||t.eh4){
-          var s4=toMin(getTV(t.sh4||"",t.sm4||"")), e4=toMin(getTV(t.eh4||"",t.em4||""));
-          if(s4!==null&&e4!==null&&e4>s4){
-            var lp4=((s4-minT)/total)*100, wp4=((e4-s4)/total)*100;
-            bar+='<div class="gantt-bar" style="left:'+lp4+'%;width:'+wp4+'%;background:#fa8072;opacity:.55;" data-uid="'+uid+'_4" data-label="'+td.label+' (4)" data-qui="--" data-start="'+getTV(t.sh4||"",t.sm4||"")+'" data-end="'+getTV(t.eh4||"",t.em4||"")+'" data-color="#fa8072" data-cmt="'+encCmt(t.comment4||"")+'"></div>';
-          }
+    var bar="";
+    var s=toMin(start), e=toMin(end);
+    if(s!==null&&e!==null&&e>s){
+      var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
+      bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+td.color+'" data-uid="'+uid+'" data-label="'+td.label+'" data-qui="--" data-start="'+start+'" data-end="'+end+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment||"")+'">'+td.label.replace("TARGET ","")+'</div>';
+    }
+    [[t.sh2,t.sm2,t.eh2,t.em2,t.comment2,"_2"],[t.sh3,t.sm3,t.eh3,t.em3,t.comment3,"_3"],[t.sh4,t.sm4,t.eh4,t.em4,t.comment4,"_4"]].forEach(function(sl){
+      if(sl[0]||sl[2]){
+        var sx=toMin(getTV(sl[0]||"",sl[1]||"")), ex=toMin(getTV(sl[2]||"",sl[3]||""));
+        if(sx!==null&&ex!==null&&ex>sx){
+          var lpx=((sx-minT)/total)*100, wpx=((ex-sx)/total)*100;
+          bar+='<div class="gantt-bar" style="left:'+lpx+'%;width:'+wpx+'%;background:#fa8072;opacity:.8;" data-uid="'+uid+sl[5]+'" data-label="'+td.label+'" data-qui="--" data-start="'+getTV(sl[0]||"",sl[1]||"")+'" data-end="'+getTV(sl[2]||"",sl[3]||"")+'" data-color="#fa8072" data-cmt="'+encCmt(sl[4]||"")+'"></div>';
         }
       }
-    }
+    });
     var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
     h+='<tr class="target-section'+(isSelA?" sel-a":isSelB?" sel-b":"")+'" data-uid="'+uid+'" style="background:'+td.color+'22;">'+
       '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
@@ -828,74 +802,32 @@ function renderGantt(date, machine, data) {
   });
   h+='<tr><td colspan="'+(5+slots+1)+'" style="background:#e8edf5;height:4px;"></td></tr>';
 
-  // Taches fixes + extras bout chaud triees
-  var allRows=[];
-  TASKS_RONDELLE.forEach(function(task,idx){
-    var t=tasks[task.id]||{}, start=getTV(t.sh||"",t.sm||"");
-    allRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:toMin(start),group:"boutchaud"});
-  });
-  extrasBoutChaud.forEach(function(et,idx){
-    var start=getTV(et.sh||"",et.sm||"");
-    allRows.push({type:"extra",et:et,idx:idx,sMin:toMin(start),group:"boutchaud"});
-  });
-  allRows.sort(function(a,b){ if(a.sMin===null)return 1; if(b.sMin===null)return -1; return a.sMin-b.sMin; });
-
-  // Bout froid
-  var bfRows=[];
-  TASKS_BOUT_FROID.forEach(function(task,idx){
-    var t=tasks[task.id]||{}, start=getTV(t.sh||"",t.sm||"");
-    bfRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:toMin(start),group:"boutfroid"});
-  });
-  extrasBoutFroid.forEach(function(et,idx){
-    var start=getTV(et.sh||"",et.sm||"");
-    bfRows.push({type:"extra",et:et,idx:idx,sMin:toMin(start),group:"boutfroid"});
-  });
-  bfRows.sort(function(a,b){ if(a.sMin===null)return 1; if(b.sMin===null)return -1; return a.sMin-b.sMin; });
-
-  function renderRow(rowData, rowIdx) {
-    var uid, color, start, end, bar="", cmts=[];
+  function renderRow(rowData, rowIdx, isBF) {
+    var uid, color, start, end, bar="", cmts=[], t={}, task={}, quiDisplay="";
     if (rowData.type==="fixed") {
-      var task=rowData.task, t=rowData.t, idx=rowData.idx;
-      color = rowData.group==="boutfroid" ? task.color : TASK_COLORS[idx%TASK_COLORS.length];
+      task=rowData.task; t=rowData.t;
+      color = isBF ? task.color : TASK_COLORS[rowData.idx%TASK_COLORS.length];
       uid = "task_"+task.id;
       start=getTV(t.sh||"",t.sm||""); end=getTV(t.eh||"",t.em||"");
-      var quiDisplay=ganttQuiOverrides[uid]||t.qui||task.qui;
+      quiDisplay=ganttQuiOverrides[uid]||t.qui||task.qui;
       allTasks[uid]={machine:task.machine,qui:quiDisplay,start:start,end:end,color:color};
       cmts=[t.comment,t.comment2,t.comment3,t.comment4];
-
       var s=toMin(start), e=toMin(end);
       if(s!==null&&e!==null&&e>s){
         var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
         bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+color+'" data-uid="'+uid+'" data-label="'+task.machine+'" data-qui="'+quiDisplay+'" data-start="'+start+'" data-end="'+end+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment||"")+'"></div>';
       }
-      if(t.sh2||t.eh2){
-        var s2=toMin(getTV(t.sh2||"",t.sm2||"")), e2=toMin(getTV(t.eh2||"",t.em2||""));
-        if(s2!==null&&e2!==null&&e2>s2){
-          var lp2=((s2-minT)/total)*100, wp2=((e2-s2)/total)*100;
-          bar+='<div class="gantt-bar" style="left:'+lp2+'%;width:'+wp2+'%;background:'+color+';opacity:.75;" data-uid="'+uid+'_2" data-label="'+task.machine+' (2)" data-qui="'+quiDisplay+'" data-start="'+getTV(t.sh2||"",t.sm2||"")+'" data-end="'+getTV(t.eh2||"",t.em2||"")+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment2||"")+'"></div>';
-        }
-      }
-      if(t.sh3||t.eh3){
-        var s3=toMin(getTV(t.sh3||"",t.sm3||"")), e3=toMin(getTV(t.eh3||"",t.em3||""));
-        if(s3!==null&&e3!==null&&e3>s3){
-          var lp3=((s3-minT)/total)*100, wp3=((e3-s3)/total)*100;
-          bar+='<div class="gantt-bar" style="left:'+lp3+'%;width:'+wp3+'%;background:'+color+';opacity:.6;" data-uid="'+uid+'_3" data-label="'+task.machine+' (3)" data-qui="'+quiDisplay+'" data-start="'+getTV(t.sh3||"",t.sm3||"")+'" data-end="'+getTV(t.eh3||"",t.em3||"")+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment3||"")+'"></div>';
-        }
-      }
-      if(t.sh4||t.eh4){
-        var s4t=toMin(getTV(t.sh4||"",t.sm4||"")), e4t=toMin(getTV(t.eh4||"",t.em4||""));
-        if(s4t!==null&&e4t!==null&&e4t>s4t){
-          var lp4t=((s4t-minT)/total)*100, wp4t=((e4t-s4t)/total)*100;
-          bar+='<div class="gantt-bar" style="left:'+lp4t+'%;width:'+wp4t+'%;background:'+color+';opacity:.5;" data-uid="'+uid+'_4" data-label="'+task.machine+' (4)" data-qui="'+quiDisplay+'" data-start="'+getTV(t.sh4||'',t.sm4||'')+'" data-end="'+getTV(t.eh4||'',t.em4||'')+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment4||'')+'"></div>';
-        }
-      }
-
+      [[t.sh2,t.sm2,t.eh2,t.em2,t.comment2,"_2",.75],[t.sh3,t.sm3,t.eh3,t.em3,t.comment3,"_3",.6],[t.sh4,t.sm4,t.eh4,t.em4,t.comment4,"_4",.5]].forEach(function(sl){
+        if(sl[0]||sl[2]){var sx=toMin(getTV(sl[0]||"",sl[1]||"")),ex=toMin(getTV(sl[2]||"",sl[3]||""));if(sx!==null&&ex!==null&&ex>sx){var lpx=((sx-minT)/total)*100,wpx=((ex-sx)/total)*100;bar+='<div class="gantt-bar" style="left:'+lpx+'%;width:'+wpx+'%;background:'+color+';opacity:'+sl[6]+';" data-uid="'+uid+sl[5]+'" data-label="'+task.machine+'" data-qui="'+quiDisplay+'" data-start="'+getTV(sl[0]||"",sl[1]||"")+'" data-end="'+getTV(sl[2]||"",sl[3]||"")+'" data-color="'+color+'" data-cmt="'+encCmt(sl[4]||"")+'"></div>';}}
+      });
       var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
       var rowCls=isSelA?"sel-a":isSelB?"sel-b":rowIdx%2===0?"odd":"even";
-      if(rowData.group==="boutfroid") rowCls+=" boutfroid-row";
+      if(isBF) rowCls+=" boutfroid-row";
+      var machineName = task.machine;
+      if (isBF && task.labelDebut) machineName += '<div style="font-size:10px;color:#6c6c70;font-weight:400;margin-top:2px;">'+task.labelDebut+' — '+task.labelFin+'</div>';
       h+='<tr class="'+rowCls+'" data-uid="'+uid+'">'+
         '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
-        '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+task.machine+(task.labelDebut?'<div style="font-size:10px;color:#6c6c70;font-weight:400;margin-top:2px;">'+task.labelDebut+' — '+task.labelFin+'</div>':'')+'</td>'+
+        '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+machineName+'</td>'+
         '<td class="info who-cell who-editable" data-uid="'+uid+'" title="Modifier">'+quiDisplay+' [mod]</td>'+
         '<td class="info time-cell">'+(start||"--")+'</td>'+
         '<td class="info time-cell">'+(end||"--")+'</td>'+
@@ -903,43 +835,23 @@ function renderGantt(date, machine, data) {
         fmtCmtCell(cmts,color)+
         '</tr>';
     } else {
-      var et=rowData.et, idx=rowData.idx;
-      color = et.color || TASK_COLORS[(TASKS_RONDELLE.length+idx)%TASK_COLORS.length];
-      uid = "task_extra_"+rowData.group+"_"+idx;
+      var et=rowData.et;
+      color=et.color||TASK_COLORS[(TASKS_RONDELLE.length+rowData.idx)%TASK_COLORS.length];
+      uid="extra_"+rowData.idx+(isBF?"_bf":"_bc");
       start=getTV(et.sh||"",et.sm||""); end=getTV(et.eh||"",et.em||"");
       allTasks[uid]={machine:et.machine||"Extra",qui:et.qui||"",start:start,end:end,color:color};
       cmts=[et.comment,et.comment2,et.comment3,et.comment4];
-
       var s=toMin(start), e=toMin(end);
       if(s!==null&&e!==null&&e>s){
         var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
         bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+color+'" data-uid="'+uid+'" data-label="'+(et.machine||"Extra")+'" data-qui="'+(et.qui||"")+'" data-start="'+start+'" data-end="'+end+'" data-color="'+color+'" data-cmt="'+encCmt(et.comment||"")+'"></div>';
       }
-      if(et.sh2||et.eh2){
-        var s2=toMin(getTV(et.sh2||"",et.sm2||"")), e2=toMin(getTV(et.eh2||"",et.em2||""));
-        if(s2!==null&&e2!==null&&e2>s2){
-          var lp2=((s2-minT)/total)*100, wp2=((e2-s2)/total)*100;
-          bar+='<div class="gantt-bar" style="left:'+lp2+'%;width:'+wp2+'%;background:'+color+';opacity:.75;" data-uid="'+uid+'_2" data-label="'+(et.machine||"Extra")+' (2)" data-qui="'+(et.qui||"")+'" data-start="'+getTV(et.sh2||"",et.sm2||"")+'" data-end="'+getTV(et.eh2||"",et.em2||"")+'" data-color="'+color+'" data-cmt="'+encCmt(et.comment2||"")+'"></div>';
-        }
-      }
-      if(et.sh3||et.eh3){
-        var s3=toMin(getTV(et.sh3||"",et.sm3||"")), e3=toMin(getTV(et.eh3||"",et.em3||""));
-        if(s3!==null&&e3!==null&&e3>s3){
-          var lp3=((s3-minT)/total)*100, wp3=((e3-s3)/total)*100;
-          bar+='<div class="gantt-bar" style="left:'+lp3+'%;width:'+wp3+'%;background:'+color+';opacity:.6;" data-uid="'+uid+'_3" data-label="'+(et.machine||"Extra")+' (3)" data-qui="'+(et.qui||"")+'" data-start="'+getTV(et.sh3||"",et.sm3||"")+'" data-end="'+getTV(et.eh3||"",et.em3||"")+'" data-color="'+color+'" data-cmt="'+encCmt(et.comment3||"")+'"></div>';
-        }
-      }
-      if(et.sh4||et.eh4){
-        var s4e=toMin(getTV(et.sh4||"",et.sm4||"")), e4e=toMin(getTV(et.eh4||"",et.em4||""));
-        if(s4e!==null&&e4e!==null&&e4e>s4e){
-          var lp4e=((s4e-minT)/total)*100, wp4e=((e4e-s4e)/total)*100;
-          bar+='<div class="gantt-bar" style="left:'+lp4e+'%;width:'+wp4e+'%;background:'+color+';opacity:.5;" data-uid="'+uid+'_4" data-label="'+(et.machine||'Extra')+' (4)" data-qui="'+(et.qui||'')+'" data-start="'+getTV(et.sh4||'',et.sm4||'')+'" data-end="'+getTV(et.eh4||'',et.em4||'')+'" data-color="'+color+'" data-cmt="'+encCmt(et.comment4||'')+'"></div>';
-        }
-      }
-
+      [[et.sh2,et.sm2,et.eh2,et.em2,et.comment2,"_2",.75],[et.sh3,et.sm3,et.eh3,et.em3,et.comment3,"_3",.6],[et.sh4,et.sm4,et.eh4,et.em4,et.comment4,"_4",.5]].forEach(function(sl){
+        if(sl[0]||sl[2]){var sx=toMin(getTV(sl[0]||"",sl[1]||"")),ex=toMin(getTV(sl[2]||"",sl[3]||""));if(sx!==null&&ex!==null&&ex>sx){var lpx=((sx-minT)/total)*100,wpx=((ex-sx)/total)*100;bar+='<div class="gantt-bar" style="left:'+lpx+'%;width:'+wpx+'%;background:'+color+';opacity:'+sl[6]+';" data-uid="'+uid+sl[5]+'" data-label="'+(et.machine||"Extra")+'" data-qui="'+(et.qui||"")+'" data-start="'+getTV(sl[0]||"",sl[1]||"")+'" data-end="'+getTV(sl[2]||"",sl[3]||"")+'" data-color="'+color+'" data-cmt="'+encCmt(sl[4]||"")+'"></div>';}}
+      });
       var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
       var rowCls=isSelA?"sel-a":isSelB?"sel-b":rowIdx%2===0?"odd":"even";
-      if(rowData.group==="boutfroid") rowCls+=" boutfroid-row";
+      if(isBF) rowCls+=" boutfroid-row";
       h+='<tr class="'+rowCls+'" data-uid="'+uid+'">'+
         '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
         '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+(et.machine||"Extra")+'</td>'+
@@ -952,10 +864,30 @@ function renderGantt(date, machine, data) {
     }
   }
 
-  allRows.forEach(function(rowData, rowIdx){ renderRow(rowData, rowIdx); });
+  // Bout Chaud
+  var bcRows=[];
+  TASKS_RONDELLE.forEach(function(task,idx){
+    var t=tasks[task.id]||{};
+    bcRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:toMin(getTV(t.sh||"",t.sm||""))});
+  });
+  extrasBoutChaud.forEach(function(et,idx){
+    bcRows.push({type:"extra",et:et,idx:idx,sMin:toMin(getTV(et.sh||"",et.sm||""))});
+  });
+  bcRows.sort(function(a,b){ if(a.sMin===null)return 1; if(b.sMin===null)return -1; return a.sMin-b.sMin; });
+  bcRows.forEach(function(r,i){ renderRow(r,i,false); });
 
+  // Bout Froid
   h+='<tr><td colspan="'+(5+slots+1)+'" style="background:'+BOUT_FROID_COLOR+';color:#fff;font-weight:700;font-size:12px;padding:7px 12px;">BOUT FROID</td></tr>';
-  bfRows.forEach(function(rowData, rowIdx){ renderRow(rowData, rowIdx); });
+  var bfRows=[];
+  TASKS_BOUT_FROID.forEach(function(task,idx){
+    var t=tasks[task.id]||{};
+    bfRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:toMin(getTV(t.sh||"",t.sm||""))});
+  });
+  extrasBoutFroid.forEach(function(et,idx){
+    bfRows.push({type:"extra",et:et,idx:idx,sMin:toMin(getTV(et.sh||"",et.sm||""))});
+  });
+  bfRows.sort(function(a,b){ if(a.sMin===null)return 1; if(b.sMin===null)return -1; return a.sMin-b.sMin; });
+  bfRows.forEach(function(r,i){ renderRow(r,i,true); });
 
   h+='</table>';
   container.innerHTML=h;
@@ -977,8 +909,9 @@ function renderGantt(date, machine, data) {
   renderJustifications();
 }
 
-// ── TOOLTIP ───────────────────────────────────────────────────────────────────
-
+// ================================================================
+// 13. TOOLTIP
+// ================================================================
 function showTT(e,label,qui,start,end,color,comment){
   var TT=document.getElementById("tooltip");
   document.getElementById("tt-dot").style.background=color||"#3b82f6";
@@ -1006,8 +939,9 @@ function showTT(e,label,qui,start,end,color,comment){
 }
 function hideTT(){ document.getElementById("tooltip").classList.remove("visible"); }
 
-// ── SELECTION ─────────────────────────────────────────────────────────────────
-
+// ================================================================
+// 14. SELECTION / COMPARAISON
+// ================================================================
 function toggleSelect(id){
   var idx=selectedIds.indexOf(id);
   if(idx>-1) selectedIds.splice(idx,1);
@@ -1052,8 +986,9 @@ function doCompare(){
 }
 function closeCompare(){ document.getElementById("cmp-result").classList.remove("visible"); }
 
-// ── JUSTIFICATION ─────────────────────────────────────────────────────────────
-
+// ================================================================
+// 15. JUSTIFICATION
+// ================================================================
 function openJustifDialog(){
   if(selectedIds.length<1) return;
   var existing=document.getElementById("justif-dialog"); if(existing){existing.remove();return;}
@@ -1100,8 +1035,9 @@ function renderJustifications(){
   });
 }
 
-// ── QUI EDITABLE ──────────────────────────────────────────────────────────────
-
+// ================================================================
+// 16. QUI EDITABLE
+// ================================================================
 function showQuiEditor(cell,uid,current){
   var existing=document.getElementById("qui-editor"); if(existing) existing.remove();
   var editor=document.createElement("div"); editor.id="qui-editor"; editor.className="qui-editor";
@@ -1113,28 +1049,17 @@ function showQuiEditor(cell,uid,current){
   function applyEdit(){
     var val=input.value.trim(); if(!val){editor.remove();return;}
     ganttQuiOverrides[uid]=val; cell.textContent=val+" [mod]"; cell.dataset.uid=uid;
-    var date=document.getElementById("f-date").value, machine=document.getElementById("f-machine-name").value.trim();
-    var ex=Object.entries(allSessions).find(function(e){return e[1].date===date&&e[1].machine===machine;});
-    if(!ex) ex=Object.entries(allSessions).find(function(e){return true;});
-    if(ex){
-      var sessId=ex[0], session=JSON.parse(JSON.stringify(ex[1]));
-      var taskId=uid.replace("task_","");
-      if(!session.ganttData) session.ganttData={};
-      if(!session.ganttData.tasks) session.ganttData.tasks={};
-      if(!session.ganttData.tasks[taskId]) session.ganttData.tasks[taskId]={};
-      session.ganttData.tasks[taskId].qui=val;
-      set(ref(db,"sessions/"+sessId),session);
-      showToast("Responsable mis a jour !","#1a3a6b");
-    }
     editor.remove();
+    showToast("Responsable mis a jour !","#1a3a6b");
   }
   saveBtn.addEventListener("click",applyEdit);
   input.addEventListener("keydown",function(e){if(e.key==="Enter")applyEdit();if(e.key==="Escape")editor.remove();});
   cancelBtn.addEventListener("click",function(){editor.remove();});
 }
 
-// ── EXPORT ────────────────────────────────────────────────────────────────────
-
+// ================================================================
+// 17. EXPORT
+// ================================================================
 function initExportButtons(){
   document.getElementById("export-toggle-btn").addEventListener("click",function(e){
     e.stopPropagation();
@@ -1182,6 +1107,11 @@ function exportToExcel(dateFrom,dateTo){
       var dur=toMin(start)!==null&&toMin(end)!==null?toMin(end)-toMin(start):"";
       rows.push([dateStr,jourStr,machine,"Taches",task.machine,t.qui||task.qui,start,end,dur,(t.comment||"").replace(/\n/g," | ")]);
     });
+    TASKS_BOUT_FROID.forEach(function(task){
+      var t=tasks[task.id]||{},start=getTV(t.sh||"",t.sm||""),end=getTV(t.eh||"",t.em||"");
+      var dur=toMin(start)!==null&&toMin(end)!==null?toMin(end)-toMin(start):"";
+      rows.push([dateStr,jourStr,machine,"Bout Froid",task.machine,t.qui||task.qui,start,end,dur,(t.comment||"").replace(/\n/g," | ")]);
+    });
     extras.forEach(function(et){
       var start=getTV(et.sh||"",et.sm||""),end=getTV(et.eh||"",et.em||"");
       var dur=toMin(start)!==null&&toMin(end)!==null?toMin(end)-toMin(start):"";
@@ -1196,8 +1126,9 @@ function exportToExcel(dateFrom,dateTo){
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
-// ── TOAST ─────────────────────────────────────────────────────────────────────
-
+// ================================================================
+// 18. TOAST
+// ================================================================
 function showToast(message,color){
   var ex=document.getElementById("toast-notif"); if(ex) ex.remove();
   var toast=document.createElement("div"); toast.id="toast-notif"; toast.textContent=message;
