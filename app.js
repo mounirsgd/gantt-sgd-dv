@@ -574,11 +574,17 @@ async function saveSession() {
     await set(ref(db,"sessions/"+sessId+"/ganttData/targets/"+tkey), data.targets[tkey]||{});
   }
 
-  // Sauvegarder chaque tache individuellement
-  // Ce que l utilisateur a saisi est la verite - vide ou rempli
+  // Sauvegarder uniquement les taches qui ont des horaires remplis
+  // Les taches vides ne sont jamais ecrasees dans Firebase
+  // Cela permet a deux PC de remplir des sections differentes sans conflit
   var allTaskIds = TASKS_RONDELLE.map(function(t){return t.id;}).concat(TASKS_BOUT_FROID.map(function(t){return t.id;}));
   for (var taskId of allTaskIds) {
-    await set(ref(db,"sessions/"+sessId+"/ganttData/tasks/"+taskId), data.tasks[taskId]||{});
+    var localTask = data.tasks[taskId] || {};
+    if (localTask.sh || localTask.eh || localTask.comment) {
+      // Cette tache a ete remplie sur ce PC -> sauvegarder
+      await set(ref(db,"sessions/"+sessId+"/ganttData/tasks/"+taskId), localTask);
+    }
+    // Si vide -> ne pas toucher ce qui est deja dans Firebase
   }
 
   // Sauvegarder les extras
