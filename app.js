@@ -587,7 +587,10 @@ async function loadHistorySession(id) {
   var d = snap.val(); if (!d) return;
   document.getElementById("f-date").value = d.date||"";
   document.getElementById("f-machine-name").value = d.machine||"";
-  ganttData = d.ganttData || { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
+  ganttData = d.ganttData || {};
+  ganttData.targets = ganttData.targets || {grand_t1:{},petit_t1:{},rondelle:{}};
+  ganttData.tasks = ganttData.tasks || {};
+  ganttData.extraTasks = ganttData.extraTasks || [];
   currentSessId = id;
   buildForm();
   renderGantt(d.date, d.machine, ganttData);
@@ -599,7 +602,10 @@ async function editHistorySession(id) {
   var d = snap.val(); if (!d) return;
   document.getElementById("f-date").value = d.date||"";
   document.getElementById("f-machine-name").value = d.machine||"";
-  ganttData = d.ganttData || { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
+  ganttData = d.ganttData || {};
+  ganttData.targets = ganttData.targets || {grand_t1:{},petit_t1:{},rondelle:{}};
+  ganttData.tasks = ganttData.tasks || {};
+  ganttData.extraTasks = ganttData.extraTasks || [];
   currentSessId = id;
   buildForm();
   document.querySelector(".info-sec").scrollIntoView({behavior:"smooth"});
