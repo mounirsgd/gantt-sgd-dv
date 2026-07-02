@@ -2,9 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getDatabase, ref, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-// ================================================================
-// 1. CONFIGURATION FIREBASE
-// ================================================================
 const firebaseConfig = {
   apiKey: "AIzaSyDi9y4PmgvUHvnxDNu4kwpRvB9b-h7Dquk",
   authDomain: "gantt-sgd.firebaseapp.com",
@@ -18,9 +15,6 @@ const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getDatabase(firebaseApp);
 
-// ================================================================
-// 2. CONSTANTES
-// ================================================================
 const TASK_COLORS = [
   "#3b82f6","#8b5cf6","#06b6d4","#22c55e","#f97316",
   "#ec4899","#14b8a6","#a855f7","#0ea5e9","#84cc16",
@@ -50,10 +44,8 @@ const TASKS_BOUT_FROID = [
 const BOUT_FROID_COLOR = "#2e86ab";
 const MAX_SLOTS = 4;
 const HISTORY_PAGE_SIZE = 5;
+const ALL_TASK_IDS = TASKS_RONDELLE.map(function(t){return t.id;}).concat(TASKS_BOUT_FROID.map(function(t){return t.id;}));
 
-// ================================================================
-// 3. VARIABLES GLOBALES
-// ================================================================
 let allSessions = {};
 let ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
 let selectedIds = [];
@@ -62,10 +54,9 @@ let historyPage = 0;
 let ganttQuiOverrides = {};
 let justifications = [];
 let appReady = false;
+let currentSessId = null;
 
-// ================================================================
-// 4. AUTH
-// ================================================================
+// ── AUTH ──────────────────────────────────────────────────────────────────────
 document.getElementById("login-btn").addEventListener("click", async function() {
   var email = document.getElementById("login-email").value.trim();
   var password = document.getElementById("login-pass").value.trim();
@@ -91,8 +82,8 @@ document.getElementById("logout-btn").addEventListener("click", function() {
   signOut(auth); appReady = false;
   document.getElementById("app").style.display = "none";
   document.getElementById("login-screen").style.display = "flex";
-  var btn = document.getElementById("login-btn");
-  btn.textContent = "Se connecter"; btn.disabled = false;
+  document.getElementById("login-btn").textContent = "Se connecter";
+  document.getElementById("login-btn").disabled = false;
   document.getElementById("login-error").style.display = "none";
 });
 
@@ -118,46 +109,36 @@ function showLoginError(msg) {
 
 function translateAuthError(code) {
   var m = {
-    "auth/invalid-email": "Identifiant invalide.",
-    "auth/user-not-found": "Identifiant introuvable.",
-    "auth/wrong-password": "Mot de passe incorrect.",
-    "auth/invalid-credential": "Identifiant ou mot de passe incorrect.",
-    "auth/too-many-requests": "Trop de tentatives.",
-    "auth/network-request-failed": "Erreur reseau."
+    "auth/invalid-email":"Identifiant invalide.",
+    "auth/user-not-found":"Identifiant introuvable.",
+    "auth/wrong-password":"Mot de passe incorrect.",
+    "auth/invalid-credential":"Identifiant ou mot de passe incorrect.",
+    "auth/too-many-requests":"Trop de tentatives.",
+    "auth/network-request-failed":"Erreur reseau."
   };
   return m[code] || "Erreur : " + code;
 }
 
-// ================================================================
-// 5. INIT
-// ================================================================
+// ── INIT ──────────────────────────────────────────────────────────────────────
 function initApp() {
-  ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
-  selectedIds = []; ganttQuiOverrides = {}; justifications = [];
-
+  resetState();
   var dateField = document.getElementById("f-date");
   if (dateField && !dateField.value) dateField.value = new Date().toISOString().slice(0,10);
   setInterval(function() {
     var d = document.getElementById("f-date");
     if (d && !d.value) d.value = new Date().toISOString().slice(0,10);
   }, 60000);
-
-  document.getElementById("f-machine-name").value = "";
-  document.getElementById("gantt-container").innerHTML = '<div class="empty-gantt">Remplissez le formulaire et enregistrez pour afficher le Gantt</div>';
-
   buildForm();
 
   onValue(ref(db, "sessions"), function(snap) {
     allSessions = snap.val() || {};
     renderHistory(allSessions);
     document.getElementById("sync-status").textContent = "Connecte";
+    // Mettre a jour le Gantt si une session est en cours d affichage
     var gs = document.getElementById("gantt-section");
-    if (gs && gs.style.display !== "none") {
-      var sessId = window._editingSessionId;
-      if (sessId && allSessions[sessId] && allSessions[sessId].ganttData) {
-        var s = allSessions[sessId];
-        renderGantt(s.date, s.machine, s.ganttData);
-      }
+    if (gs && gs.style.display !== "none" && currentSessId && allSessions[currentSessId]) {
+      var s = allSessions[currentSessId];
+      renderGantt(s.date, s.machine, s.ganttData || {});
     }
   });
 
@@ -169,27 +150,6 @@ function initApp() {
   document.getElementById("do-justif-btn").addEventListener("click", openJustifDialog);
   initExportButtons();
 
-  // Creer session automatiquement quand machine est remplie
-  document.getElementById("f-machine-name").addEventListener("blur", async function() {
-    var machine = this.value.trim();
-    var date = document.getElementById("f-date").value;
-    if (machine && date && !window._editingSessionId) {
-      var existing = Object.entries(allSessions).find(function(e) { return e[1].date===date && e[1].machine===machine; });
-      if (existing) {
-        window._editingSessionId = existing[0];
-      } else {
-        var sessId = "sess_"+Date.now();
-        var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
-        await set(ref(db,"sessions/"+sessId), {
-          date:date, machine:machine,
-          ganttData:{ targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] },
-          title:machine+" - "+dl, savedAt:Date.now()
-        });
-        window._editingSessionId = sessId;
-      }
-    }
-  });
-
   var TT = document.getElementById("tooltip");
   document.addEventListener("mousemove", function(e) {
     if (!TT.classList.contains("visible")) return;
@@ -200,9 +160,15 @@ function initApp() {
   });
 }
 
-// ================================================================
-// 6. FORMULAIRE
-// ================================================================
+function resetState() {
+  ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
+  selectedIds = []; ganttQuiOverrides = {}; justifications = [];
+  currentSessId = null;
+  document.getElementById("f-machine-name").value = "";
+  document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
+}
+
+// ── FORMULAIRE ────────────────────────────────────────────────────────────────
 function buildForm() {
   var container = document.getElementById("form-sections");
   container.innerHTML = "";
@@ -216,12 +182,9 @@ function buildForm() {
 
   var tasksSec = document.createElement("div");
   tasksSec.className = "tasks-sec"; tasksSec.style.borderColor = "#1a3a6b";
-  var tasksHd = document.createElement("div");
-  tasksHd.className = "tasks-sec-hd"; tasksHd.style.background = "#1a3a6b";
-  tasksHd.textContent = "Taches detaillees";
-  tasksSec.appendChild(tasksHd);
-  tasksSec._taskFields = {};
-  tasksSec._extraFields = [];
+  var tasksHd = document.createElement("div"); tasksHd.className = "tasks-sec-hd"; tasksHd.style.background = "#1a3a6b";
+  tasksHd.textContent = "Taches detaillees"; tasksSec.appendChild(tasksHd);
+  tasksSec._taskFields = {}; tasksSec._extraFields = [];
 
   TASKS_RONDELLE.forEach(function(task, idx) {
     var tv = ganttData.tasks[task.id] || {};
@@ -230,8 +193,7 @@ function buildForm() {
 
   var bfSep = document.createElement("div");
   bfSep.style.cssText = "background:"+BOUT_FROID_COLOR+";color:#fff;font-size:12px;font-weight:700;padding:8px 12px;letter-spacing:.5px;";
-  bfSep.textContent = "BOUT FROID";
-  tasksSec.appendChild(bfSep);
+  bfSep.textContent = "BOUT FROID"; tasksSec.appendChild(bfSep);
 
   TASKS_BOUT_FROID.forEach(function(task) {
     var tv = ganttData.tasks[task.id] || {};
@@ -240,8 +202,7 @@ function buildForm() {
   });
 
   (ganttData.extraTasks || []).forEach(function(et) {
-    var color = et.color || TASK_COLORS[Math.floor(Math.random()*TASK_COLORS.length)];
-    appendExtraTaskRow(tasksSec, et, color);
+    appendExtraTaskRow(tasksSec, et, et.color || TASK_COLORS[0]);
   });
 
   var addBtn = document.createElement("button");
@@ -256,10 +217,8 @@ function buildForm() {
     btnBC.textContent = "Bout Chaud";
     btnBC.style.cssText = "flex:1;padding:10px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;";
     btnBC.addEventListener("click", function() {
-      var idx = tasksSec._extraFields.length;
-      var color = TASK_COLORS[(TASKS_RONDELLE.length + idx) % TASK_COLORS.length];
-      appendExtraTaskRow(tasksSec, {group:"boutchaud"}, color);
-      popup.remove();
+      var color = TASK_COLORS[(TASKS_RONDELLE.length + tasksSec._extraFields.length) % TASK_COLORS.length];
+      appendExtraTaskRow(tasksSec, {group:"boutchaud"}, color); popup.remove();
     });
     var btnBF = document.createElement("button");
     btnBF.textContent = "Bout Froid";
@@ -267,8 +226,7 @@ function buildForm() {
     btnBF.addEventListener("click", function() {
       var bfColors = ["#f1c40f","#64748b","#795548","#2e86ab"];
       var idx = tasksSec._extraFields.filter(function(f){return f.group==="boutfroid";}).length;
-      appendExtraTaskRow(tasksSec, {group:"boutfroid"}, bfColors[idx%4]);
-      popup.remove();
+      appendExtraTaskRow(tasksSec, {group:"boutfroid"}, bfColors[idx%4]); popup.remove();
     });
     popup.appendChild(btnBC); popup.appendChild(btnBF);
     tasksSec.insertBefore(popup, addBtn);
@@ -331,87 +289,62 @@ function appendExtraTaskRow(sec, et, color) {
   sec.appendChild(row);
 }
 
-// ================================================================
-// 7. SYSTEME DE CRENEAUX
-// ================================================================
+// ── SYSTEME DE CRENEAUX ───────────────────────────────────────────────────────
 function buildSlotSystem(holder, container, savedSlots, labelDebut, labelFin) {
   holder._slots = [];
-  var slotsWrap = document.createElement("div");
-  slotsWrap.className = "task-row-times";
-
-  var addBtn = document.createElement("button");
-  addBtn.className = "btn-add-slot"; addBtn.textContent = "+";
-
-  var removeBtn = document.createElement("button");
-  removeBtn.className = "btn-add-slot"; removeBtn.textContent = "-";
-  removeBtn.style.background = "#e74c3c";
-  removeBtn.style.display = "none";
+  var slotsWrap = document.createElement("div"); slotsWrap.className = "task-row-times";
+  var addBtn = document.createElement("button"); addBtn.className = "btn-add-slot"; addBtn.textContent = "+";
+  var removeBtn = document.createElement("button"); removeBtn.className = "btn-add-slot"; removeBtn.textContent = "-";
+  removeBtn.style.background = "#e74c3c"; removeBtn.style.display = "none";
 
   function refreshBtns() {
-    var n = holder._slots.length;
-    addBtn.style.display = n >= MAX_SLOTS ? "none" : "";
-    removeBtn.style.display = n <= 1 ? "none" : "";
+    addBtn.style.display = holder._slots.length >= MAX_SLOTS ? "none" : "";
+    removeBtn.style.display = holder._slots.length <= 1 ? "none" : "";
   }
 
   function addSlot(sh, sm, eh, em, comment) {
     var n = holder._slots.length;
     if (n > 0) {
-      var sep = document.createElement("span");
-      sep.className = "slot-sep";
-      sep.style.cssText = "font-size:11px;color:#6c6c70;margin:0 4px;";
-      sep.textContent = "puis";
+      var sep = document.createElement("span"); sep.className = "slot-sep";
+      sep.style.cssText = "font-size:11px;color:#6c6c70;margin:0 4px;"; sep.textContent = "puis";
       slotsWrap.insertBefore(sep, addBtn);
     }
     var slotEl = makeSlotRow(sh||"", sm||"", eh||"", em||"", n===0?labelDebut:null, n===0?labelFin:null);
     slotsWrap.insertBefore(slotEl, addBtn);
     var cmtTA = makeTextarea("Commentaire creneau "+(n+1)+"...", comment||"");
-    var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap";
-    cmtWrap.appendChild(cmtTA);
+    var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap"; cmtWrap.appendChild(cmtTA);
     container.appendChild(cmtWrap);
     holder._slots.push({slotEl:slotEl, cmtTA:cmtTA, cmtWrap:cmtWrap});
     refreshBtns();
   }
 
-  function removeLastSlot() {
+  addBtn.addEventListener("click", function() { addSlot("","","",""); });
+  removeBtn.addEventListener("click", function() {
     if (holder._slots.length <= 1) return;
     var last = holder._slots.pop();
     last.slotEl.remove(); last.cmtWrap.remove();
     var seps = slotsWrap.querySelectorAll("span.slot-sep");
     if (seps.length > 0) seps[seps.length-1].remove();
     refreshBtns();
-  }
-
-  addBtn.addEventListener("click", function() { addSlot("","","",""); });
-  removeBtn.addEventListener("click", removeLastSlot);
-  slotsWrap.appendChild(addBtn);
-  slotsWrap.appendChild(removeBtn);
+  });
+  slotsWrap.appendChild(addBtn); slotsWrap.appendChild(removeBtn);
 
   if (savedSlots && savedSlots.length > 0) {
     savedSlots.forEach(function(s) { addSlot(s.sh, s.sm, s.eh, s.em, s.comment); });
-  } else {
-    addSlot("","","","");
-  }
+  } else { addSlot("","","",""); }
 
   return slotsWrap;
 }
 
 function readSlots(holder) {
-  var d = {};
-  if (!holder._slots) return d;
-  var keys = [
-    ["sh","sm","eh","em","comment"],
-    ["sh2","sm2","eh2","em2","comment2"],
-    ["sh3","sm3","eh3","em3","comment3"],
-    ["sh4","sm4","eh4","em4","comment4"]
-  ];
+  var d = {}; if (!holder._slots) return d;
+  var keys = [["sh","sm","eh","em","comment"],["sh2","sm2","eh2","em2","comment2"],["sh3","sm3","eh3","em3","comment3"],["sh4","sm4","eh4","em4","comment4"]];
   holder._slots.forEach(function(s, i) {
     if (i >= keys.length) return;
     var k = keys[i];
-    d[k[0]] = s.slotEl._sF._getH();
-    d[k[1]] = s.slotEl._sF._getM();
-    d[k[2]] = s.slotEl._eF._getH();
-    d[k[3]] = s.slotEl._eF._getM();
-    d[k[4]] = s.cmtTA.value;
+    d[k[0]]=s.slotEl._sF._getH(); d[k[1]]=s.slotEl._sF._getM();
+    d[k[2]]=s.slotEl._eF._getH(); d[k[3]]=s.slotEl._eF._getM();
+    d[k[4]]=s.cmtTA.value;
   });
   return d;
 }
@@ -424,19 +357,15 @@ function getSavedSlots(obj) {
   return slots;
 }
 
-// ================================================================
-// 8. CHAMPS TEMPS
-// ================================================================
+// ── CHAMPS TEMPS ──────────────────────────────────────────────────────────────
 function makeSlotRow(sh, sm, eh, em, labelDebut, labelFin) {
   var wrap = document.createElement("div"); wrap.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;";
   var sGrp = document.createElement("div"); sGrp.className = "time-group";
   var sLbl = document.createElement("label"); sLbl.textContent = labelDebut||"Debut";
-  var sF = makeTimeField(sh, sm);
-  sGrp.appendChild(sLbl); sGrp.appendChild(sF);
+  var sF = makeTimeField(sh, sm); sGrp.appendChild(sLbl); sGrp.appendChild(sF);
   var eGrp = document.createElement("div"); eGrp.className = "time-group";
   var eLbl = document.createElement("label"); eLbl.textContent = labelFin||"Fin";
-  var eF = makeTimeField(eh, em);
-  eGrp.appendChild(eLbl); eGrp.appendChild(eF);
+  var eF = makeTimeField(eh, em); eGrp.appendChild(eLbl); eGrp.appendChild(eF);
   var prev = document.createElement("span"); prev.className = "time-preview";
   function updPrev() {
     var s=getTV(sF._getH(),sF._getM()), e=getTV(eF._getH(),eF._getM());
@@ -457,16 +386,12 @@ function makeTimeField(hVal, mVal) {
     this.value = this.value.replace(/\D/g,"").slice(0,2);
     if (this.value.length===2) { if(parseInt(this.value)>23) this.value="23"; mInp.focus(); }
   });
-  hInp.addEventListener("blur", function() {
-    if (this.value !== "") { var v=parseInt(this.value); if(v>23)this.value="23"; if(v<0)this.value="0"; }
-  });
+  hInp.addEventListener("blur", function() { if (this.value !== "") { var v=parseInt(this.value); if(v>23)this.value="23"; if(v<0)this.value="0"; } });
   mInp.addEventListener("input", function() {
     this.value = this.value.replace(/\D/g,"").slice(0,2);
     if (this.value.length===2 && parseInt(this.value)>59) this.value="59";
   });
-  mInp.addEventListener("blur", function() {
-    if (this.value !== "") { var v=parseInt(this.value); if(v>59)this.value="59"; if(v<0)this.value="0"; }
-  });
+  mInp.addEventListener("blur", function() { if (this.value !== "") { var v=parseInt(this.value); if(v>59)this.value="59"; if(v<0)this.value="0"; } });
   wrap.appendChild(hInp); wrap.appendChild(sep); wrap.appendChild(mInp);
   wrap._getH = function() { return hInp.value; };
   wrap._getM = function() { return mInp.value; };
@@ -474,8 +399,7 @@ function makeTimeField(hVal, mVal) {
 }
 
 function makeTextarea(placeholder, value) {
-  var ta = document.createElement("textarea");
-  ta.placeholder = placeholder; ta.value = value||""; ta.rows = 1;
+  var ta = document.createElement("textarea"); ta.placeholder = placeholder; ta.value = value||""; ta.rows = 1;
   function resize() { ta.style.height="auto"; ta.style.height=ta.scrollHeight+"px"; }
   ta.addEventListener("input", resize); setTimeout(resize, 0);
   return ta;
@@ -492,19 +416,14 @@ function toMin(s) { if(!s||!s.includes(":")) return null; var p=s.split(":").map
 function fmtDur(s,e) { var d=e-s; if(d<=0) return "--"; var h=Math.floor(d/60),m=d%60; return h&&m?h+"h "+m+"min":h?h+"h":m+"min"; }
 function encCmt(str) { if(!str) return ""; return str.replace(/\\/g,"\\\\").replace(/'/g,"&#39;").replace(/"/g,"&quot;").replace(/\n/g,"\\n"); }
 
-// ================================================================
-// 9. COLLECTE
-// ================================================================
+// ── COLLECTE ──────────────────────────────────────────────────────────────────
 function collectData() {
   var container = document.getElementById("form-sections");
   var out = { targets:{}, tasks:{}, extraTasks:[] };
-
   ["grand_t1","petit_t1","rondelle"].forEach(function(key) {
     var sec = container.querySelector('[data-target-key="'+key+'"]');
-    if (!sec) return;
-    out.targets[key] = readSlots(sec);
+    if (sec) out.targets[key] = readSlots(sec);
   });
-
   var tasksSec = container._tasksSec;
   if (tasksSec) {
     TASKS_RONDELLE.forEach(function(task) {
@@ -519,34 +438,22 @@ function collectData() {
       var name = et.row._nameInp ? et.row._nameInp.value.trim() : "";
       if (!name) return;
       var d = readSlots(et.row);
-      d.machine = name;
-      d.qui = et.row._whoInp ? et.row._whoInp.value.trim() : "";
-      d.group = et.group || "boutchaud";
-      d.color = et.color || "";
+      d.machine = name; d.qui = et.row._whoInp ? et.row._whoInp.value.trim() : "";
+      d.group = et.group || "boutchaud"; d.color = et.color || "";
       out.extraTasks.push(d);
     });
   }
   return out;
 }
 
-// ================================================================
-// 10. SAUVEGARDE — Par tache individuelle pour eviter ecrasement
-// ================================================================
-async function getSessionId() {
+// ── SAUVEGARDE ────────────────────────────────────────────────────────────────
+async function ensureSession() {
   var date = document.getElementById("f-date").value;
   var machine = document.getElementById("f-machine-name").value.trim();
   if (!date || !machine) return null;
-
-  if (window._editingSessionId) return window._editingSessionId;
-
-  var existing = Object.entries(allSessions).find(function(e) {
-    return e[1].date===date && e[1].machine===machine;
-  });
-  if (existing) {
-    window._editingSessionId = existing[0];
-    return existing[0];
-  }
-
+  if (currentSessId) return currentSessId;
+  var existing = Object.entries(allSessions).find(function(e) { return e[1].date===date && e[1].machine===machine; });
+  if (existing) { currentSessId = existing[0]; return currentSessId; }
   var sessId = "sess_"+Date.now();
   var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
   await set(ref(db,"sessions/"+sessId), {
@@ -554,7 +461,7 @@ async function getSessionId() {
     ganttData:{ targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] },
     title:machine+" - "+dl, savedAt:Date.now()
   });
-  window._editingSessionId = sessId;
+  currentSessId = sessId;
   return sessId;
 }
 
@@ -563,36 +470,35 @@ async function saveSession() {
   var machine = document.getElementById("f-machine-name").value.trim();
   if (!date || !machine) { alert("Veuillez remplir la date et la machine."); return; }
 
-  var sessId = await getSessionId();
+  var sessId = await ensureSession();
   if (!sessId) return;
 
   var data = collectData();
   var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
 
-  // Sauvegarder les targets
+  // Sauvegarder targets - toujours (seul PC qui remplit les targets)
   for (var tkey of ["grand_t1","petit_t1","rondelle"]) {
     await set(ref(db,"sessions/"+sessId+"/ganttData/targets/"+tkey), data.targets[tkey]||{});
   }
 
-  // Sauvegarder uniquement les taches qui ont des horaires remplis
-  // Les taches vides ne sont jamais ecrasees dans Firebase
-  // Cela permet a deux PC de remplir des sections differentes sans conflit
-  var allTaskIds = TASKS_RONDELLE.map(function(t){return t.id;}).concat(TASKS_BOUT_FROID.map(function(t){return t.id;}));
-  for (var taskId of allTaskIds) {
-    var localTask = data.tasks[taskId] || {};
-    if (localTask.sh || localTask.eh || localTask.comment) {
-      // Cette tache a ete remplie sur ce PC -> sauvegarder
-      await set(ref(db,"sessions/"+sessId+"/ganttData/tasks/"+taskId), localTask);
+  // Sauvegarder uniquement les taches remplies sur ce PC
+  // Les taches vides ne sont JAMAIS ecrasees dans Firebase
+  // => 2 PC peuvent remplir des sections differentes sans conflit
+  for (var taskId of ALL_TASK_IDS) {
+    var t = data.tasks[taskId] || {};
+    var hasData = t.sh || t.eh || t.comment || t.sh2 || t.eh2 || t.sh3 || t.eh3 || t.sh4 || t.eh4;
+    if (hasData) {
+      await set(ref(db,"sessions/"+sessId+"/ganttData/tasks/"+taskId), t);
     }
-    // Si vide -> ne pas toucher ce qui est deja dans Firebase
+    // Si vide -> ne pas toucher Firebase -> preserve les donnees de l autre PC
   }
 
-  // Sauvegarder les extras uniquement si ce PC en a
+  // Sauvegarder les extras seulement si ce PC en a
   if (data.extraTasks && data.extraTasks.length > 0) {
     await set(ref(db,"sessions/"+sessId+"/ganttData/extraTasks"), data.extraTasks);
   }
 
-  // Mettre a jour les metadonnees
+  // Metadonnees
   await set(ref(db,"sessions/"+sessId+"/machine"), machine);
   await set(ref(db,"sessions/"+sessId+"/date"), date);
   await set(ref(db,"sessions/"+sessId+"/title"), machine+" - "+dl);
@@ -600,37 +506,35 @@ async function saveSession() {
 
   showToast("Seance enregistree !", "#34c759");
 
-  // Afficher le Gantt avec les donnees completes depuis Firebase
+  // Lire les donnees completes depuis Firebase pour afficher le Gantt
   var snap = await get(ref(db,"sessions/"+sessId));
-  var sessionData = snap.val();
-  if (sessionData && sessionData.ganttData) {
-    renderGantt(date, machine, sessionData.ganttData);
+  var s = snap.val();
+  if (s && s.ganttData) {
+    ganttData = s.ganttData;
+    renderGantt(date, machine, s.ganttData);
   }
   setTimeout(function() { document.getElementById("gantt-section").scrollIntoView({behavior:"smooth"}); }, 100);
 }
 
 async function autoSaveExtras() {
-  var sessId = window._editingSessionId;
-  if (!sessId) return;
+  if (!currentSessId) return;
   var data = collectData();
-  await set(ref(db,"sessions/"+sessId+"/ganttData/extraTasks"), data.extraTasks||[]);
+  if (data.extraTasks && data.extraTasks.length >= 0) {
+    await set(ref(db,"sessions/"+currentSessId+"/ganttData/extraTasks"), data.extraTasks);
+  }
   showToast("Tache supprimee !", "#e74c3c");
 }
 
 async function newSession() {
   if (!confirm("Repartir a zero ?")) return;
-  justifications = []; window._editingSessionId = null;
-  document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
-  document.getElementById("f-machine-name").value = "";
-  ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
+  justifications = [];
+  resetState();
   buildForm();
   document.getElementById("gantt-container").innerHTML = '<div class="empty-gantt">Remplissez le formulaire et enregistrez pour afficher le Gantt</div>';
   document.getElementById("gantt-section").style.display = "none";
 }
 
-// ================================================================
-// 11. HISTORIQUE
-// ================================================================
+// ── HISTORIQUE ────────────────────────────────────────────────────────────────
 function renderHistory(sessions) {
   var list = document.getElementById("history-list");
   var arr = Object.entries(sessions).sort(function(a,b) {
@@ -684,9 +588,9 @@ async function loadHistorySession(id) {
   document.getElementById("f-date").value = d.date||"";
   document.getElementById("f-machine-name").value = d.machine||"";
   ganttData = d.ganttData || { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
-  window._editingSessionId = id;
+  currentSessId = id;
   buildForm();
-  renderGantt(d.date, d.machine, d.ganttData||{});
+  renderGantt(d.date, d.machine, ganttData);
   setTimeout(function() { document.getElementById("gantt-section").scrollIntoView({behavior:"smooth"}); }, 200);
 }
 
@@ -696,18 +600,16 @@ async function editHistorySession(id) {
   document.getElementById("f-date").value = d.date||"";
   document.getElementById("f-machine-name").value = d.machine||"";
   ganttData = d.ganttData || { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
+  currentSessId = id;
   buildForm();
-  window._editingSessionId = id;
   document.querySelector(".info-sec").scrollIntoView({behavior:"smooth"});
   showToast("Seance chargee - modifiez puis enregistrez", "#1a3a6b");
 }
 
-async function deleteSession(id) { if (!confirm("Supprimer cette seance ?")) return; await remove(ref(db,"sessions/"+id)); }
-async function deleteAllHistory() { if (!confirm("Supprimer tout l historique ?")) return; await remove(ref(db,"sessions")); }
+async function deleteSession(id) { if (!confirm("Supprimer cette seance ?")) return; await remove(ref(db,"sessions/"+id)); if (currentSessId === id) { resetState(); buildForm(); } }
+async function deleteAllHistory() { if (!confirm("Supprimer tout l historique ?")) return; await remove(ref(db,"sessions")); resetState(); buildForm(); }
 
-// ================================================================
-// 12. GANTT
-// ================================================================
+// ── GANTT ─────────────────────────────────────────────────────────────────────
 function fmtCmtCell(cmts, color) {
   var valid = cmts.filter(function(c){return c&&c.trim();});
   if (!valid.length) return '<td class="info cmt-col"></td>';
@@ -716,8 +618,7 @@ function fmtCmtCell(cmts, color) {
     if (i > 0) html += '<div class="cmt-col-sep"></div>';
     html += '<div class="cmt-col-text">'+c.replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\\n/g,"<br>")+'</div>';
   });
-  html += '</td>';
-  return html;
+  return html + '</td>';
 }
 
 function renderGantt(date, machine, data) {
@@ -736,7 +637,6 @@ function renderGantt(date, machine, data) {
     if(s!==null&&s>0) minT=Math.min(minT,s);
     if(e!==null&&e>0) maxT=Math.max(maxT,e);
   }
-
   function regObj(obj) {
     regT(obj.sh,obj.sm,obj.eh,obj.em);
     if(obj.sh2||obj.eh2) regT(obj.sh2,obj.sm2,obj.eh2,obj.em2);
@@ -755,8 +655,8 @@ function renderGantt(date, machine, data) {
 
   var total=maxT-minT, slotMin=10, slots=total/slotMin;
   var slotW=Math.max(35,Math.min(90,900/slots));
-
   var dateStr=date?new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"}):"";
+
   document.getElementById("gantt-machine-title").textContent = machine||"Changement - Temp/Machine";
   document.getElementById("gantt-subtitle").textContent = "SGD Pharma - Sucy-en-Brie"+(dateStr?" - "+dateStr:"");
 
@@ -774,8 +674,7 @@ function renderGantt(date, machine, data) {
     var hh=Math.floor(m/60).toString().padStart(2,"0"),mm2=(m%60).toString().padStart(2,"0");
     h+='<th style="width:'+slotW+'px;font-size:10px;color:#555;font-weight:400">'+(mm2==="00"?hh+"h":mm2)+'</th>';
   }
-  h+='</tr>';
-  h+='<tr><td colspan="'+(5+slots+1)+'" style="background:#1a3a6b;color:#fff;font-weight:700;font-size:13px;padding:7px 10px;text-align:center;">'+machine+(dateStr?" - "+dateStr:"")+'</td></tr>';
+  h+='</tr><tr><td colspan="'+(5+slots+1)+'" style="background:#1a3a6b;color:#fff;font-weight:700;font-size:13px;padding:7px 10px;text-align:center;">'+machine+(dateStr?" - "+dateStr:"")+'</td></tr>';
 
   // TARGET
   targetDefs.forEach(function(td) {
@@ -811,92 +710,75 @@ function renderGantt(date, machine, data) {
   });
   h+='<tr><td colspan="'+(5+slots+1)+'" style="background:#e8edf5;height:4px;"></td></tr>';
 
-  function renderRow(rowData, rowIdx, isBF) {
-    var uid, color, start, end, bar="", cmts=[], t={}, task={}, quiDisplay="";
-    if (rowData.type==="fixed") {
-      task=rowData.task; t=rowData.t;
-      color = isBF ? task.color : TASK_COLORS[rowData.idx%TASK_COLORS.length];
-      uid = "task_"+task.id;
-      start=getTV(t.sh||"",t.sm||""); end=getTV(t.eh||"",t.em||"");
-      quiDisplay=ganttQuiOverrides[uid]||t.qui||task.qui;
-      allTasks[uid]={machine:task.machine,qui:quiDisplay,start:start,end:end,color:color};
-      cmts=[t.comment,t.comment2,t.comment3,t.comment4];
-      var s=toMin(start), e=toMin(end);
-      if(s!==null&&e!==null&&e>s){
-        var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
-        bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+color+'" data-uid="'+uid+'" data-label="'+task.machine+'" data-qui="'+quiDisplay+'" data-start="'+start+'" data-end="'+end+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment||"")+'"></div>';
-      }
-      [[t.sh2,t.sm2,t.eh2,t.em2,t.comment2,"_2",.75],[t.sh3,t.sm3,t.eh3,t.em3,t.comment3,"_3",.6],[t.sh4,t.sm4,t.eh4,t.em4,t.comment4,"_4",.5]].forEach(function(sl){
-        if(sl[0]||sl[2]){var sx=toMin(getTV(sl[0]||"",sl[1]||"")),ex=toMin(getTV(sl[2]||"",sl[3]||""));if(sx!==null&&ex!==null&&ex>sx){var lpx=((sx-minT)/total)*100,wpx=((ex-sx)/total)*100;bar+='<div class="gantt-bar" style="left:'+lpx+'%;width:'+wpx+'%;background:'+color+';opacity:'+sl[6]+';" data-uid="'+uid+sl[5]+'" data-label="'+task.machine+'" data-qui="'+quiDisplay+'" data-start="'+getTV(sl[0]||"",sl[1]||"")+'" data-end="'+getTV(sl[2]||"",sl[3]||"")+'" data-color="'+color+'" data-cmt="'+encCmt(sl[4]||"")+'"></div>';}}
-      });
-      var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
-      var rowCls=isSelA?"sel-a":isSelB?"sel-b":rowIdx%2===0?"odd":"even";
-      if(isBF) rowCls+=" boutfroid-row";
-      var machineName = task.machine;
-      if (isBF && task.labelDebut) machineName += '<div style="font-size:10px;color:#6c6c70;font-weight:400;margin-top:2px;">'+task.labelDebut+' — '+task.labelFin+'</div>';
-      h+='<tr class="'+rowCls+'" data-uid="'+uid+'">'+
-        '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
-        '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+machineName+'</td>'+
-        '<td class="info who-cell who-editable" data-uid="'+uid+'" title="Modifier">'+quiDisplay+' [mod]</td>'+
-        '<td class="info time-cell">'+(start||"--")+'</td>'+
-        '<td class="info time-cell">'+(end||"--")+'</td>'+
-        '<td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td>'+
-        fmtCmtCell(cmts,color)+
-        '</tr>';
-    } else {
-      var et=rowData.et;
-      color=et.color||TASK_COLORS[(TASKS_RONDELLE.length+rowData.idx)%TASK_COLORS.length];
-      uid="extra_"+rowData.idx+(isBF?"_bf":"_bc");
-      start=getTV(et.sh||"",et.sm||""); end=getTV(et.eh||"",et.em||"");
-      allTasks[uid]={machine:et.machine||"Extra",qui:et.qui||"",start:start,end:end,color:color};
-      cmts=[et.comment,et.comment2,et.comment3,et.comment4];
-      var s=toMin(start), e=toMin(end);
-      if(s!==null&&e!==null&&e>s){
-        var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
-        bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+color+'" data-uid="'+uid+'" data-label="'+(et.machine||"Extra")+'" data-qui="'+(et.qui||"")+'" data-start="'+start+'" data-end="'+end+'" data-color="'+color+'" data-cmt="'+encCmt(et.comment||"")+'"></div>';
-      }
-      [[et.sh2,et.sm2,et.eh2,et.em2,et.comment2,"_2",.75],[et.sh3,et.sm3,et.eh3,et.em3,et.comment3,"_3",.6],[et.sh4,et.sm4,et.eh4,et.em4,et.comment4,"_4",.5]].forEach(function(sl){
-        if(sl[0]||sl[2]){var sx=toMin(getTV(sl[0]||"",sl[1]||"")),ex=toMin(getTV(sl[2]||"",sl[3]||""));if(sx!==null&&ex!==null&&ex>sx){var lpx=((sx-minT)/total)*100,wpx=((ex-sx)/total)*100;bar+='<div class="gantt-bar" style="left:'+lpx+'%;width:'+wpx+'%;background:'+color+';opacity:'+sl[6]+';" data-uid="'+uid+sl[5]+'" data-label="'+(et.machine||"Extra")+'" data-qui="'+(et.qui||"")+'" data-start="'+getTV(sl[0]||"",sl[1]||"")+'" data-end="'+getTV(sl[2]||"",sl[3]||"")+'" data-color="'+color+'" data-cmt="'+encCmt(sl[4]||"")+'"></div>';}}
-      });
-      var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
-      var rowCls=isSelA?"sel-a":isSelB?"sel-b":rowIdx%2===0?"odd":"even";
-      if(isBF) rowCls+=" boutfroid-row";
-      h+='<tr class="'+rowCls+'" data-uid="'+uid+'">'+
-        '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
-        '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+(et.machine||"Extra")+'</td>'+
-        '<td class="info who-cell">'+(et.qui||"")+'</td>'+
-        '<td class="info time-cell">'+(start||"--")+'</td>'+
-        '<td class="info time-cell">'+(end||"--")+'</td>'+
-        '<td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+bar+'</div></td>'+
-        fmtCmtCell(cmts,color)+
-        '</tr>';
+  function makeBar(t, uid, color, label, quiDisplay) {
+    var bar = "";
+    var start=getTV(t.sh||"",t.sm||""), end=getTV(t.eh||"",t.em||"");
+    var s=toMin(start), e=toMin(end);
+    if(s!==null&&e!==null&&e>s){
+      var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
+      bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+color+'" data-uid="'+uid+'" data-label="'+label+'" data-qui="'+quiDisplay+'" data-start="'+start+'" data-end="'+end+'" data-color="'+color+'" data-cmt="'+encCmt(t.comment||"")+'"></div>';
     }
+    [[t.sh2,t.sm2,t.eh2,t.em2,t.comment2,"_2",.75],[t.sh3,t.sm3,t.eh3,t.em3,t.comment3,"_3",.6],[t.sh4,t.sm4,t.eh4,t.em4,t.comment4,"_4",.5]].forEach(function(sl){
+      if(sl[0]||sl[2]){
+        var sx=toMin(getTV(sl[0]||"",sl[1]||"")), ex=toMin(getTV(sl[2]||"",sl[3]||""));
+        if(sx!==null&&ex!==null&&ex>sx){
+          var lpx=((sx-minT)/total)*100, wpx=((ex-sx)/total)*100;
+          bar+='<div class="gantt-bar" style="left:'+lpx+'%;width:'+wpx+'%;background:'+color+';opacity:'+sl[6]+';" data-uid="'+uid+sl[5]+'" data-label="'+label+'" data-qui="'+quiDisplay+'" data-start="'+getTV(sl[0]||"",sl[1]||"")+'" data-end="'+getTV(sl[2]||"",sl[3]||"")+'" data-color="'+color+'" data-cmt="'+encCmt(sl[4]||"")+'"></div>';
+        }
+      }
+    });
+    return {bar:bar, start:start, end:end};
   }
 
-  // Bout Chaud
-  var bcRows=[];
-  TASKS_RONDELLE.forEach(function(task,idx){
-    var t=tasks[task.id]||{};
-    bcRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:toMin(getTV(t.sh||"",t.sm||""))});
-  });
-  extrasBoutChaud.forEach(function(et,idx){
-    bcRows.push({type:"extra",et:et,idx:idx,sMin:toMin(getTV(et.sh||"",et.sm||""))});
-  });
-  // Ordre fixe - pas de tri chronologique
-  bcRows.forEach(function(r,i){ renderRow(r,i,false); });
+  function renderTaskRow(task, t, idx, isBF, rowIdx) {
+    var color = isBF ? task.color : TASK_COLORS[idx%TASK_COLORS.length];
+    var uid = "task_"+task.id;
+    var quiDisplay = ganttQuiOverrides[uid]||t.qui||task.qui;
+    var res = makeBar(t, uid, color, task.machine, quiDisplay);
+    allTasks[uid]={machine:task.machine,qui:quiDisplay,start:res.start,end:res.end,color:color};
+    var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
+    var rowCls=isSelA?"sel-a":isSelB?"sel-b":rowIdx%2===0?"odd":"even";
+    if(isBF) rowCls+=" boutfroid-row";
+    var machineName = task.machine;
+    if (isBF && task.labelDebut) machineName += '<div style="font-size:10px;color:#6c6c70;font-weight:400;margin-top:2px;">'+task.labelDebut+' — '+task.labelFin+'</div>';
+    h+='<tr class="'+rowCls+'" data-uid="'+uid+'">'+
+      '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
+      '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+machineName+'</td>'+
+      '<td class="info who-cell who-editable" data-uid="'+uid+'" title="Modifier">'+quiDisplay+' [mod]</td>'+
+      '<td class="info time-cell">'+(res.start||"--")+'</td>'+
+      '<td class="info time-cell">'+(res.end||"--")+'</td>'+
+      '<td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+res.bar+'</div></td>'+
+      fmtCmtCell([t.comment,t.comment2,t.comment3,t.comment4],color)+
+      '</tr>';
+  }
 
-  // Bout Froid
+  function renderExtraRow(et, idx, isBF, rowIdx) {
+    var color = et.color || TASK_COLORS[(TASKS_RONDELLE.length+idx)%TASK_COLORS.length];
+    var uid = "extra_"+(isBF?"bf":"bc")+"_"+idx;
+    var res = makeBar(et, uid, color, et.machine||"Extra", et.qui||"");
+    allTasks[uid]={machine:et.machine||"Extra",qui:et.qui||"",start:res.start,end:res.end,color:color};
+    var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
+    var rowCls=isSelA?"sel-a":isSelB?"sel-b":rowIdx%2===0?"odd":"even";
+    if(isBF) rowCls+=" boutfroid-row";
+    h+='<tr class="'+rowCls+'" data-uid="'+uid+'">'+
+      '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
+      '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+(et.machine||"Extra")+'</td>'+
+      '<td class="info who-cell">'+(et.qui||"")+'</td>'+
+      '<td class="info time-cell">'+(res.start||"--")+'</td>'+
+      '<td class="info time-cell">'+(res.end||"--")+'</td>'+
+      '<td colspan="'+slots+'" class="bar-cell"><div class="bar-inner">'+res.bar+'</div></td>'+
+      fmtCmtCell([et.comment,et.comment2,et.comment3,et.comment4],color)+
+      '</tr>';
+  }
+
+  // Bout Chaud - ordre fixe
+  TASKS_RONDELLE.forEach(function(task,idx){ renderTaskRow(task, tasks[task.id]||{}, idx, false, idx); });
+  extrasBoutChaud.forEach(function(et,idx){ renderExtraRow(et, idx, false, TASKS_RONDELLE.length+idx); });
+
+  // Bout Froid - ordre fixe
   h+='<tr><td colspan="'+(5+slots+1)+'" style="background:'+BOUT_FROID_COLOR+';color:#fff;font-weight:700;font-size:12px;padding:7px 12px;">BOUT FROID</td></tr>';
-  var bfRows=[];
-  TASKS_BOUT_FROID.forEach(function(task,idx){
-    var t=tasks[task.id]||{};
-    bfRows.push({type:"fixed",task:task,t:t,idx:idx,sMin:toMin(getTV(t.sh||"",t.sm||""))});
-  });
-  extrasBoutFroid.forEach(function(et,idx){
-    bfRows.push({type:"extra",et:et,idx:idx,sMin:toMin(getTV(et.sh||"",et.sm||""))});
-  });
-  // Ordre fixe - pas de tri chronologique
-  bfRows.forEach(function(r,i){ renderRow(r,i,true); });
+  TASKS_BOUT_FROID.forEach(function(task,idx){ renderTaskRow(task, tasks[task.id]||{}, idx, true, idx); });
+  extrasBoutFroid.forEach(function(et,idx){ renderExtraRow(et, idx, true, TASKS_BOUT_FROID.length+idx); });
 
   h+='</table>';
   container.innerHTML=h;
@@ -918,9 +800,7 @@ function renderGantt(date, machine, data) {
   renderJustifications();
 }
 
-// ================================================================
-// 13. TOOLTIP
-// ================================================================
+// ── TOOLTIP ───────────────────────────────────────────────────────────────────
 function showTT(e,label,qui,start,end,color,comment){
   var TT=document.getElementById("tooltip");
   document.getElementById("tt-dot").style.background=color||"#3b82f6";
@@ -948,9 +828,7 @@ function showTT(e,label,qui,start,end,color,comment){
 }
 function hideTT(){ document.getElementById("tooltip").classList.remove("visible"); }
 
-// ================================================================
-// 14. SELECTION / COMPARAISON
-// ================================================================
+// ── SELECTION ─────────────────────────────────────────────────────────────────
 function toggleSelect(id){
   var idx=selectedIds.indexOf(id);
   if(idx>-1) selectedIds.splice(idx,1);
@@ -995,9 +873,7 @@ function doCompare(){
 }
 function closeCompare(){ document.getElementById("cmp-result").classList.remove("visible"); }
 
-// ================================================================
-// 15. JUSTIFICATION
-// ================================================================
+// ── JUSTIFICATION ─────────────────────────────────────────────────────────────
 function openJustifDialog(){
   if(selectedIds.length<1) return;
   var existing=document.getElementById("justif-dialog"); if(existing){existing.remove();return;}
@@ -1044,9 +920,7 @@ function renderJustifications(){
   });
 }
 
-// ================================================================
-// 16. QUI EDITABLE
-// ================================================================
+// ── QUI EDITABLE ──────────────────────────────────────────────────────────────
 function showQuiEditor(cell,uid,current){
   var existing=document.getElementById("qui-editor"); if(existing) existing.remove();
   var editor=document.createElement("div"); editor.id="qui-editor"; editor.className="qui-editor";
@@ -1058,17 +932,14 @@ function showQuiEditor(cell,uid,current){
   function applyEdit(){
     var val=input.value.trim(); if(!val){editor.remove();return;}
     ganttQuiOverrides[uid]=val; cell.textContent=val+" [mod]"; cell.dataset.uid=uid;
-    editor.remove();
-    showToast("Responsable mis a jour !","#1a3a6b");
+    editor.remove(); showToast("Responsable mis a jour !","#1a3a6b");
   }
   saveBtn.addEventListener("click",applyEdit);
   input.addEventListener("keydown",function(e){if(e.key==="Enter")applyEdit();if(e.key==="Escape")editor.remove();});
   cancelBtn.addEventListener("click",function(){editor.remove();});
 }
 
-// ================================================================
-// 17. EXPORT
-// ================================================================
+// ── EXPORT ────────────────────────────────────────────────────────────────────
 function initExportButtons(){
   document.getElementById("export-toggle-btn").addEventListener("click",function(e){
     e.stopPropagation();
@@ -1135,9 +1006,7 @@ function exportToExcel(dateFrom,dateTo){
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
-// ================================================================
-// 18. TOAST
-// ================================================================
+// ── TOAST ─────────────────────────────────────────────────────────────────────
 function showToast(message,color){
   var ex=document.getElementById("toast-notif"); if(ex) ex.remove();
   var toast=document.createElement("div"); toast.id="toast-notif"; toast.textContent=message;
