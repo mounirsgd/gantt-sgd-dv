@@ -587,8 +587,10 @@ async function saveSession() {
     // Si vide -> ne pas toucher ce qui est deja dans Firebase
   }
 
-  // Sauvegarder les extras
-  await set(ref(db,"sessions/"+sessId+"/ganttData/extraTasks"), data.extraTasks||[]);
+  // Sauvegarder les extras uniquement si ce PC en a
+  if (data.extraTasks && data.extraTasks.length > 0) {
+    await set(ref(db,"sessions/"+sessId+"/ganttData/extraTasks"), data.extraTasks);
+  }
 
   // Mettre a jour les metadonnees
   await set(ref(db,"sessions/"+sessId+"/machine"), machine);
