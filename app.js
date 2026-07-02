@@ -151,6 +151,15 @@ function initApp() {
   });
 
   document.getElementById("save-btn").addEventListener("click", saveSession);
+
+  // Creer la session automatiquement quand machine est remplie
+  document.getElementById("f-machine-name").addEventListener("blur", async function() {
+    var machine = this.value.trim();
+    var date = document.getElementById("f-date").value;
+    if (machine && date) {
+      await getOrCreateSession();
+    }
+  });
   document.getElementById("new-session-btn").addEventListener("click", newSession);
   document.getElementById("del-all-btn").addEventListener("click", deleteAllHistory);
   document.getElementById("do-compare-btn").addEventListener("click", doCompare);
@@ -506,86 +515,84 @@ function collectData() {
 
 // ── SAUVEGARDE ────────────────────────────────────────────────────────────────
 
-async function saveSession() {
-  var data = collectData();
+// ── GESTION SESSION ──────────────────────────────────────────────────────────
+
+async function getOrCreateSession() {
+  // Recupere ou cree la session pour la date+machine actuelle
   var date = document.getElementById("f-date").value;
   var machine = document.getElementById("f-machine-name").value.trim();
-  if (!date || !machine) { alert("Veuillez remplir la date et la machine."); return; }
+  if (!date || !machine) return null;
 
-  var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
   var existingId = window._editingSessionId;
   if (!existingId) {
     var existing = Object.entries(allSessions).find(function(e) { return e[1].date===date && e[1].machine===machine; });
     if (existing) existingId = existing[0];
   }
-  var sessId = existingId || "sess_"+Date.now();
 
-  // Fusionner avec les donnees existantes pour eviter d ecraser les champs non remplis
-  var mergedData = data;
-  if (existingId && allSessions[existingId] && allSessions[existingId].ganttData) {
-    var existing_data = allSessions[existingId].ganttData;
-    mergedData = mergeGanttData(existing_data, data);
+  if (!existingId) {
+    // Creer la session vide
+    var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
+    existingId = "sess_"+Date.now();
+    await set(ref(db,"sessions/"+existingId), {
+      date:date, machine:machine,
+      ganttData:{ targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] },
+      title:machine+" - "+dl, savedAt:Date.now()
+    });
+    window._editingSessionId = existingId;
   }
 
-  await set(ref(db,"sessions/"+sessId), { date:date, machine:machine, ganttData:mergedData, title:machine+" - "+dl, savedAt:Date.now() });
+  return existingId;
+}
+
+async function saveField(path, value) {
+  // Sauvegarde un champ specifique dans Firebase
+  var sessId = await getOrCreateSession();
+  if (!sessId) return;
+  await set(ref(db,"sessions/"+sessId+"/ganttData/"+path), value);
+}
+
+async function saveSession() {
+  // Sauvegarde tous les champs et affiche le Gantt
+  var date = document.getElementById("f-date").value;
+  var machine = document.getElementById("f-machine-name").value.trim();
+  if (!date || !machine) { alert("Veuillez remplir la date et la machine."); return; }
+
+  var sessId = await getOrCreateSession();
+  if (!sessId) return;
+
+  var data = collectData();
+  var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
+
+  // Sauvegarder chaque section independamment pour ne pas ecraser les autres
+  await set(ref(db,"sessions/"+sessId+"/ganttData/targets"), data.targets);
+  await set(ref(db,"sessions/"+sessId+"/ganttData/tasks"), data.tasks);
+  await set(ref(db,"sessions/"+sessId+"/ganttData/extraTasks"), data.extraTasks||[]);
+  await set(ref(db,"sessions/"+sessId+"/savedAt"), Date.now());
+  await set(ref(db,"sessions/"+sessId+"/machine"), machine);
+  await set(ref(db,"sessions/"+sessId+"/date"), date);
+  await set(ref(db,"sessions/"+sessId+"/title"), machine+" - "+dl);
+
   window._editingSessionId = sessId;
-  ganttData = mergedData;
 
   showToast("Seance enregistree !", "#34c759");
-  renderGantt(date, machine, mergedData);
+  renderGantt(date, machine, data);
   setTimeout(function() { document.getElementById("gantt-section").scrollIntoView({behavior:"smooth"}); }, 100);
   document.getElementById("f-machine-name").value = machine;
   document.getElementById("f-date").value = date;
 }
 
-function mergeGanttData(existing, newData) {
-  // Fusionne les donnees : garde les valeurs existantes si les nouvelles sont vides
-  var merged = JSON.parse(JSON.stringify(existing));
-
-  // Fusionner targets
-  ["grand_t1","petit_t1","rondelle"].forEach(function(key) {
-    if (newData.targets && newData.targets[key]) {
-      var nd = newData.targets[key];
-      // Si la nouvelle donnee a des horaires remplis, on prend la nouvelle
-      if (nd.sh || nd.eh) {
-        merged.targets[key] = nd;
-      }
-      // Sinon on garde l ancienne
-    }
-  });
-
-  // Fusionner tasks - prendre la plus complete
-  if (newData.tasks) {
-    Object.keys(newData.tasks).forEach(function(taskId) {
-      var nd = newData.tasks[taskId];
-      var ed = merged.tasks[taskId] || {};
-      // Si la nouvelle tache a des horaires, on la prend
-      if (nd.sh || nd.eh) {
-        merged.tasks[taskId] = nd;
-      } else if (!ed.sh && !ed.eh) {
-        // Ni nouvelle ni ancienne n ont d horaires - garder nouvelle (vide)
-        merged.tasks[taskId] = nd;
-      }
-      // Sinon garder l ancienne qui a des horaires
-    });
-  }
-
-  // Fusionner extraTasks - prendre la liste la plus longue
-  if (newData.extraTasks && newData.extraTasks.length > 0) {
-    merged.extraTasks = newData.extraTasks;
-  }
-
-  return merged;
-}
-
 async function autoSaveExtras(sec) {
-  var date = document.getElementById("f-date").value;
-  var machine = document.getElementById("f-machine-name").value.trim();
-  if (!date || !machine) return;
-  var existing = Object.entries(allSessions).find(function(e) { return e[1].date===date && e[1].machine===machine; });
-  if (!existing) return;
+  var sessId = window._editingSessionId;
+  if (!sessId) {
+    var date = document.getElementById("f-date").value;
+    var machine = document.getElementById("f-machine-name").value.trim();
+    if (!date || !machine) return;
+    var existing = Object.entries(allSessions).find(function(e) { return e[1].date===date && e[1].machine===machine; });
+    if (!existing) return;
+    sessId = existing[0];
+  }
   var data = collectData();
-  await set(ref(db,"sessions/"+existing[0]+"/ganttData"), data);
+  await set(ref(db,"sessions/"+sessId+"/ganttData/extraTasks"), data.extraTasks||[]);
   showToast("Tache supprimee !", "#e74c3c");
 }
 
