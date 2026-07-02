@@ -874,7 +874,7 @@ function renderGantt(date, machine, data) {
   extrasBoutChaud.forEach(function(et,idx){
     bcRows.push({type:"extra",et:et,idx:idx,sMin:toMin(getTV(et.sh||"",et.sm||""))});
   });
-  bcRows.sort(function(a,b){ if(a.sMin===null)return 1; if(b.sMin===null)return -1; return a.sMin-b.sMin; });
+  // Ordre fixe - pas de tri chronologique
   bcRows.forEach(function(r,i){ renderRow(r,i,false); });
 
   // Bout Froid
@@ -887,7 +887,7 @@ function renderGantt(date, machine, data) {
   extrasBoutFroid.forEach(function(et,idx){
     bfRows.push({type:"extra",et:et,idx:idx,sMin:toMin(getTV(et.sh||"",et.sm||""))});
   });
-  bfRows.sort(function(a,b){ if(a.sMin===null)return 1; if(b.sMin===null)return -1; return a.sMin-b.sMin; });
+  // Ordre fixe - pas de tri chronologique
   bfRows.forEach(function(r,i){ renderRow(r,i,true); });
 
   h+='</table>';
