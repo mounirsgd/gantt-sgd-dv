@@ -50,7 +50,7 @@ const HISTORY_PAGE_SIZE = 5;
 const ALL_TASK_IDS = TASKS_RONDELLE.map(function(t){return t.id;}).concat(TASKS_BOUT_FROID.map(function(t){return t.id;}));
 
 let allSessions = {};
-let ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{},nettoyage:{},anticipation_feder:{},passage_so3:{}}, tasks:{}, extraTasks:[] };
+let ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{},nettoyage:{},anticipation_feeder:{},passage_so3:{}}, tasks:{}, extraTasks:[] };
 let selectedIds = [];
 let allTasks = {};
 let historyPage = 0;
@@ -164,7 +164,7 @@ function initApp() {
 }
 
 function resetState() {
-  ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{},nettoyage:{},anticipation_feder:{},passage_so3:{}}, tasks:{}, extraTasks:[] };
+  ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{},nettoyage:{},anticipation_feeder:{},passage_so3:{}}, tasks:{}, extraTasks:[] };
   selectedIds = []; ganttQuiOverrides = {}; justifications = [];
   currentSessId = null;
   document.getElementById("f-machine-name").value = "";
@@ -182,7 +182,7 @@ function buildForm() {
   targetsGroup.appendChild(buildTargetSection("nettoyage","TARGET (Nettoyage)","#27ae60",ganttData.targets.nettoyage||{}));
   targetsGroup.appendChild(buildTargetSection("petit_t1","TARGET (Petit t1)","#e07b54",ganttData.targets.petit_t1||{}));
   targetsGroup.appendChild(buildTargetSection("rondelle","TARGET (Rondelle)","#7d3c98",ganttData.targets.rondelle||{}));
-  targetsGroup.appendChild(buildTargetSection("anticipation_feder","TARGET (Anticipation Feder)","#2980b9",ganttData.targets.anticipation_feder||{}));
+  targetsGroup.appendChild(buildTargetSection("anticipation_feeder","TARGET (Anticipation Feeder)","#2980b9",ganttData.targets.anticipation_feeder||{}));
   targetsGroup.appendChild(buildTargetSection("passage_so3","TARGET (Passage en SO3)","#e91e8c",ganttData.targets.passage_so3||{}));
   container.appendChild(targetsGroup);
 
@@ -426,7 +426,7 @@ function encCmt(str) { if(!str) return ""; return str.replace(/\\/g,"\\\\").repl
 function collectData() {
   var container = document.getElementById("form-sections");
   var out = { targets:{}, tasks:{}, extraTasks:[] };
-  ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feder","passage_so3"].forEach(function(key) {
+  ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feeder","passage_so3"].forEach(function(key) {
     var sec = container.querySelector('[data-target-key="'+key+'"]');
     if (sec) out.targets[key] = readSlots(sec);
   });
@@ -483,7 +483,7 @@ async function saveSession() {
   var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
 
   // Sauvegarder targets - toujours (seul PC qui remplit les targets)
-  for (var tkey of ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feder","passage_so3"]) {
+  for (var tkey of ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feeder","passage_so3"]) {
     await set(ref(db,"sessions/"+sessId+"/ganttData/targets/"+tkey), data.targets[tkey]||{});
   }
 
@@ -656,7 +656,7 @@ function renderGantt(date, machine, data) {
     if(obj.sh4||obj.eh4) regT(obj.sh4,obj.sm4,obj.eh4,obj.em4);
   }
 
-  ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feder","passage_so3"].forEach(function(k){ regObj(targets[k]||{}); });
+  ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feeder","passage_so3"].forEach(function(k){ regObj(targets[k]||{}); });
   TASKS_RONDELLE.forEach(function(t){ regObj(tasks[t.id]||{}); });
   TASKS_BOUT_FROID.forEach(function(t){ regObj(tasks[t.id]||{}); });
   extras.forEach(function(et){ regObj(et); });
@@ -677,7 +677,7 @@ function renderGantt(date, machine, data) {
     {key:"nettoyage",label:"TARGET (Nettoyage)",color:"#27ae60"},
     {key:"petit_t1",label:"TARGET (Petit t1)",color:"#e07b54"},
     {key:"rondelle",label:"TARGET (Rondelle)",color:"#7d3c98"},
-    {key:"anticipation_feder",label:"TARGET (Anticipation Feder)",color:"#2980b9"},
+    {key:"anticipation_feeder",label:"TARGET (Anticipation Feeder)",color:"#2980b9"},
     {key:"passage_so3",label:"TARGET (Passage en SO3)",color:"#e91e8c"}
   ];
 
@@ -703,12 +703,13 @@ function renderGantt(date, machine, data) {
       var lp=((s-minT)/total)*100, wp=((e-s)/total)*100;
       bar='<div class="gantt-bar" style="left:'+lp+'%;width:'+wp+'%;background:'+td.color+'" data-uid="'+uid+'" data-label="'+td.label+'" data-qui="--" data-start="'+start+'" data-end="'+end+'" data-color="'+td.color+'" data-cmt="'+encCmt(t.comment||"")+'">'+td.label.replace("TARGET ","")+'</div>';
     }
-    [[t.sh2,t.sm2,t.eh2,t.em2,t.comment2,"_2"],[t.sh3,t.sm3,t.eh3,t.em3,t.comment3,"_3"],[t.sh4,t.sm4,t.eh4,t.em4,t.comment4,"_4"]].forEach(function(sl){
+    [[t.sh2,t.sm2,t.eh2,t.em2,t.comment2,"_2",.8],[t.sh3,t.sm3,t.eh3,t.em3,t.comment3,"_3",.65],[t.sh4,t.sm4,t.eh4,t.em4,t.comment4,"_4",.5]].forEach(function(sl){
       if(sl[0]||sl[2]){
         var sx=toMin(getTV(sl[0]||"",sl[1]||"")), ex=toMin(getTV(sl[2]||"",sl[3]||""));
         if(sx!==null&&ex!==null&&ex>sx){
           var lpx=((sx-minT)/total)*100, wpx=((ex-sx)/total)*100;
-          bar+='<div class="gantt-bar" style="left:'+lpx+'%;width:'+wpx+'%;background:#fa8072;opacity:.8;" data-uid="'+uid+sl[5]+'" data-label="'+td.label+'" data-qui="--" data-start="'+getTV(sl[0]||"",sl[1]||"")+'" data-end="'+getTV(sl[2]||"",sl[3]||"")+'" data-color="#fa8072" data-cmt="'+encCmt(sl[4]||"")+'"></div>';
+          var slotColor = td.key==="grand_t1" ? "#fa8072" : td.color;
+          bar+='<div class="gantt-bar" style="left:'+lpx+'%;width:'+wpx+'%;background:'+slotColor+';opacity:'+sl[6]+';" data-uid="'+uid+sl[5]+'" data-label="'+td.label+'" data-qui="--" data-start="'+getTV(sl[0]||"",sl[1]||"")+'" data-end="'+getTV(sl[2]||"",sl[3]||"")+'" data-color="'+slotColor+'" data-cmt="'+encCmt(sl[4]||"")+'"></div>';
         }
       }
     });
@@ -988,31 +989,77 @@ function exportToExcel(dateFrom,dateTo){
   var filtered=dateFrom&&dateTo?sessions.filter(function(s){return s.date>=dateFrom&&s.date<=dateTo;}):sessions;
   if(!filtered.length){alert("Aucune seance trouvee.");return;}
   filtered.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
-  var rows=[["Date","Jour","Machine","Section","Tache","Qui","Debut","Fin","Duree (min)","Commentaire"]];
+  var rows=[["ID_Changement","Date","Jour","Machine","Section","Type_Tâche","Tâche","Tâche_Référence","Qui","Début","Fin","Date_Heure_Début","Date_Heure_Fin","Durée (min)","Commentaire"]];
+
+  // Correspondance tâche -> TARGET de référence
+  var TACHE_REF = {
+    "Nettoyage de machine": "TARGET (Nettoyage)",
+    "Changement rondelle (cuvette)": "TARGET (Rondelle)",
+    "Cote Finisseur": "TARGET (Grand T1)",
+    "Cote Ebaucheur": "TARGET (Grand T1)",
+    "Entonnoir sous verre": "TARGET (Petit t1)",
+    "Distributeur sous verre": "TARGET (Petit t1)",
+    "Demarrage section sans flacon": "TARGET (Grand T1)",
+    "Debut section avec flacon": "TARGET (Grand T1)",
+    "Machine complete avec flacon": "TARGET (Grand T1)",
+    "Mise a l arche": "TARGET (Grand T1)",
+    "T0 : Aligneur vide": "TARGET (Nettoyage)",
+    "T0’ : Nettoyage de ligne": "TARGET (Nettoyage)",
+    "T1 : Durée pré-réglage": "TARGET (Anticipation Feeder)",
+    "T1’ : Arrivée 2 sections contrôlables": "TARGET (Anticipation Feeder)",
+    "T2 : Top qualités": "TARGET (Passage en SO3)",
+    "T2’ : Premier lot sorti": "TARGET (Passage en SO3)",
+    "T2’’ : Montée en régime": "TARGET (Passage en SO3)"
+  };
+
+  function makeDT(dateS, timeS) {
+    if (!dateS || !timeS || timeS === "--") return "";
+    return dateS + " " + timeS + ":00";
+  }
+
+  var exportRowIdx = 0;
   filtered.forEach(function(session){
+    exportRowIdx = 0;
     var dateStr=session.date||"",jourStr=dateStr?new Date(dateStr+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long"}):"",machine=session.machine||"";
     var data=session.ganttData||{},targets=data.targets||{},tasks=data.tasks||{},extras=data.extraTasks||[];
-    [["grand_t1","TARGET (Grand T1)"],["nettoyage","TARGET (Nettoyage)"],["petit_t1","TARGET (Petit t1)"],["rondelle","TARGET (Rondelle)"],["anticipation_feder","TARGET (Anticipation Feder)"],["passage_so3","TARGET (Passage en SO3)"]].forEach(function(td){
-      var t=targets[td[0]]||{},start=getTV(t.sh||"",t.sm||""),end=getTV(t.eh||"",t.em||"");
-      var dur=toMin(start)!==null&&toMin(end)!==null?toMin(end)-toMin(start):"";
-      rows.push([dateStr,jourStr,machine,td[1],"Target","--",start,end,dur,(t.comment||"").replace(/\n/g," | ")]);
+
+    function addRow(section, type, tache, ref, qui, start, end) {
+      exportRowIdx++;
+      var id = machine.replace(/\s/g,"_")+"_"+dateStr+"_"+String(exportRowIdx).padStart(3,"0");
+      var dur = toMin(start)!==null&&toMin(end)!==null ? toMin(end)-toMin(start) : "";
+      rows.push([id, dateStr, jourStr, machine, section, type, tache, ref, qui, start, end,
+        makeDT(dateStr,start), makeDT(dateStr,end), dur, ""]);
+    }
+
+    // Targets
+    [["grand_t1","TARGET (Grand T1)"],["nettoyage","TARGET (Nettoyage)"],["petit_t1","TARGET (Petit t1)"],["rondelle","TARGET (Rondelle)"],["anticipation_feeder","TARGET (Anticipation Feeder)"],["passage_so3","TARGET (Passage en SO3)"]].forEach(function(td){
+      var t=targets[td[0]]||{};
+      var start=getTV(t.sh||"",t.sm||""), end=getTV(t.eh||"",t.em||"");
+      addRow(td[1], "TARGET", td[1], "--", "--", start, end);
     });
+
+    // Bout Chaud
     TASKS_RONDELLE.forEach(function(task){
-      var t=tasks[task.id]||{},start=getTV(t.sh||"",t.sm||""),end=getTV(t.eh||"",t.em||"");
-      var dur=toMin(start)!==null&&toMin(end)!==null?toMin(end)-toMin(start):"";
-      rows.push([dateStr,jourStr,machine,"Taches",task.machine,t.qui||task.qui,start,end,dur,(t.comment||"").replace(/\n/g," | ")]);
+      var t=tasks[task.id]||{};
+      var start=getTV(t.sh||"",t.sm||""), end=getTV(t.eh||"",t.em||"");
+      addRow("Bout Chaud", "Tâche", task.machine, TACHE_REF[task.machine]||"--", t.qui||task.qui, start, end);
     });
+
+    // Bout Froid
     TASKS_BOUT_FROID.forEach(function(task){
-      var t=tasks[task.id]||{},start=getTV(t.sh||"",t.sm||""),end=getTV(t.eh||"",t.em||"");
-      var dur=toMin(start)!==null&&toMin(end)!==null?toMin(end)-toMin(start):"";
-      rows.push([dateStr,jourStr,machine,"Bout Froid",task.machine,t.qui||task.qui,start,end,dur,(t.comment||"").replace(/\n/g," | ")]);
+      var t=tasks[task.id]||{};
+      var start=getTV(t.sh||"",t.sm||""), end=getTV(t.eh||"",t.em||"");
+      addRow("Bout Froid", "Tâche", task.machine, TACHE_REF[task.machine]||"--", t.qui||task.qui, start, end);
     });
+
+    // Extras
     extras.forEach(function(et){
-      var start=getTV(et.sh||"",et.sm||""),end=getTV(et.eh||"",et.em||"");
-      var dur=toMin(start)!==null&&toMin(end)!==null?toMin(end)-toMin(start):"";
-      rows.push([dateStr,jourStr,machine,"Taches",et.machine||"Extra",et.qui||"",start,end,dur,(et.comment||"").replace(/\n/g," | ")]);
+      var start=getTV(et.sh||"",et.sm||""), end=getTV(et.eh||"",et.em||"");
+      var section = et.group==="boutfroid" ? "Bout Froid" : "Bout Chaud";
+      addRow(section, "Tâche", et.machine||"Extra", TACHE_REF[et.machine]||"--", et.qui||"", start, end);
     });
-    rows.push(["","","","","","","","","",""]);
+
+    rows.push(Array(15).fill(""));
   });
   var csv=rows.map(function(row){return row.map(function(cell){var str=String(cell!==null&&cell!==undefined?cell:"").replace(/\n/g," | ").replace(/\r/g,""); return(str.indexOf(";")>-1||str.indexOf('"')>-1)?'"'+str.replace(/"/g,'""')+'"':str;}).join(";");}).join("\n");
   var blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
