@@ -39,7 +39,7 @@ const TASKS_BOUT_FROID = [
   {id:"bf_5", machine:"T0\u2019 : Nettoyage de ligne", qui:"Production", color:"#e67e22", labelDebut:"Debut", labelFin:"Heur valid. vide de ligne"},
   {id:"bf_2", machine:"T1 : Duree pre-reglage", qui:"Automation", color:"#64748b", labelDebut:"Debut reglage automation", labelFin:"Fin reglage de base machines"},
   {id:"bf_4", machine:"T1\u2019 : Arrivee 2 sections controlables", qui:"Automation", color:"#2e86ab", labelDebut:"Arrivee deux sections", labelFin:"Arrivee de toutes sections"},
-  {id:"bf_3", machine:"T2 : Top qualit\u00e9s", qui:"Automation", color:"#795548", labelDebut:"Debut", labelFin:"Fin"},
+  {id:"bf_3", machine:"T2 : Top qualité", qui:"Automation", color:"#795548", labelDebut:"Debut", labelFin:"Fin"},
   {id:"bf_6", machine:"T2\u2019 : Premier lot sorti", qui:"Automation", color:"#9b59b6", labelDebut:"Debut", labelFin:"Fin"},
   {id:"bf_7", machine:"T2\u2019\u2019 : Montee en r\u00e9gime", qui:"Automation", color:"#1abc9c", labelDebut:"Debut", labelFin:"Val. 2 lots commercialisables"}
 ];
