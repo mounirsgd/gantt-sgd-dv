@@ -50,7 +50,7 @@ const HISTORY_PAGE_SIZE = 5;
 const ALL_TASK_IDS = TASKS_RONDELLE.map(function(t){return t.id;}).concat(TASKS_BOUT_FROID.map(function(t){return t.id;}));
 
 let allSessions = {};
-let ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
+let ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{},nettoyage:{},anticipation_feder:{},passage_so3:{}}, tasks:{}, extraTasks:[] };
 let selectedIds = [];
 let allTasks = {};
 let historyPage = 0;
@@ -164,7 +164,7 @@ function initApp() {
 }
 
 function resetState() {
-  ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] };
+  ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{},nettoyage:{},anticipation_feder:{},passage_so3:{}}, tasks:{}, extraTasks:[] };
   selectedIds = []; ganttQuiOverrides = {}; justifications = [];
   currentSessId = null;
   document.getElementById("f-machine-name").value = "";
@@ -179,8 +179,11 @@ function buildForm() {
   var targetsGroup = document.createElement("div");
   targetsGroup.style.cssText = "background:#f0f2f5;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;margin-bottom:4px;";
   targetsGroup.appendChild(buildTargetSection("grand_t1","TARGET (Grand T1)","#c0392b",ganttData.targets.grand_t1||{}));
+  targetsGroup.appendChild(buildTargetSection("nettoyage","TARGET (Nettoyage)","#27ae60",ganttData.targets.nettoyage||{}));
   targetsGroup.appendChild(buildTargetSection("petit_t1","TARGET (Petit t1)","#e07b54",ganttData.targets.petit_t1||{}));
   targetsGroup.appendChild(buildTargetSection("rondelle","TARGET (Rondelle)","#7d3c98",ganttData.targets.rondelle||{}));
+  targetsGroup.appendChild(buildTargetSection("anticipation_feder","TARGET (Anticipation Feder)","#2980b9",ganttData.targets.anticipation_feder||{}));
+  targetsGroup.appendChild(buildTargetSection("passage_so3","TARGET (Passage en SO3)","#e91e8c",ganttData.targets.passage_so3||{}));
   container.appendChild(targetsGroup);
 
   var tasksSec = document.createElement("div");
@@ -423,7 +426,7 @@ function encCmt(str) { if(!str) return ""; return str.replace(/\\/g,"\\\\").repl
 function collectData() {
   var container = document.getElementById("form-sections");
   var out = { targets:{}, tasks:{}, extraTasks:[] };
-  ["grand_t1","petit_t1","rondelle"].forEach(function(key) {
+  ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feder","passage_so3"].forEach(function(key) {
     var sec = container.querySelector('[data-target-key="'+key+'"]');
     if (sec) out.targets[key] = readSlots(sec);
   });
@@ -480,7 +483,7 @@ async function saveSession() {
   var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
 
   // Sauvegarder targets - toujours (seul PC qui remplit les targets)
-  for (var tkey of ["grand_t1","petit_t1","rondelle"]) {
+  for (var tkey of ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feder","passage_so3"]) {
     await set(ref(db,"sessions/"+sessId+"/ganttData/targets/"+tkey), data.targets[tkey]||{});
   }
 
@@ -653,7 +656,7 @@ function renderGantt(date, machine, data) {
     if(obj.sh4||obj.eh4) regT(obj.sh4,obj.sm4,obj.eh4,obj.em4);
   }
 
-  ["grand_t1","petit_t1","rondelle"].forEach(function(k){ regObj(targets[k]||{}); });
+  ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feder","passage_so3"].forEach(function(k){ regObj(targets[k]||{}); });
   TASKS_RONDELLE.forEach(function(t){ regObj(tasks[t.id]||{}); });
   TASKS_BOUT_FROID.forEach(function(t){ regObj(tasks[t.id]||{}); });
   extras.forEach(function(et){ regObj(et); });
@@ -671,8 +674,11 @@ function renderGantt(date, machine, data) {
 
   var targetDefs=[
     {key:"grand_t1",label:"TARGET (Grand T1)",color:"#c0392b"},
+    {key:"nettoyage",label:"TARGET (Nettoyage)",color:"#27ae60"},
     {key:"petit_t1",label:"TARGET (Petit t1)",color:"#e07b54"},
-    {key:"rondelle",label:"TARGET (Rondelle)",color:"#7d3c98"}
+    {key:"rondelle",label:"TARGET (Rondelle)",color:"#7d3c98"},
+    {key:"anticipation_feder",label:"TARGET (Anticipation Feder)",color:"#2980b9"},
+    {key:"passage_so3",label:"TARGET (Passage en SO3)",color:"#e91e8c"}
   ];
 
   var h='<table class="gantt"><tr><th colspan="5"></th>';
@@ -986,7 +992,7 @@ function exportToExcel(dateFrom,dateTo){
   filtered.forEach(function(session){
     var dateStr=session.date||"",jourStr=dateStr?new Date(dateStr+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long"}):"",machine=session.machine||"";
     var data=session.ganttData||{},targets=data.targets||{},tasks=data.tasks||{},extras=data.extraTasks||[];
-    [["grand_t1","TARGET (Grand T1)"],["petit_t1","TARGET (Petit t1)"],["rondelle","TARGET (Rondelle)"]].forEach(function(td){
+    [["grand_t1","TARGET (Grand T1)"],["nettoyage","TARGET (Nettoyage)"],["petit_t1","TARGET (Petit t1)"],["rondelle","TARGET (Rondelle)"],["anticipation_feder","TARGET (Anticipation Feder)"],["passage_so3","TARGET (Passage en SO3)"]].forEach(function(td){
       var t=targets[td[0]]||{},start=getTV(t.sh||"",t.sm||""),end=getTV(t.eh||"",t.em||"");
       var dur=toMin(start)!==null&&toMin(end)!==null?toMin(end)-toMin(start):"";
       rows.push([dateStr,jourStr,machine,td[1],"Target","--",start,end,dur,(t.comment||"").replace(/\n/g," | ")]);
