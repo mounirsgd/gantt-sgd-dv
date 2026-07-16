@@ -483,8 +483,13 @@ async function saveSession() {
   var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
 
   // Sauvegarder targets - toujours (seul PC qui remplit les targets)
+  // Sauvegarder les targets uniquement si remplies - eviter d ecraser celles d un autre PC
   for (var tkey of ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feeder","passage_so3"]) {
-    await set(ref(db,"sessions/"+sessId+"/ganttData/targets/"+tkey), data.targets[tkey]||{});
+    var tgt = data.targets[tkey] || {};
+    var tgtHasData = tgt.sh || tgt.eh || tgt.comment || tgt.sh2 || tgt.eh2 || tgt.sh3 || tgt.eh3 || tgt.sh4 || tgt.eh4;
+    if (tgtHasData) {
+      await set(ref(db,"sessions/"+sessId+"/ganttData/targets/"+tkey), tgt);
+    }
   }
 
   // Sauvegarder uniquement les taches remplies sur ce PC
