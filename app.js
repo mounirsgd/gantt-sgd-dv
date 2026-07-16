@@ -136,6 +136,7 @@ function initApp() {
   onValue(ref(db, "sessions"), function(snap) {
     allSessions = snap.val() || {};
     renderHistory(allSessions);
+    renderCorbeilleButton();
     document.getElementById("sync-status").textContent = "Connecte";
     // Mettre a jour le Gantt si une session est en cours d affichage
     var gs = document.getElementById("gantt-section");
@@ -146,6 +147,19 @@ function initApp() {
   });
 
   document.getElementById("save-btn").addEventListener("click", saveSession);
+
+  // Écouter la corbeille pour afficher le badge
+  onValue(ref(db, "corbeille"), function(snap) {
+    var corbeille = snap.val() || {};
+    var now = Date.now();
+    // Filtrer les sessions encore dans les 24h
+    var actives = Object.entries(corbeille).filter(function(e) {
+      return now - (e[1]._deletedAt||0) < 86400000;
+    });
+    updateCorbeilleButton(actives.length);
+    // Nettoyer les anciennes automatiquement
+    cleanCorbeille();
+  });
   document.getElementById("new-session-btn").addEventListener("click", newSession);
   document.getElementById("del-all-btn").addEventListener("click", deleteAllHistory);
   document.getElementById("do-compare-btn").addEventListener("click", doCompare);
@@ -593,6 +607,86 @@ function renderHistory(sessions) {
   if (nb) nb.addEventListener("click", function() { historyPage++; renderHistory(allSessions); });
 }
 
+function updateCorbeilleButton(count) {
+  var btn = document.getElementById("corbeille-btn");
+  if (!btn) return;
+  if (count > 0) {
+    btn.style.display = "inline-flex";
+    btn.innerHTML = "🗑️ Corbeille <span style='background:#e74c3c;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:5px;'>"+count+"</span>";
+  } else {
+    btn.style.display = "none";
+  }
+}
+
+function renderCorbeilleButton() {
+  var hd = document.querySelector(".history-hd");
+  if (!hd || document.getElementById("corbeille-btn")) return;
+  var btn = document.createElement("span");
+  btn.id = "corbeille-btn";
+  btn.style.cssText = "cursor:pointer;color:#e67e22;font-size:12px;font-weight:600;margin-left:10px;display:none;align-items:center;gap:4px;";
+  btn.addEventListener("click", openCorbeille);
+  hd.insertBefore(btn, hd.querySelector(".history-del-all"));
+}
+
+async function openCorbeille() {
+  var snap = await get(ref(db,"corbeille"));
+  var corbeille = snap.val() || {};
+  var now = Date.now();
+  var actives = Object.entries(corbeille).filter(function(e) {
+    return now - (e[1]._deletedAt||0) < 86400000;
+  }).sort(function(a,b){ return (b[1]._deletedAt||0)-(a[1]._deletedAt||0); });
+
+  var existing = document.getElementById("corbeille-panel");
+  if (existing) { existing.remove(); return; }
+
+  var panel = document.createElement("div");
+  panel.id = "corbeille-panel";
+  panel.style.cssText = "background:#fff8f0;border:2px solid #e67e22;border-radius:12px;padding:12px;margin:8px 0;";
+
+  var title = document.createElement("div");
+  title.style.cssText = "font-size:13px;font-weight:700;color:#e67e22;margin-bottom:10px;";
+  title.textContent = "🗑️ Corbeille — Sessions supprimées (récupérables 24h)";
+  panel.appendChild(title);
+
+  if (actives.length === 0) {
+    var empty = document.createElement("div");
+    empty.style.cssText = "color:#999;font-size:12px;text-align:center;padding:10px;";
+    empty.textContent = "Corbeille vide";
+    panel.appendChild(empty);
+  } else {
+    actives.forEach(function(entry) {
+      var id = entry[0], s = entry[1];
+      var dl = s.date ? new Date(s.date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"}) : "";
+      var deletedAgo = Math.round((now - (s._deletedAt||0)) / 60000);
+      var timeStr = deletedAgo < 60 ? deletedAgo+" min" : Math.round(deletedAgo/60)+"h";
+
+      var item = document.createElement("div");
+      item.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#fff;border-radius:8px;margin-bottom:6px;border:1px solid #f0d0b0;";
+      item.innerHTML = '<div><div style="font-size:13px;font-weight:700;">'+( s.machine||"Séance")+'</div><div style="font-size:11px;color:#999;">'+dl+' · supprimée il y a '+timeStr+'</div></div>'+
+        '<button style="background:#34c759;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;" data-restore="'+id+'">Restaurer</button>';
+      panel.appendChild(item);
+    });
+  }
+
+  var closeBtn = document.createElement("button");
+  closeBtn.textContent = "Fermer";
+  closeBtn.style.cssText = "margin-top:8px;background:#e67e22;color:#fff;border:none;border-radius:8px;padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;width:100%;";
+  closeBtn.addEventListener("click", function() { panel.remove(); });
+  panel.appendChild(closeBtn);
+
+  panel.querySelectorAll("[data-restore]").forEach(function(btn) {
+    btn.addEventListener("click", async function() {
+      await restoreSession(btn.dataset.restore);
+      panel.remove();
+    });
+  });
+
+  // Insérer après le bouton corbeille
+  var histSec = document.querySelector(".history-sec");
+  if (histSec) histSec.insertAdjacentElement("afterend", panel);
+  else document.querySelector(".form-wrap").insertAdjacentElement("afterbegin", panel);
+}
+
 async function loadHistorySession(id) {
   var snap = await get(ref(db,"sessions/"+id));
   var d = snap.val(); if (!d) return;
@@ -623,8 +717,47 @@ async function editHistorySession(id) {
   showToast("Seance chargee - modifiez puis enregistrez", "#1a3a6b");
 }
 
-async function deleteSession(id) { if (!confirm("Supprimer cette seance ?")) return; await remove(ref(db,"sessions/"+id)); if (currentSessId === id) { resetState(); buildForm(); } }
-async function deleteAllHistory() { if (!confirm("Supprimer tout l historique ?")) return; await remove(ref(db,"sessions")); resetState(); buildForm(); }
+async function deleteSession(id) {
+  if (!confirm("Supprimer cette séance ?")) return;
+  var snap = await get(ref(db,"sessions/"+id));
+  var d = snap.val(); if (!d) return;
+  d._deletedAt = Date.now();
+  await set(ref(db,"corbeille/"+id), d);
+  await remove(ref(db,"sessions/"+id));
+  if (currentSessId === id) { resetState(); buildForm(); }
+  showToast("Séance déplacée dans la corbeille (récupérable 24h)", "#e67e22");
+}
+
+async function deleteAllHistory() {
+  if (!confirm("Supprimer tout l'historique ?")) return;
+  for (var id of Object.keys(allSessions)) {
+    var d = JSON.parse(JSON.stringify(allSessions[id]));
+    d._deletedAt = Date.now();
+    await set(ref(db,"corbeille/"+id), d);
+  }
+  await remove(ref(db,"sessions"));
+  resetState(); buildForm();
+}
+
+async function restoreSession(id) {
+  var snap = await get(ref(db,"corbeille/"+id));
+  var d = snap.val(); if (!d) return;
+  delete d._deletedAt;
+  await set(ref(db,"sessions/"+id), d);
+  await remove(ref(db,"corbeille/"+id));
+  showToast("Séance restaurée !", "#34c759");
+}
+
+async function cleanCorbeille() {
+  var snap = await get(ref(db,"corbeille"));
+  var corbeille = snap.val() || {};
+  var now = Date.now();
+  for (var cid of Object.keys(corbeille)) {
+    if (now - (corbeille[cid]._deletedAt||0) > 86400000) {
+      await remove(ref(db,"corbeille/"+cid));
+    }
+  }
+}
 
 // ── GANTT ─────────────────────────────────────────────────────────────────────
 function fmtCmtCell(cmts, color) {
