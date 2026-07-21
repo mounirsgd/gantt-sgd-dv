@@ -35,15 +35,15 @@ const TASKS_RONDELLE = [
 ];
 
 const TASKS_BOUT_FROID = [
-  {id:"bf_1", machine:"T0 : Aligneur vide", qui:"Production", color:"#f1c40f", labelDebut:"Debut", labelFin:"Fin"},
-  {id:"bf_5", machine:"T0\u2019 : Nettoyage de ligne", qui:"Production", color:"#e67e22", labelDebut:"Debut", labelFin:"Heur valid. vide de ligne"},
-  {id:"bf_2", machine:"T1 : Duree pre-reglage", qui:"Automation", color:"#64748b", labelDebut:"Debut reglage automation", labelFin:"Fin reglage de base machines"},
-  {id:"bf_4", machine:"T1\u2019 : Arrivee 2 sections controlables", qui:"Automation", color:"#2e86ab", labelDebut:"Arrivee deux sections", labelFin:"Arrivee de toutes sections"},
-  {id:"bf_3", machine:"T2 : Top qualité", qui:"Automation", color:"#795548", labelDebut:"Debut", labelFin:"Fin"},
-  {id:"bf_6", machine:"T2\u2019 : Premier lot sorti", qui:"Automation", color:"#9b59b6", labelDebut:"Debut", labelFin:"Fin"},
-  {id:"bf_7", machine:"T2\u2019\u2019 : Montee en r\u00e9gime", qui:"Automation", color:"#1abc9c", labelDebut:"Debut", labelFin:"Val. 2 lots commercialisables"}
+  {id:"bf_1", machine:"Aligneur vide", qui:"Production", color:"#f1c40f", labelDebut:"Début", labelFin:"Fin"},
+  {id:"bf_5", machine:"T0 : Nettoyage de ligne", qui:"Production", color:"#e67e22", labelDebut:"Début", labelFin:"Fin (validation vide de ligne)"},
+  {id:"bf_2", machine:"T1 : Durée pré-réglage", qui:"Automation", color:"#64748b", labelDebut:"Début réglage automation", labelFin:"Fin réglage de base machines"},
+  {id:"bf_4", machine:"Arrivée deux sections contrôlables", qui:"Automation", color:"#2e86ab", labelDebut:"Début", labelFin:"Fin"},
+  {id:"bf_3", machine:"Arrivée de toutes sections", qui:"Automation", color:"#795548", labelDebut:"Début", labelFin:"Fin"},
+  {id:"bf_6", machine:"Top qualité", qui:"Automation", color:"#9b59b6", labelDebut:"Début", labelFin:"Fin"},
+  {id:"bf_7", machine:"Premier lot sorti", qui:"Automation", color:"#1abc9c", labelDebut:"Début", labelFin:"Fin"},
+  {id:"bf_8", machine:"Validation de deux lots commercialisables", qui:"Automation", color:"#e74c3c", labelDebut:"Début", labelFin:"Fin"}
 ];
-
 const BOUT_FROID_COLOR = "#2e86ab";
 const MAX_SLOTS = 4;
 const HISTORY_PAGE_SIZE = 5;
