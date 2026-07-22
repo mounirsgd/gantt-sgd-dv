@@ -1161,15 +1161,20 @@ function exportToExcel(dateFrom,dateTo){
     var dateStr=session.date||"",jourStr=dateStr?new Date(dateStr+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long"}):"",machine=session.machine||"";
     var data=session.ganttData||{},targets=data.targets||{},tasks=data.tasks||{},extras=data.extraTasks||[];
 
-    // Extraire la référence machine (après " - ")
-    var machineRef = machine.indexOf(" - ") > -1 ? machine.split(" - ").slice(1).join(" - ").trim() : "";
+    // Extraire nom court (avant " - ") et référence (après " - ")
+    var machineParts = machine.indexOf(" - ") > -1 ? machine.split(" - ") : [machine, ""];
+    var machineCourt = machineParts[0].trim();
+    var machineRef = machineParts.slice(1).join(" - ").trim();
 
     function addRow(section, type, tache, ref, qui, start, end, commentaire) {
       exportRowIdx++;
-      var id = machine.replace(/\s/g,"_")+"_"+dateStr+"_"+String(exportRowIdx).padStart(3,"0");
+      var id = machineCourt.replace(/\s/g,"_")+"_"+dateStr+"_"+String(exportRowIdx).padStart(3,"0");
       var dur = toMin(start)!==null&&toMin(end)!==null ? toMin(end)-toMin(start) : "";
-      rows.push([id, dateStr, jourStr, machine, machineRef, section, type, tache, ref, qui, start, end,
-        makeDT(dateStr,start), makeDT(dateStr,end), dur, (commentaire||"").replace(/\n/g," | ")]);
+      // Protéger contre les formules Excel : préfixer avec apostrophe si commence par = + - @
+      var cmt = (commentaire||"").replace(/\n/g," | ");
+      if (cmt && "=+-@".indexOf(cmt[0]) > -1) cmt = "'" + cmt;
+      rows.push([id, dateStr, jourStr, machineCourt, machineRef, section, type, tache, ref, qui, start, end,
+        makeDT(dateStr,start), makeDT(dateStr,end), dur, cmt]);
     }
 
     // Targets
