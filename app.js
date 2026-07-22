@@ -1127,7 +1127,7 @@ function exportToExcel(dateFrom,dateTo){
   var filtered=dateFrom&&dateTo?sessions.filter(function(s){return s.date>=dateFrom&&s.date<=dateTo;}):sessions;
   if(!filtered.length){alert("Aucune seance trouvee.");return;}
   filtered.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
-  var rows=[["ID_Changement","Date","Jour","Machine","Section","Type_Tâche","Tâche","Tâche_Référence","Qui","Début","Fin","Date_Heure_Début","Date_Heure_Fin","Durée (min)","Commentaire"]];
+  var rows=[["ID_Changement","Date","Jour","Machine","Référence_Machine","Section","Type_Tâche","Tâche","Tâche_Référence","Qui","Début","Fin","Date_Heure_Début","Date_Heure_Fin","Durée (min)","Commentaires"]];
 
   // Correspondance tâche -> TARGET de référence
   var TACHE_REF = {
@@ -1161,40 +1161,43 @@ function exportToExcel(dateFrom,dateTo){
     var dateStr=session.date||"",jourStr=dateStr?new Date(dateStr+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long"}):"",machine=session.machine||"";
     var data=session.ganttData||{},targets=data.targets||{},tasks=data.tasks||{},extras=data.extraTasks||[];
 
-    function addRow(section, type, tache, ref, qui, start, end) {
+    // Extraire la référence machine (après " - ")
+    var machineRef = machine.indexOf(" - ") > -1 ? machine.split(" - ").slice(1).join(" - ").trim() : "";
+
+    function addRow(section, type, tache, ref, qui, start, end, commentaire) {
       exportRowIdx++;
       var id = machine.replace(/\s/g,"_")+"_"+dateStr+"_"+String(exportRowIdx).padStart(3,"0");
       var dur = toMin(start)!==null&&toMin(end)!==null ? toMin(end)-toMin(start) : "";
-      rows.push([id, dateStr, jourStr, machine, section, type, tache, ref, qui, start, end,
-        makeDT(dateStr,start), makeDT(dateStr,end), dur, ""]);
+      rows.push([id, dateStr, jourStr, machine, machineRef, section, type, tache, ref, qui, start, end,
+        makeDT(dateStr,start), makeDT(dateStr,end), dur, (commentaire||"").replace(/\n/g," | ")]);
     }
 
     // Targets
     [["grand_t1","TARGET (Grand T1)"],["nettoyage","TARGET (Nettoyage)"],["petit_t1","TARGET (Petit t1)"],["rondelle","TARGET (Rondelle)"],["anticipation_feeder","TARGET (Anticipation Feeder)"],["passage_so3","TARGET (Passage en SO3)"]].forEach(function(td){
       var t=targets[td[0]]||{};
       var start=getTV(t.sh||"",t.sm||""), end=getTV(t.eh||"",t.em||"");
-      addRow(td[1], "TARGET", td[1], "--", "--", start, end);
+      addRow(td[1], "TARGET", td[1], "--", "--", start, end, t.comment||"");
     });
 
     // Bout Chaud
     TASKS_RONDELLE.forEach(function(task){
       var t=tasks[task.id]||{};
       var start=getTV(t.sh||"",t.sm||""), end=getTV(t.eh||"",t.em||"");
-      addRow("Bout Chaud", "Tâche", task.machine, TACHE_REF[task.machine]||"--", t.qui||task.qui, start, end);
+      addRow("Bout Chaud", "Tâche", task.machine, TACHE_REF[task.machine]||"--", t.qui||task.qui, start, end, t.comment||"");
     });
 
     // Bout Froid
     TASKS_BOUT_FROID.forEach(function(task){
       var t=tasks[task.id]||{};
       var start=getTV(t.sh||"",t.sm||""), end=getTV(t.eh||"",t.em||"");
-      addRow("Bout Froid", "Tâche", task.machine, TACHE_REF[task.machine]||"--", t.qui||task.qui, start, end);
+      addRow("Bout Froid", "Tâche", task.machine, TACHE_REF[task.machine]||"--", t.qui||task.qui, start, end, t.comment||"");
     });
 
     // Extras
     extras.forEach(function(et){
       var start=getTV(et.sh||"",et.sm||""), end=getTV(et.eh||"",et.em||"");
       var section = et.group==="boutfroid" ? "Bout Froid" : "Bout Chaud";
-      addRow(section, "Tâche", et.machine||"Extra", TACHE_REF[et.machine]||"--", et.qui||"", start, end);
+      addRow(section, "Tâche", et.machine||"Extra", TACHE_REF[et.machine]||"--", et.qui||"", start, end, et.comment||"");
     });
 
     rows.push(Array(15).fill(""));
