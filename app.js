@@ -58,6 +58,7 @@ let ganttQuiOverrides = {};
 let justifications = [];
 let appReady = false;
 let currentSessId = null;
+let modifiedFields = new Set(); // Dirty tracking : IDs des champs modifiés par l'utilisateur
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 document.getElementById("login-btn").addEventListener("click", async function() {
@@ -180,6 +181,7 @@ function initApp() {
 function resetState() {
   ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{},nettoyage:{},anticipation_feeder:{},passage_so3:{}}, tasks:{}, extraTasks:[] };
   selectedIds = []; ganttQuiOverrides = {}; justifications = [];
+  modifiedFields = new Set();
   currentSessId = null;
   document.getElementById("f-machine-name").value = "";
   document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
@@ -261,7 +263,7 @@ function buildTargetSection(key, label, color, saved) {
   var hd = document.createElement("div"); hd.className = "tasks-sec-hd"; hd.style.background = color;
   hd.textContent = label; sec.appendChild(hd);
   var cmtContainer = document.createElement("div");
-  var slotsWrap = buildSlotSystem(sec, cmtContainer, getSavedSlots(saved));
+  var slotsWrap = buildSlotSystem(sec, cmtContainer, getSavedSlots(saved), null, null, "target_"+key);
   slotsWrap.style.padding = "10px 12px";
   sec.appendChild(slotsWrap); sec.appendChild(cmtContainer);
   sec.dataset.targetKey = key;
@@ -277,7 +279,7 @@ function appendTaskRow(sec, taskId, machineName, quiDefault, tv, color) {
   top.appendChild(colorBar); top.appendChild(lbl); top.appendChild(who);
   row.appendChild(top);
   var cmtContainer = document.createElement("div");
-  var slotsWrap = buildSlotSystem(row, cmtContainer, getSavedSlots(tv), tv._labelDebut, tv._labelFin);
+  var slotsWrap = buildSlotSystem(row, cmtContainer, getSavedSlots(tv), tv._labelDebut, tv._labelFin, "task_"+taskId);
   row.appendChild(slotsWrap); row.appendChild(cmtContainer);
   sec._taskFields[taskId] = {color:color, row:row};
   sec.appendChild(row);
@@ -302,15 +304,18 @@ function appendExtraTaskRow(sec, et, color) {
   top.appendChild(colorBar); top.appendChild(nameInp); top.appendChild(whoInp); top.appendChild(delBtn);
   row.appendChild(top);
   var cmtContainer = document.createElement("div");
-  var slotsWrap = buildSlotSystem(row, cmtContainer, getSavedSlots(et));
+  var slotsWrap = buildSlotSystem(row, cmtContainer, getSavedSlots(et), null, null, "extra_"+sec._extraFields.length);
   row.appendChild(slotsWrap); row.appendChild(cmtContainer);
   row._nameInp = nameInp; row._whoInp = whoInp;
+  // Tracker les modifications des extras
+  nameInp.addEventListener("input", function() { modifiedFields.add("extras_modified"); });
+  whoInp.addEventListener("input", function() { modifiedFields.add("extras_modified"); });
   sec._extraFields.push({color:color, row:row, group:et.group||"boutchaud"});
   sec.appendChild(row);
 }
 
 // ── SYSTEME DE CRENEAUX ───────────────────────────────────────────────────────
-function buildSlotSystem(holder, container, savedSlots, labelDebut, labelFin) {
+function buildSlotSystem(holder, container, savedSlots, labelDebut, labelFin, trackingId) {
   holder._slots = [];
   var slotsWrap = document.createElement("div"); slotsWrap.className = "task-row-times";
   var addBtn = document.createElement("button"); addBtn.className = "btn-add-slot"; addBtn.textContent = "+";
@@ -329,9 +334,9 @@ function buildSlotSystem(holder, container, savedSlots, labelDebut, labelFin) {
       sep.style.cssText = "font-size:11px;color:#6c6c70;margin:0 4px;"; sep.textContent = "puis";
       slotsWrap.insertBefore(sep, addBtn);
     }
-    var slotEl = makeSlotRow(sh||"", sm||"", eh||"", em||"", n===0?labelDebut:null, n===0?labelFin:null);
+    var slotEl = makeSlotRow(sh||"", sm||"", eh||"", em||"", n===0?labelDebut:null, n===0?labelFin:null, trackingId);
     slotsWrap.insertBefore(slotEl, addBtn);
-    var cmtTA = makeTextarea("Commentaire creneau "+(n+1)+"...", comment||"");
+    var cmtTA = makeTextarea("Commentaire creneau "+(n+1)+"...", comment||"", trackingId);
     var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap"; cmtWrap.appendChild(cmtTA);
     container.appendChild(cmtWrap);
     holder._slots.push({slotEl:slotEl, cmtTA:cmtTA, cmtWrap:cmtWrap});
@@ -378,14 +383,14 @@ function getSavedSlots(obj) {
 }
 
 // ── CHAMPS TEMPS ──────────────────────────────────────────────────────────────
-function makeSlotRow(sh, sm, eh, em, labelDebut, labelFin) {
+function makeSlotRow(sh, sm, eh, em, labelDebut, labelFin, trackingId) {
   var wrap = document.createElement("div"); wrap.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;";
   var sGrp = document.createElement("div"); sGrp.className = "time-group";
   var sLbl = document.createElement("label"); sLbl.textContent = labelDebut||"Debut";
-  var sF = makeTimeField(sh, sm); sGrp.appendChild(sLbl); sGrp.appendChild(sF);
+  var sF = makeTimeField(sh, sm, trackingId); sGrp.appendChild(sLbl); sGrp.appendChild(sF);
   var eGrp = document.createElement("div"); eGrp.className = "time-group";
   var eLbl = document.createElement("label"); eLbl.textContent = labelFin||"Fin";
-  var eF = makeTimeField(eh, em); eGrp.appendChild(eLbl); eGrp.appendChild(eF);
+  var eF = makeTimeField(eh, em, trackingId); eGrp.appendChild(eLbl); eGrp.appendChild(eF);
   var prev = document.createElement("span"); prev.className = "time-preview";
   function updPrev() {
     var s=getTV(sF._getH(),sF._getM()), e=getTV(eF._getH(),eF._getM());
@@ -397,17 +402,19 @@ function makeSlotRow(sh, sm, eh, em, labelDebut, labelFin) {
   return wrap;
 }
 
-function makeTimeField(hVal, mVal) {
+function makeTimeField(hVal, mVal, trackingId) {
   var wrap = document.createElement("div"); wrap.className = "time-field";
   var hInp = document.createElement("input"); hInp.className = "h-inp"; hInp.inputMode = "numeric"; hInp.maxLength = 2; hInp.placeholder = "H"; hInp.value = hVal||"";
   var sep = document.createElement("span"); sep.className = "time-field-sep"; sep.textContent = ":";
   var mInp = document.createElement("input"); mInp.className = "m-inp"; mInp.inputMode = "numeric"; mInp.maxLength = 2; mInp.placeholder = "mm"; mInp.value = mVal||"";
   hInp.addEventListener("input", function() {
+    if (trackingId) modifiedFields.add(trackingId);
     this.value = this.value.replace(/\D/g,"").slice(0,2);
     if (this.value.length===2) { if(parseInt(this.value)>23) this.value="23"; mInp.focus(); }
   });
   hInp.addEventListener("blur", function() { if (this.value !== "") { var v=parseInt(this.value); if(v>23)this.value="23"; if(v<0)this.value="0"; } });
   mInp.addEventListener("input", function() {
+    if (trackingId) modifiedFields.add(trackingId);
     this.value = this.value.replace(/\D/g,"").slice(0,2);
     if (this.value.length===2 && parseInt(this.value)>59) this.value="59";
   });
@@ -418,10 +425,10 @@ function makeTimeField(hVal, mVal) {
   return wrap;
 }
 
-function makeTextarea(placeholder, value) {
+function makeTextarea(placeholder, value, trackingId) {
   var ta = document.createElement("textarea"); ta.placeholder = placeholder; ta.value = value||""; ta.rows = 1;
   function resize() { ta.style.height="auto"; ta.style.height=ta.scrollHeight+"px"; }
-  ta.addEventListener("input", resize); setTimeout(resize, 0);
+  ta.addEventListener("input", function() { if (trackingId) modifiedFields.add(trackingId); resize(); }); setTimeout(resize, 0);
   return ta;
 }
 
@@ -496,30 +503,26 @@ async function saveSession() {
   var data = collectData();
   var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
 
-  // Sauvegarder targets - toujours (seul PC qui remplit les targets)
-  // Sauvegarder les targets uniquement si remplies - eviter d ecraser celles d un autre PC
+  // DIRTY TRACKING : sauvegarder uniquement les champs modifiés par ce PC
+  // => Si un champ n'a pas été touché, on ne le sauvegarde pas => pas d'écrasement
+  // => Si un champ a été vidé volontairement, il est marqué modifié => la valeur vide est sauvegardée
+
+  // Sauvegarder les targets modifiées uniquement
   for (var tkey of ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feeder","passage_so3"]) {
-    var tgt = data.targets[tkey] || {};
-    var tgtHasData = tgt.sh || tgt.eh || tgt.comment || tgt.sh2 || tgt.eh2 || tgt.sh3 || tgt.eh3 || tgt.sh4 || tgt.eh4;
-    if (tgtHasData) {
-      await set(ref(db,"sessions/"+sessId+"/ganttData/targets/"+tkey), tgt);
+    if (modifiedFields.has("target_"+tkey)) {
+      await set(ref(db,"sessions/"+sessId+"/ganttData/targets/"+tkey), data.targets[tkey]||{});
     }
   }
 
-  // Sauvegarder uniquement les taches remplies sur ce PC
-  // Les taches vides ne sont JAMAIS ecrasees dans Firebase
-  // => 2 PC peuvent remplir des sections differentes sans conflit
+  // Sauvegarder les tâches modifiées uniquement
   for (var taskId of ALL_TASK_IDS) {
-    var t = data.tasks[taskId] || {};
-    var hasData = t.sh || t.eh || t.comment || t.sh2 || t.eh2 || t.sh3 || t.eh3 || t.sh4 || t.eh4;
-    if (hasData) {
-      await set(ref(db,"sessions/"+sessId+"/ganttData/tasks/"+taskId), t);
+    if (modifiedFields.has("task_"+taskId)) {
+      await set(ref(db,"sessions/"+sessId+"/ganttData/tasks/"+taskId), data.tasks[taskId]||{});
     }
-    // Si vide -> ne pas toucher Firebase -> preserve les donnees de l autre PC
   }
 
-  // Sauvegarder les extras seulement si ce PC en a
-  if (data.extraTasks && data.extraTasks.length > 0) {
+  // Sauvegarder les extras seulement si modifiés
+  if (modifiedFields.has("extras_modified") && data.extraTasks && data.extraTasks.length > 0) {
     await set(ref(db,"sessions/"+sessId+"/ganttData/extraTasks"), data.extraTasks);
   }
 
@@ -529,7 +532,8 @@ async function saveSession() {
   await set(ref(db,"sessions/"+sessId+"/title"), machine+" - "+dl);
   await set(ref(db,"sessions/"+sessId+"/savedAt"), Date.now());
 
-  showToast("Seance enregistree !", "#34c759");
+  modifiedFields = new Set(); // Réinitialiser le tracking après sauvegarde
+  showToast("Séance enregistrée !", "#34c759");
 
   // Lire les donnees completes depuis Firebase pour afficher le Gantt
   var snap = await get(ref(db,"sessions/"+sessId));
