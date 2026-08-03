@@ -31,7 +31,9 @@ const TASKS_RONDELLE = [
   {id:"ron_7", machine:"Demarrage section sans flacon", qui:"Chef de section"},
   {id:"ron_8", machine:"Debut section avec flacon", qui:"Chef de section"},
   {id:"ron_9", machine:"Machine complete avec flacon", qui:"Chef de section"},
-  {id:"ron_10", machine:"Mise a l arche", qui:"Chef de section"}
+  {id:"ron_10", machine:"Mise a l arche", qui:"Chef de section"},
+  {id:"ron_11", machine:"Changement Traitement Surface", qui:"Production"},
+  {id:"ron_12", machine:"Nettoyage SO3", qui:"Production"}
 ];
 
 const TASKS_BOUT_FROID = [
@@ -44,6 +46,35 @@ const TASKS_BOUT_FROID = [
   {id:"bf_7", machine:"Premier lot sorti", qui:"Automation", color:"#1abc9c", labelDebut:"Début", labelFin:"Fin"},
   {id:"bf_8", machine:"Validation de deux lots commercialisables", qui:"Automation", color:"#e74c3c", labelDebut:"Début", labelFin:"Fin"}
 ];
+
+// Dictionnaire des causes par tâche (Bout Chaud)
+const CAUSES_BOUT_CHAUD = {
+  "Nettoyage de machine": ["Nettoyage non réalisé","Manque de personnel","Machine très sale"],
+  "Changement rondelle (cuvette)": ["Poids non conforme","Paraison non conforme","T°FMS non conforme","Cuvette non conforme","Formation"],
+  "Cote Finisseur": ["Moulerie non conforme","Equipement variable non conforme","Reprise réglages","Problème mécanique","Préparation incomplète","Problème Communication","Formation"],
+  "Cote Ebaucheur": ["Moulerie non conforme","Equipement variable non conforme","Reprise réglages","Problème mécanique","Préparation incomplète","Problème Communication","Formation"],
+  "Entonnoir sous verre": ["Paraison non conforme"],
+  "Distributeur sous verre": ["Problème mécanique","Problème électrique","Problème Lubrification"],
+  "Demarrage section sans flacon": ["Réglages section non conforme","Reprise réglages par atelier IS","Equipement non conforme","Problème Ventilation Machine","Problème mécanique","Problème électrique"],
+  "Debut section avec flacon": ["Réglages section non conforme","Reprise réglages par atelier IS","Equipement non conforme","Problème Ventilation Machine","Problème mécanique","Problème électrique","Poids non conforme","Paraison non conforme","T°FMS non conforme"],
+  "Machine complete avec flacon": ["Retard réglage section","Equipement non conforme","Problème Ventilation Machine","Problème mécanique","Problème électrique","Poids non conforme","Paraison non conforme","T°FMS non conforme"],
+  "Mise a l arche": ["Retard réglage SO3","Retard réglage Clear & Safe","Retard réglage enfournement"],
+  "Changement Traitement Surface": ["Retard changement équipement TDS","Equipement non conforme","Retard réglages","Réglages non conforme","Formation"],
+  "Nettoyage SO3": ["Nettoyage non réalisé","Nettoyage long"]
+};
+
+// Dictionnaire des causes par tâche (Bout Froid)
+const CAUSES_BOUT_FROID_DICT = {
+  "Aligneur vide": ["Manque de personnel","Vide de l\'arche BF","Vide de la ligne entière"],
+  "T0 : Nettoyage de ligne": ["Nettoyage non terminé","Manque de personnel"],
+  "T1 : Durée pré-réglage": ["Manque de personnel","Témoins NOK","Chariot film NOK","Matériel NOK","Nettoyage (débris verre)","Intervention maintenance","Réglage non terminé","Création fiche","Formation"],
+  "Arrivée deux sections contrôlables": ["Retard arrivée sections","Recuit NOK","Réglage équipement BF"],
+  "Arrivée de toutes sections": ["Retard démarrage","Top Qualité retardé","Top Emballage retardé","Tombées sur arche","Réglage BF"],
+  "Top qualité": ["Top Qualité retardé","Démarrage tardif","SAP"],
+  "Premier lot sorti": ["Lot bloqué","Défaut qualité","Défaut palettisation","SAP - étiquette","Démarrage tardif"],
+  "Validation de deux lots commercialisables": ["Lot bloqué","Validation retardée"]
+};
+
 const BOUT_FROID_COLOR = "#2e86ab";
 const MAX_SLOTS = 4;
 const HISTORY_PAGE_SIZE = 5;
@@ -51,11 +82,9 @@ const ALL_TASK_IDS = TASKS_RONDELLE.map(function(t){return t.id;}).concat(TASKS_
 
 let allSessions = {};
 let ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{},nettoyage:{},anticipation_feeder:{},passage_so3:{}}, tasks:{}, extraTasks:[] };
-let selectedIds = [];
 let allTasks = {};
 let historyPage = 0;
 let ganttQuiOverrides = {};
-let justifications = [];
 let appReady = false;
 let currentSessId = null;
 let modifiedFields = new Set(); // Dirty tracking : IDs des champs modifiés par l'utilisateur
@@ -163,9 +192,6 @@ function initApp() {
   });
   document.getElementById("new-session-btn").addEventListener("click", newSession);
   document.getElementById("del-all-btn").addEventListener("click", deleteAllHistory);
-  document.getElementById("do-compare-btn").addEventListener("click", doCompare);
-  document.getElementById("close-compare-btn").addEventListener("click", closeCompare);
-  document.getElementById("do-justif-btn").addEventListener("click", openJustifDialog);
   initExportButtons();
 
   var TT = document.getElementById("tooltip");
@@ -180,10 +206,11 @@ function initApp() {
 
 function resetState() {
   ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{},nettoyage:{},anticipation_feeder:{},passage_so3:{}}, tasks:{}, extraTasks:[] };
-  selectedIds = []; ganttQuiOverrides = {}; justifications = [];
+  ganttQuiOverrides = {};
   modifiedFields = new Set();
   currentSessId = null;
   document.getElementById("f-machine-name").value = "";
+  var refField = document.getElementById("f-reference"); if (refField) refField.value = "";
   document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
 }
 
@@ -263,7 +290,7 @@ function buildTargetSection(key, label, color, saved) {
   var hd = document.createElement("div"); hd.className = "tasks-sec-hd"; hd.style.background = color;
   hd.textContent = label; sec.appendChild(hd);
   var cmtContainer = document.createElement("div");
-  var slotsWrap = buildSlotSystem(sec, cmtContainer, getSavedSlots(saved), null, null, "target_"+key);
+  var slotsWrap = buildSlotSystem(sec, cmtContainer, getSavedSlots(saved), null, null, "target_"+key, label);
   slotsWrap.style.padding = "10px 12px";
   sec.appendChild(slotsWrap); sec.appendChild(cmtContainer);
   sec.dataset.targetKey = key;
@@ -279,7 +306,7 @@ function appendTaskRow(sec, taskId, machineName, quiDefault, tv, color) {
   top.appendChild(colorBar); top.appendChild(lbl); top.appendChild(who);
   row.appendChild(top);
   var cmtContainer = document.createElement("div");
-  var slotsWrap = buildSlotSystem(row, cmtContainer, getSavedSlots(tv), tv._labelDebut, tv._labelFin, "task_"+taskId);
+  var slotsWrap = buildSlotSystem(row, cmtContainer, getSavedSlots(tv), tv._labelDebut, tv._labelFin, "task_"+taskId, machineName);
   row.appendChild(slotsWrap); row.appendChild(cmtContainer);
   sec._taskFields[taskId] = {color:color, row:row};
   sec.appendChild(row);
@@ -304,7 +331,7 @@ function appendExtraTaskRow(sec, et, color) {
   top.appendChild(colorBar); top.appendChild(nameInp); top.appendChild(whoInp); top.appendChild(delBtn);
   row.appendChild(top);
   var cmtContainer = document.createElement("div");
-  var slotsWrap = buildSlotSystem(row, cmtContainer, getSavedSlots(et), null, null, "extra_"+sec._extraFields.length);
+  var slotsWrap = buildSlotSystem(row, cmtContainer, getSavedSlots(et), null, null, "extra_"+Date.now(), et.machine||"");
   row.appendChild(slotsWrap); row.appendChild(cmtContainer);
   row._nameInp = nameInp; row._whoInp = whoInp;
   // Tracker les modifications des extras
@@ -315,7 +342,7 @@ function appendExtraTaskRow(sec, et, color) {
 }
 
 // ── SYSTEME DE CRENEAUX ───────────────────────────────────────────────────────
-function buildSlotSystem(holder, container, savedSlots, labelDebut, labelFin, trackingId) {
+function buildSlotSystem(holder, container, savedSlots, labelDebut, labelFin, trackingId, taskMachineName) {
   holder._slots = [];
   var slotsWrap = document.createElement("div"); slotsWrap.className = "task-row-times";
   var addBtn = document.createElement("button"); addBtn.className = "btn-add-slot"; addBtn.textContent = "+";
@@ -336,7 +363,7 @@ function buildSlotSystem(holder, container, savedSlots, labelDebut, labelFin, tr
     }
     var slotEl = makeSlotRow(sh||"", sm||"", eh||"", em||"", n===0?labelDebut:null, n===0?labelFin:null, trackingId);
     slotsWrap.insertBefore(slotEl, addBtn);
-    var cmtTA = makeTextarea("Commentaire creneau "+(n+1)+"...", comment||"", trackingId);
+    var cmtTA = makeTextarea("Commentaire creneau "+(n+1)+"...", comment||"", trackingId, taskMachineName);
     var cmtWrap = document.createElement("div"); cmtWrap.className = "task-comment-wrap"; cmtWrap.appendChild(cmtTA);
     container.appendChild(cmtWrap);
     holder._slots.push({slotEl:slotEl, cmtTA:cmtTA, cmtWrap:cmtWrap});
@@ -425,11 +452,97 @@ function makeTimeField(hVal, mVal, trackingId) {
   return wrap;
 }
 
-function makeTextarea(placeholder, value, trackingId) {
-  var ta = document.createElement("textarea"); ta.placeholder = placeholder; ta.value = value||""; ta.rows = 1;
+function makeTextarea(placeholder, value, trackingId, taskMachineName) {
+  var wrapper = document.createElement("div");
+  wrapper.style.cssText = "display:flex;flex-direction:column;gap:4px;width:100%;";
+
+  // Chercher les causes disponibles pour cette tâche
+  var causes = null;
+  if (taskMachineName) {
+    causes = CAUSES_BOUT_CHAUD[taskMachineName] || CAUSES_BOUT_FROID_DICT[taskMachineName] || null;
+  }
+
+  // Décomposer la valeur existante en motifs sélectionnés et commentaire libre
+  var existingParts = (value||"").split(" | ").filter(function(s){return s.trim();});
+  var selectedMotifs = [];
+  var freeText = "";
+  if (causes && existingParts.length > 0) {
+    existingParts.forEach(function(part) {
+      if (causes.indexOf(part.trim()) > -1) selectedMotifs.push(part.trim());
+      else if (part.trim()) freeText += (freeText ? " | " : "") + part.trim();
+    });
+  } else {
+    freeText = value || "";
+  }
+
+  // Zone de résumé
+  var resumeEl = document.createElement("div");
+  resumeEl.style.cssText = "font-size:11px;color:#1a3a6b;padding:2px 4px;min-height:16px;font-style:italic;";
+  function updateResume() {
+    var parts = selectedMotifs.slice();
+    var ft = ta.value.trim();
+    if (ft) parts.push(ft);
+    resumeEl.textContent = parts.length ? parts.join(" | ") : "";
+    wrapper._getValue = function() { return parts.join(" | "); };
+  }
+
+  // Boutons motifs si causes disponibles
+  if (causes) {
+    var motifsWrap = document.createElement("div");
+    motifsWrap.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;padding:2px 0;";
+    causes.forEach(function(cause) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = cause;
+      var isSelected = selectedMotifs.indexOf(cause) > -1;
+      btn.style.cssText = "padding:4px 8px;border-radius:6px;font-size:11px;font-family:Arial,sans-serif;cursor:pointer;border:1.5px solid #d0d0d5;transition:all .15s;" +
+        (isSelected ? "background:#34c759;color:#fff;border-color:#34c759;" : "background:#f7f7f8;color:#333;");
+      btn.addEventListener("click", function() {
+        var idx = selectedMotifs.indexOf(cause);
+        if (idx > -1) {
+          selectedMotifs.splice(idx, 1);
+          btn.style.background = "#f7f7f8";
+          btn.style.color = "#333";
+          btn.style.borderColor = "#d0d0d5";
+        } else {
+          selectedMotifs.push(cause);
+          btn.style.background = "#34c759";
+          btn.style.color = "#fff";
+          btn.style.borderColor = "#34c759";
+        }
+        if (trackingId) modifiedFields.add(trackingId);
+        updateResume();
+      });
+      motifsWrap.appendChild(btn);
+    });
+    wrapper.appendChild(motifsWrap);
+  }
+
+  // Champ texte libre
+  var ta = document.createElement("textarea");
+  ta.placeholder = causes ? "Autre commentaire..." : placeholder;
+  ta.value = freeText; ta.rows = 1;
   function resize() { ta.style.height="auto"; ta.style.height=ta.scrollHeight+"px"; }
-  ta.addEventListener("input", function() { if (trackingId) modifiedFields.add(trackingId); resize(); }); setTimeout(resize, 0);
-  return ta;
+  ta.addEventListener("input", function() { if (trackingId) modifiedFields.add(trackingId); resize(); updateResume(); });
+  setTimeout(resize, 0);
+  wrapper.appendChild(ta);
+  wrapper.appendChild(resumeEl);
+
+  // Exposer la valeur combinée
+  wrapper._getValue = function() {
+    var parts = selectedMotifs.slice();
+    var ft = ta.value.trim();
+    if (ft) parts.push(ft);
+    return parts.join(" | ");
+  };
+  // Compatibilité : exposer .value comme un textarea
+  Object.defineProperty(wrapper, "value", {
+    get: function() { return wrapper._getValue(); },
+    set: function(v) { ta.value = v; updateResume(); }
+  });
+
+  updateResume();
+  return wrapper;
 }
 
 function getTV(h, m) {
@@ -485,7 +598,7 @@ async function ensureSession() {
   var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
   await set(ref(db,"sessions/"+sessId), {
     date:date, machine:machine,
-    ganttData:{ targets:{grand_t1:{},petit_t1:{},rondelle:{}}, tasks:{}, extraTasks:[] },
+    ganttData:{ targets:{grand_t1:{},nettoyage:{},petit_t1:{},rondelle:{},anticipation_feeder:{},passage_so3:{}}, tasks:{}, extraTasks:[] },
     title:machine+" - "+dl, savedAt:Date.now()
   });
   currentSessId = sessId;
@@ -504,19 +617,20 @@ async function saveSession() {
   var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
 
   // DIRTY TRACKING : sauvegarder uniquement les champs modifiés par ce PC
-  // => Si un champ n'a pas été touché, on ne le sauvegarde pas => pas d'écrasement
-  // => Si un champ a été vidé volontairement, il est marqué modifié => la valeur vide est sauvegardée
+  // Exception : si c'est le premier enregistrement (session vide), sauvegarder tout
+  var snapCheck = await get(ref(db,"sessions/"+sessId+"/ganttData/tasks"));
+  var isFirstSave = !snapCheck.val() || Object.keys(snapCheck.val()).length === 0;
 
-  // Sauvegarder les targets modifiées uniquement
+  // Sauvegarder les targets
   for (var tkey of ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feeder","passage_so3"]) {
-    if (modifiedFields.has("target_"+tkey)) {
+    if (isFirstSave || modifiedFields.has("target_"+tkey)) {
       await set(ref(db,"sessions/"+sessId+"/ganttData/targets/"+tkey), data.targets[tkey]||{});
     }
   }
 
-  // Sauvegarder les tâches modifiées uniquement
+  // Sauvegarder les tâches
   for (var taskId of ALL_TASK_IDS) {
-    if (modifiedFields.has("task_"+taskId)) {
+    if (isFirstSave || modifiedFields.has("task_"+taskId)) {
       await set(ref(db,"sessions/"+sessId+"/ganttData/tasks/"+taskId), data.tasks[taskId]||{});
     }
   }
@@ -556,7 +670,7 @@ async function autoSaveExtras() {
 
 async function newSession() {
   if (!confirm("Repartir a zero ?")) return;
-  justifications = [];
+ 
   resetState();
   buildForm();
   document.getElementById("gantt-container").innerHTML = '<div class="empty-gantt">Remplissez le formulaire et enregistrez pour afficher le Gantt</div>';
@@ -826,7 +940,7 @@ function renderGantt(date, machine, data) {
   var h='<table class="gantt"><tr><th colspan="5"></th>';
   for(var m=minT;m<maxT;m+=60) h+='<th colspan="'+(60/slotMin)+'" style="background:#1a3a6b;color:#fff">60 min</th>';
   h+='<th style="width:250px;background:#e8edf5;color:#1a3a6b;font-weight:700;font-size:11px;" rowspan="2">COMMENTAIRE</th>';
-  h+='</tr><tr><th class="chk-cell"></th><th style="width:150px;text-align:left;padding-left:8px">MACHINE / SECTEUR<br><span style="font-weight:400;color:#1a5fa8;font-size:10px;">'+machine+'</span></th><th style="width:80px">WHO</th><th style="width:52px">START</th><th style="width:48px">FINAL</th>';
+  h+='</tr><tr><th style="width:150px;text-align:left;padding-left:8px">MACHINE / SECTEUR<br><span style="font-weight:400;color:#1a5fa8;font-size:10px;">'+machine+'</span></th><th style="width:80px">WHO</th><th style="width:52px">START</th><th style="width:48px">FINAL</th>';
   for(var m=minT;m<maxT;m+=slotMin){
     var hh=Math.floor(m/60).toString().padStart(2,"0"),mm2=(m%60).toString().padStart(2,"0");
     h+='<th style="width:'+slotW+'px;font-size:10px;color:#555;font-weight:400">'+(mm2==="00"?hh+"h":mm2)+'</th>';
@@ -855,9 +969,8 @@ function renderGantt(date, machine, data) {
         }
       }
     });
-    var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
-    h+='<tr class="target-section'+(isSelA?" sel-a":isSelB?" sel-b":"")+'" data-uid="'+uid+'" style="background:'+td.color+'22;">'+
-      '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
+        h+='<tr class="target-section'+'" data-uid="'+uid+'" style="background:'+td.color+'22;">'+
+      
       '<td class="info machine-name" style="color:'+td.color+';font-weight:700;">'+td.label+'</td>'+
       '<td class="info who-cell">--</td>'+
       '<td class="info time-cell">'+(start||"--")+'</td>'+
@@ -894,13 +1007,12 @@ function renderGantt(date, machine, data) {
     var quiDisplay = ganttQuiOverrides[uid]||t.qui||task.qui;
     var res = makeBar(t, uid, color, task.machine, quiDisplay);
     allTasks[uid]={machine:task.machine,qui:quiDisplay,start:res.start,end:res.end,color:color};
-    var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
-    var rowCls=isSelA?"sel-a":isSelB?"sel-b":rowIdx%2===0?"odd":"even";
+        var rowCls=rowIdx%2===0?"odd":"even";
     if(isBF) rowCls+=" boutfroid-row";
     var machineName = task.machine;
     if (isBF && task.labelDebut) machineName += '<div style="font-size:10px;color:#6c6c70;font-weight:400;margin-top:2px;">'+task.labelDebut+' — '+task.labelFin+'</div>';
     h+='<tr class="'+rowCls+'" data-uid="'+uid+'">'+
-      '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
+      
       '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+machineName+'</td>'+
       '<td class="info who-cell who-editable" data-uid="'+uid+'" title="Modifier">'+quiDisplay+' [mod]</td>'+
       '<td class="info time-cell">'+(res.start||"--")+'</td>'+
@@ -915,11 +1027,10 @@ function renderGantt(date, machine, data) {
     var uid = "extra_"+(isBF?"bf":"bc")+"_"+idx;
     var res = makeBar(et, uid, color, et.machine||"Extra", et.qui||"");
     allTasks[uid]={machine:et.machine||"Extra",qui:et.qui||"",start:res.start,end:res.end,color:color};
-    var isSelA=selectedIds[0]===uid, isSelB=selectedIds[1]===uid;
-    var rowCls=isSelA?"sel-a":isSelB?"sel-b":rowIdx%2===0?"odd":"even";
+        var rowCls=rowIdx%2===0?"odd":"even";
     if(isBF) rowCls+=" boutfroid-row";
     h+='<tr class="'+rowCls+'" data-uid="'+uid+'">'+
-      '<td class="chk-cell info"><input type="checkbox" '+(selectedIds.includes(uid)?"checked":"")+' data-uid="'+uid+'"></td>'+
+      
       '<td class="info machine-name"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+color+';margin-right:5px;vertical-align:middle"></span>'+(et.machine||"Extra")+'</td>'+
       '<td class="info who-cell">'+(et.qui||"")+'</td>'+
       '<td class="info time-cell">'+(res.start||"--")+'</td>'+
@@ -945,17 +1056,13 @@ function renderGantt(date, machine, data) {
     el.addEventListener("mouseenter",function(e){ showTT(e,el.dataset.label,el.dataset.qui,el.dataset.start,el.dataset.end,el.dataset.color,el.dataset.cmt); });
     el.addEventListener("mouseleave",hideTT);
   });
-  container.querySelectorAll("input[type=checkbox][data-uid]").forEach(function(chk){
-    chk.addEventListener("change",function(){ toggleSelect(chk.dataset.uid); });
-  });
+
   container.addEventListener("click",function(e){
     var cell=e.target.closest(".who-editable"); if(!cell) return;
     showQuiEditor(cell,cell.dataset.uid,cell.textContent.replace(" [mod]","").trim());
   });
 
   document.getElementById("gantt-section").style.display="block";
-  updateCmpBar();
-  renderJustifications();
 }
 
 // ── TOOLTIP ───────────────────────────────────────────────────────────────────
@@ -985,98 +1092,6 @@ function showTT(e,label,qui,start,end,color,comment){
   }
 }
 function hideTT(){ document.getElementById("tooltip").classList.remove("visible"); }
-
-// ── SELECTION ─────────────────────────────────────────────────────────────────
-function toggleSelect(id){
-  var idx=selectedIds.indexOf(id);
-  if(idx>-1) selectedIds.splice(idx,1);
-  else { if(selectedIds.length>=2) selectedIds.shift(); selectedIds.push(id); }
-  updateCmpBar();
-  document.querySelectorAll("[data-uid]").forEach(function(tr){
-    var uid=tr.dataset.uid, chk=tr.querySelector("input[type=checkbox]");
-    if(chk){ chk.checked=selectedIds.includes(uid); tr.classList.toggle("sel-a",selectedIds[0]===uid); tr.classList.toggle("sel-b",selectedIds[1]===uid); }
-  });
-}
-
-function updateCmpBar(){
-  var bar=document.getElementById("cmp-bar");
-  var jc=document.getElementById("justif-btn-container");
-  if(selectedIds.length>=1){
-    bar.classList.add("visible");
-    document.getElementById("cmp-bar-names").textContent=selectedIds.map(function(id){return allTasks[id]?allTasks[id].machine||"--":"--";}).join(" vs ");
-    if(jc) jc.style.display="block";
-  } else {
-    bar.classList.remove("visible");
-    if(jc) jc.style.display="none";
-    var d=document.getElementById("justif-dialog"); if(d) d.remove();
-  }
-}
-
-function doCompare(){
-  if(selectedIds.length!==2) return;
-  var A=allTasks[selectedIds[0]], B=allTasks[selectedIds[1]]; if(!A||!B) return;
-  document.getElementById("cmp-result-title").textContent=A.machine+" vs "+B.machine;
-  document.getElementById("cmp-cards").innerHTML=
-    '<div class="cmp-card a"><div class="cmp-card-badge a">A</div><div class="cmp-card-name">'+A.machine+'</div><div class="cmp-card-time">'+(A.start||"?")+" -> "+(A.end||"?")+'</div></div>'+
-    '<div class="cmp-card b"><div class="cmp-card-badge b">B</div><div class="cmp-card-name">'+B.machine+'</div><div class="cmp-card-time">'+(B.start||"?")+" -> "+(B.end||"?")+'</div></div>';
-  var sA=toMin(A.start),sB=toMin(B.start), diffText="--", diffSub="Donnees insuffisantes";
-  if(sA!==null&&sB!==null){
-    var d=Math.abs(sB-sA),hh=Math.floor(d/60),mm=d%60;
-    diffText=hh&&mm?hh+"h "+mm+"min":hh?hh+"h":mm+"min";
-    diffSub=sB>sA?"B demarre "+diffText+" apres A":sB<sA?"B demarre "+diffText+" avant A":"Meme heure";
-  }
-  document.getElementById("cmp-diff-box").innerHTML='<div class="cmp-diff-label">Ecart</div><div class="cmp-diff-value">'+diffText+'</div><div class="cmp-diff-sub">'+diffSub+'</div>';
-  document.getElementById("cmp-result").classList.add("visible");
-  document.getElementById("cmp-result").scrollIntoView({behavior:"smooth",block:"nearest"});
-}
-function closeCompare(){ document.getElementById("cmp-result").classList.remove("visible"); }
-
-// ── JUSTIFICATION ─────────────────────────────────────────────────────────────
-function openJustifDialog(){
-  if(selectedIds.length<1) return;
-  var existing=document.getElementById("justif-dialog"); if(existing){existing.remove();return;}
-  var taskA=allTasks[selectedIds[0]], taskB=selectedIds[1]?allTasks[selectedIds[1]]:null; if(!taskA) return;
-  var ecartMin="";
-  if(taskB){
-    var endA=toMin(taskA.end),startB=toMin(taskB.start),endB=toMin(taskB.end),startA=toMin(taskA.start);
-    if(endA!==null&&startB!==null&&startB>endA) ecartMin=startB-endA;
-    else if(endB!==null&&startA!==null&&startA>endB) ecartMin=startA-endB;
-  }
-  var dialog=document.createElement("div"); dialog.id="justif-dialog"; dialog.className="justif-dialog";
-  dialog.innerHTML='<div class="justif-dialog-title">Justification'+(ecartMin?" - "+ecartMin+" min":"")+'</div>'+
-    '<div class="justif-dialog-sub">'+taskA.machine+(taskB?" -> "+taskB.machine:"")+'</div>'+
-    '<textarea id="justif-input" class="justif-input" placeholder="Ex: Attente piece, pause..." rows="3"></textarea>'+
-    '<div class="justif-dialog-actions"><button id="justif-confirm" class="justif-confirm-btn">Enregistrer</button><button id="justif-cancel" class="justif-cancel-btn">Annuler</button></div>';
-  document.getElementById("justif-btn-container").insertAdjacentElement("afterend",dialog);
-  document.getElementById("justif-input").focus();
-  document.getElementById("justif-cancel").addEventListener("click",function(){dialog.remove();});
-  document.getElementById("justif-confirm").addEventListener("click",function(){
-    var text=document.getElementById("justif-input").value.trim();
-    if(!text){alert("Veuillez saisir un commentaire.");return;}
-    justifications.push({taskA:taskA,taskB:taskB,ecartMin:ecartMin,text:text});
-    dialog.remove(); renderJustifications();
-    showToast("Justification enregistree !","#f59e0b");
-  });
-}
-
-function renderJustifications(){
-  var container=document.getElementById("justif-container"); if(!container) return;
-  container.innerHTML=""; if(!justifications.length) return;
-  var title=document.createElement("div"); title.style.cssText="font-size:11px;font-weight:700;color:#6c6c70;text-transform:uppercase;margin-bottom:8px;padding:0 4px;"; title.textContent="Justifications"; container.appendChild(title);
-  justifications.forEach(function(j,idx){
-    var card=document.createElement("div"); card.className="justif-timeline-card";
-    var row=document.createElement("div"); row.className="justif-timeline-row";
-    var boxA=document.createElement("div"); boxA.className="justif-task-box"; boxA.style.background=j.taskA.color||"#3b82f6";
-    boxA.innerHTML='<div class="justif-task-name">'+j.taskA.machine+'</div><div class="justif-task-time">'+(j.taskA.end||"?")+'</div>'; row.appendChild(boxA);
-    var arrow=document.createElement("div"); arrow.className="justif-arrow";
-    arrow.innerHTML='<div class="justif-arrow-line"></div>'+(j.ecartMin?'<div class="justif-arrow-label">'+j.ecartMin+' min</div>':'')+'<div class="justif-arrow-head">&#x25B6;</div>'; row.appendChild(arrow);
-    if(j.taskB){var boxB=document.createElement("div"); boxB.className="justif-task-box"; boxB.style.background=j.taskB.color||"#22c55e"; boxB.innerHTML='<div class="justif-task-name">'+j.taskB.machine+'</div><div class="justif-task-time">'+(j.taskB.start||"?")+'</div>'; row.appendChild(boxB);}
-    var delBtn=document.createElement("button"); delBtn.className="justif-del-btn"; delBtn.textContent="x";
-    delBtn.addEventListener("click",function(){justifications.splice(idx,1);renderJustifications();}); row.appendChild(delBtn);
-    var comment=document.createElement("div"); comment.className="justif-comment"; comment.textContent=j.text;
-    card.appendChild(row); card.appendChild(comment); container.appendChild(card);
-  });
-}
 
 // ── QUI EDITABLE ──────────────────────────────────────────────────────────────
 function showQuiEditor(cell,uid,current){
@@ -1134,6 +1149,7 @@ function exportToExcel(dateFrom,dateTo){
   var rows=[["ID_Changement","Date","Jour","Machine","Référence_Machine","Section","Type_Tâche","Tâche","Tâche_Référence","Qui","Début","Fin","Date_Heure_Début","Date_Heure_Fin","Durée (min)","Commentaires"]];
 
   // Correspondance tâche -> TARGET de référence
+  // Les noms doivent correspondre EXACTEMENT à ceux dans TASKS_RONDELLE et TASKS_BOUT_FROID
   var TACHE_REF = {
     "Nettoyage de machine": "TARGET (Nettoyage)",
     "Changement rondelle (cuvette)": "TARGET (Rondelle)",
@@ -1145,13 +1161,16 @@ function exportToExcel(dateFrom,dateTo){
     "Debut section avec flacon": "TARGET (Grand T1)",
     "Machine complete avec flacon": "TARGET (Grand T1)",
     "Mise a l arche": "TARGET (Grand T1)",
-    "T0 : Aligneur vide": "TARGET (Nettoyage)",
-    "T0’ : Nettoyage de ligne": "TARGET (Nettoyage)",
+    "Changement Traitement Surface": "TARGET (Grand T1)",
+    "Nettoyage SO3": "TARGET (Passage en SO3)",
+    "Aligneur vide": "TARGET (Nettoyage)",
+    "T0 : Nettoyage de ligne": "TARGET (Nettoyage)",
     "T1 : Durée pré-réglage": "TARGET (Anticipation Feeder)",
-    "T1’ : Arrivée 2 sections contrôlables": "TARGET (Anticipation Feeder)",
-    "T2 : Top qualités": "TARGET (Passage en SO3)",
-    "T2’ : Premier lot sorti": "TARGET (Passage en SO3)",
-    "T2’’ : Montée en régime": "TARGET (Passage en SO3)"
+    "Arrivée deux sections contrôlables": "TARGET (Anticipation Feeder)",
+    "Arrivée de toutes sections": "TARGET (Anticipation Feeder)",
+    "Top qualité": "TARGET (Passage en SO3)",
+    "Premier lot sorti": "TARGET (Passage en SO3)",
+    "Validation de deux lots commercialisables": "TARGET (Passage en SO3)"
   };
 
   function makeDT(dateS, timeS) {
@@ -1165,10 +1184,13 @@ function exportToExcel(dateFrom,dateTo){
     var dateStr=session.date||"",jourStr=dateStr?new Date(dateStr+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long"}):"",machine=session.machine||"";
     var data=session.ganttData||{},targets=data.targets||{},tasks=data.tasks||{},extras=data.extraTasks||[];
 
-    // Extraire nom court (avant " - ") et référence (après " - ")
+    // Extraire nom court (avant " - ") et référence
     var machineParts = machine.indexOf(" - ") > -1 ? machine.split(" - ") : [machine, ""];
     var machineCourt = machineParts[0].trim();
     var machineRef = machineParts.slice(1).join(" - ").trim();
+    // Si un champ référence dédié existe, l'utiliser en priorité
+    var refField = document.getElementById("f-reference");
+    if (refField && refField.value.trim()) machineRef = refField.value.trim();
 
     function addRow(section, type, tache, ref, qui, start, end, commentaire) {
       exportRowIdx++;
