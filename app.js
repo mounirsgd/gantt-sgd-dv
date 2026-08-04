@@ -193,6 +193,8 @@ function initApp() {
   document.getElementById("new-session-btn").addEventListener("click", newSession);
   document.getElementById("del-all-btn").addEventListener("click", deleteAllHistory);
   initExportButtons();
+  var ghBtn = document.getElementById("send-github-btn");
+  if (ghBtn) ghBtn.addEventListener("click", sendToGitHub);
 
   var TT = document.getElementById("tooltip");
   document.addEventListener("mousemove", function(e) {
@@ -1238,6 +1240,147 @@ function exportToExcel(dateFrom,dateTo){
   var url=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=url; a.download="SGD_Pharma_Gantt_"+new Date().toLocaleDateString("fr-FR").replace(/\//g,"-")+".csv";
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ── ENVOI GITHUB (pour Power BI) ──────────────────────────────────────────────
+async function sendToGitHub() {
+  // Demander le code secret (token GitHub) si pas encore stocké
+  var token = localStorage.getItem("ghToken");
+  if (!token) {
+    token = prompt("Entrez le code d'accès pour envoyer les données :");
+    if (!token) return;
+    localStorage.setItem("ghToken", token);
+  }
+
+  // Générer le CSV complet (même logique que exportToExcel)
+  var sessions = Object.values(allSessions);
+  if (!sessions.length) { alert("Aucune séance à envoyer."); return; }
+  sessions.sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
+
+  var rows = [["ID_Changement","Date","Jour","Machine","Référence_Machine","Section","Type_Tâche","Tâche","Tâche_Référence","Qui","Début","Fin","Date_Heure_Début","Date_Heure_Fin","Durée (min)","Commentaires"]];
+
+  var TACHE_REF_GH = {
+    "Nettoyage de machine": "TARGET (Nettoyage)",
+    "Changement rondelle (cuvette)": "TARGET (Rondelle)",
+    "Cote Finisseur": "TARGET (Grand T1)",
+    "Cote Ebaucheur": "TARGET (Grand T1)",
+    "Entonnoir sous verre": "TARGET (Petit t1)",
+    "Distributeur sous verre": "TARGET (Petit t1)",
+    "Demarrage section sans flacon": "TARGET (Grand T1)",
+    "Debut section avec flacon": "TARGET (Grand T1)",
+    "Machine complete avec flacon": "TARGET (Grand T1)",
+    "Mise a l arche": "TARGET (Grand T1)",
+    "Changement Traitement Surface": "TARGET (Grand T1)",
+    "Nettoyage SO3": "TARGET (Passage en SO3)",
+    "Aligneur vide": "TARGET (Nettoyage)",
+    "T0 : Nettoyage de ligne": "TARGET (Nettoyage)",
+    "T1 : Durée pré-réglage": "TARGET (Anticipation Feeder)",
+    "Arrivée deux sections contrôlables": "TARGET (Anticipation Feeder)",
+    "Arrivée de toutes sections": "TARGET (Anticipation Feeder)",
+    "Top qualité": "TARGET (Passage en SO3)",
+    "Premier lot sorti": "TARGET (Passage en SO3)",
+    "Validation de deux lots commercialisables": "TARGET (Passage en SO3)"
+  };
+
+  function makeDTgh(dateS, timeS) {
+    if (!dateS || !timeS || timeS === "--") return "";
+    return dateS + " " + timeS + ":00";
+  }
+
+  sessions.forEach(function(session) {
+    var dateStr = session.date||"";
+    var jourStr = dateStr ? new Date(dateStr+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long"}) : "";
+    var machine = session.machine||"";
+    var machineParts = machine.indexOf(" - ") > -1 ? machine.split(" - ") : [machine, ""];
+    var machineCourt = machineParts[0].trim();
+    var machineRef = machineParts.slice(1).join(" - ").trim();
+    var data = session.ganttData||{}, targets = data.targets||{}, tasks = data.tasks||{}, extras = data.extraTasks||[];
+    var rowIdx = 0;
+
+    function addRowGH(section, type, tache, ref, qui, start, end, commentaire) {
+      rowIdx++;
+      var id = machineCourt.replace(/\s/g,"_")+"_"+dateStr+"_"+String(rowIdx).padStart(3,"0");
+      var dur = toMin(start)!==null&&toMin(end)!==null ? toMin(end)-toMin(start) : "";
+      var cmt = (commentaire||"").replace(/\n/g," | ");
+      if (cmt && "=+-@".indexOf(cmt[0]) > -1) cmt = "'" + cmt;
+      rows.push([id, dateStr, jourStr, machineCourt, machineRef, section, type, tache, ref, qui, start, end,
+        makeDTgh(dateStr,start), makeDTgh(dateStr,end), dur, cmt]);
+    }
+
+    [["grand_t1","TARGET (Grand T1)"],["nettoyage","TARGET (Nettoyage)"],["petit_t1","TARGET (Petit t1)"],["rondelle","TARGET (Rondelle)"],["anticipation_feeder","TARGET (Anticipation Feeder)"],["passage_so3","TARGET (Passage en SO3)"]].forEach(function(td){
+      var t = targets[td[0]]||{};
+      addRowGH(td[1], "TARGET", td[1], "--", "--", getTV(t.sh||"",t.sm||""), getTV(t.eh||"",t.em||""), t.comment||"");
+    });
+
+    TASKS_RONDELLE.forEach(function(task){
+      var t = tasks[task.id]||{};
+      addRowGH("Bout Chaud", "Tâche", task.machine, TACHE_REF_GH[task.machine]||"--", t.qui||task.qui, getTV(t.sh||"",t.sm||""), getTV(t.eh||"",t.em||""), t.comment||"");
+    });
+
+    TASKS_BOUT_FROID.forEach(function(task){
+      var t = tasks[task.id]||{};
+      addRowGH("Bout Froid", "Tâche", task.machine, TACHE_REF_GH[task.machine]||"--", t.qui||task.qui, getTV(t.sh||"",t.sm||""), getTV(t.eh||"",t.em||""), t.comment||"");
+    });
+
+    extras.forEach(function(et){
+      var section = et.group==="boutfroid" ? "Bout Froid" : "Bout Chaud";
+      addRowGH(section, "Tâche", et.machine||"Extra", TACHE_REF_GH[et.machine]||"--", et.qui||"", getTV(et.sh||"",et.sm||""), getTV(et.eh||"",et.em||""), et.comment||"");
+    });
+  });
+
+  var csv = rows.map(function(row){
+    return row.map(function(cell){
+      var str = String(cell!==null&&cell!==undefined?cell:"").replace(/\n/g," | ").replace(/\r/g,"");
+      return (str.indexOf(";")>-1||str.indexOf('"')>-1) ? '"'+str.replace(/"/g,'""')+'"' : str;
+    }).join(";");
+  }).join("\n");
+
+  // Envoyer vers GitHub
+  var csvBase64 = btoa(unescape(encodeURIComponent("\uFEFF" + csv)));
+
+  try {
+    showToast("Envoi en cours...", "#1a3a6b");
+
+    // Vérifier si le fichier existe déjà (pour récupérer le SHA)
+    var checkResp = await fetch("https://api.github.com/repos/mounirsgd/gantt-sgd-dv/contents/export/Gantt_SGD.csv", {
+      headers: { "Authorization": "token " + token }
+    });
+    var sha = "";
+    if (checkResp.ok) {
+      var checkData = await checkResp.json();
+      sha = checkData.sha;
+    }
+
+    // Créer ou mettre à jour le fichier
+    var body = {
+      message: "Export Gantt " + new Date().toLocaleDateString("fr-FR"),
+      content: csvBase64
+    };
+    if (sha) body.sha = sha;
+
+    var resp = await fetch("https://api.github.com/repos/mounirsgd/gantt-sgd-dv/contents/export/Gantt_SGD.csv", {
+      method: "PUT",
+      headers: {
+        "Authorization": "token " + token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (resp.ok) {
+      showToast("Données envoyées avec succès !", "#34c759");
+    } else {
+      var err = await resp.json();
+      if (resp.status === 401) {
+        localStorage.removeItem("ghToken");
+        alert("Code d'accès invalide. Veuillez réessayer.");
+      } else {
+        alert("Erreur d'envoi : " + (err.message||"inconnue"));
+      }
+    }
+  } catch (e) {
+    alert("Erreur réseau : " + e.message);
+  }
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
