@@ -242,6 +242,11 @@ function buildForm() {
     appendTaskRow(tasksSec, task.id, task.machine, task.qui, tv, TASK_COLORS[idx % TASK_COLORS.length]);
   });
 
+  // Extras Bout Chaud - juste apres les taches fixes Bout Chaud, avant le separateur
+  (ganttData.extraTasks || []).filter(function(et){ return (et.group||"boutchaud")==="boutchaud"; }).forEach(function(et) {
+    appendExtraTaskRow(tasksSec, et, et.color || TASK_COLORS[0]);
+  });
+
   var bfSep = document.createElement("div");
   bfSep.style.cssText = "background:"+BOUT_FROID_COLOR+";color:#fff;font-size:12px;font-weight:700;padding:8px 12px;letter-spacing:.5px;";
   bfSep.textContent = "BOUT FROID"; tasksSec.appendChild(bfSep);
@@ -252,7 +257,8 @@ function buildForm() {
     appendTaskRow(tasksSec, task.id, task.machine, task.qui, tv, task.color);
   });
 
-  (ganttData.extraTasks || []).forEach(function(et) {
+  // Extras Bout Froid - juste apres les taches fixes Bout Froid, avant le bouton
+  (ganttData.extraTasks || []).filter(function(et){ return et.group==="boutfroid"; }).forEach(function(et) {
     appendExtraTaskRow(tasksSec, et, et.color || TASK_COLORS[0]);
   });
 
@@ -268,8 +274,8 @@ function buildForm() {
     btnBC.textContent = "Bout Chaud";
     btnBC.style.cssText = "flex:1;padding:10px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;";
     btnBC.addEventListener("click", function() {
-      var color = TASK_COLORS[(TASKS_RONDELLE.length + tasksSec._extraFields.length) % TASK_COLORS.length];
-      appendExtraTaskRow(tasksSec, {group:"boutchaud"}, color); popup.remove();
+      var color = TASK_COLORS[(TASKS_RONDELLE.length + tasksSec._extraFields.filter(function(f){return (f.group||"boutchaud")==="boutchaud";}).length) % TASK_COLORS.length];
+      appendExtraTaskRow(tasksSec, {group:"boutchaud"}, color, bfSep); popup.remove();
     });
     var btnBF = document.createElement("button");
     btnBF.textContent = "Bout Froid";
@@ -277,7 +283,7 @@ function buildForm() {
     btnBF.addEventListener("click", function() {
       var bfColors = ["#f1c40f","#64748b","#795548","#2e86ab"];
       var idx = tasksSec._extraFields.filter(function(f){return f.group==="boutfroid";}).length;
-      appendExtraTaskRow(tasksSec, {group:"boutfroid"}, bfColors[idx%4]); popup.remove();
+      appendExtraTaskRow(tasksSec, {group:"boutfroid"}, bfColors[idx%4], addBtn); popup.remove();
     });
     popup.appendChild(btnBC); popup.appendChild(btnBF);
     tasksSec.insertBefore(popup, addBtn);
@@ -314,7 +320,7 @@ function appendTaskRow(sec, taskId, machineName, quiDefault, tv, color) {
   sec.appendChild(row);
 }
 
-function appendExtraTaskRow(sec, et, color) {
+function appendExtraTaskRow(sec, et, color, anchor) {
   var row = document.createElement("div"); row.className = "task-row";
   var top = document.createElement("div"); top.className = "task-row-top";
   var colorBar = document.createElement("div"); colorBar.className = "task-color-bar"; colorBar.style.background = color;
@@ -340,7 +346,7 @@ function appendExtraTaskRow(sec, et, color) {
   nameInp.addEventListener("input", function() { modifiedFields.add("extras_modified"); });
   whoInp.addEventListener("input", function() { modifiedFields.add("extras_modified"); });
   sec._extraFields.push({color:color, row:row, group:et.group||"boutchaud"});
-  sec.appendChild(row);
+  if (anchor) sec.insertBefore(row, anchor); else sec.appendChild(row);
 }
 
 // ── SYSTEME DE CRENEAUX ───────────────────────────────────────────────────────
@@ -939,7 +945,7 @@ function renderGantt(date, machine, data) {
     {key:"passage_so3",label:"TARGET (Passage en SO3)",color:"#e91e8c"}
   ];
 
-  var h='<table class="gantt"><tr><th colspan="5"></th>';
+  var h='<table class="gantt"><tr><th colspan="4"></th>';
   for(var m=minT;m<maxT;m+=60) h+='<th colspan="'+(60/slotMin)+'" style="background:#1a3a6b;color:#fff">60 min</th>';
   h+='<th style="width:250px;background:#e8edf5;color:#1a3a6b;font-weight:700;font-size:11px;" rowspan="2">COMMENTAIRE</th>';
   h+='</tr><tr><th style="width:150px;text-align:left;padding-left:8px">MACHINE / SECTEUR<br><span style="font-weight:400;color:#1a5fa8;font-size:10px;">'+machine+'</span></th><th style="width:80px">WHO</th><th style="width:52px">START</th><th style="width:48px">FINAL</th>';
@@ -947,7 +953,7 @@ function renderGantt(date, machine, data) {
     var hh=Math.floor(m/60).toString().padStart(2,"0"),mm2=(m%60).toString().padStart(2,"0");
     h+='<th style="width:'+slotW+'px;font-size:10px;color:#555;font-weight:400">'+(mm2==="00"?hh+"h":mm2)+'</th>';
   }
-  h+='</tr><tr><td colspan="'+(5+slots+1)+'" style="background:#1a3a6b;color:#fff;font-weight:700;font-size:13px;padding:7px 10px;text-align:center;">'+machine+(dateStr?" - "+dateStr:"")+'</td></tr>';
+  h+='</tr><tr><td colspan="'+(4+slots+1)+'" style="background:#1a3a6b;color:#fff;font-weight:700;font-size:13px;padding:7px 10px;text-align:center;">'+machine+(dateStr?" - "+dateStr:"")+'</td></tr>';
 
   // TARGET
   targetDefs.forEach(function(td) {
@@ -981,7 +987,7 @@ function renderGantt(date, machine, data) {
       fmtCmtCell([t.comment,t.comment2,t.comment3,t.comment4],td.color)+
       '</tr>';
   });
-  h+='<tr><td colspan="'+(5+slots+1)+'" style="background:#e8edf5;height:4px;"></td></tr>';
+  h+='<tr><td colspan="'+(4+slots+1)+'" style="background:#e8edf5;height:4px;"></td></tr>';
 
   function makeBar(t, uid, color, label, quiDisplay) {
     var bar = "";
@@ -1047,7 +1053,7 @@ function renderGantt(date, machine, data) {
   extrasBoutChaud.forEach(function(et,idx){ renderExtraRow(et, idx, false, TASKS_RONDELLE.length+idx); });
 
   // Bout Froid - ordre fixe
-  h+='<tr><td colspan="'+(5+slots+1)+'" style="background:'+BOUT_FROID_COLOR+';color:#fff;font-weight:700;font-size:12px;padding:7px 12px;">BOUT FROID</td></tr>';
+  h+='<tr><td colspan="'+(4+slots+1)+'" style="background:'+BOUT_FROID_COLOR+';color:#fff;font-weight:700;font-size:12px;padding:7px 12px;">BOUT FROID</td></tr>';
   TASKS_BOUT_FROID.forEach(function(task,idx){ renderTaskRow(task, tasks[task.id]||{}, idx, true, idx); });
   extrasBoutFroid.forEach(function(et,idx){ renderExtraRow(et, idx, true, TASKS_BOUT_FROID.length+idx); });
 
@@ -1175,9 +1181,19 @@ function exportToExcel(dateFrom,dateTo){
     "Validation de deux lots commercialisables": "TARGET (Passage en SO3)"
   };
 
-  function makeDT(dateS, timeS) {
+  function makeDT(dateS, timeS, isEnd, startTimeS) {
     if (!dateS || !timeS || timeS === "--") return "";
-    return dateS + " " + timeS + ":00";
+    var finalDate = dateS;
+    // Si c'est l'heure de fin et qu'elle est inferieure a l'heure de debut => passage minuit => +1 jour
+    if (isEnd && startTimeS && startTimeS !== "--") {
+      var sMin = toMin(startTimeS), eMin = toMin(timeS);
+      if (sMin !== null && eMin !== null && eMin < sMin) {
+        var d = new Date(dateS + "T00:00:00");
+        d.setDate(d.getDate() + 1);
+        finalDate = d.toISOString().slice(0,10);
+      }
+    }
+    return finalDate + " " + timeS + ":00";
   }
 
   var exportRowIdx = 0;
@@ -1197,12 +1213,17 @@ function exportToExcel(dateFrom,dateTo){
     function addRow(section, type, tache, ref, qui, start, end, commentaire) {
       exportRowIdx++;
       var id = machineCourt.replace(/\s/g,"_")+"_"+dateStr+"_"+String(exportRowIdx).padStart(3,"0");
-      var dur = toMin(start)!==null&&toMin(end)!==null ? toMin(end)-toMin(start) : "";
+      var sMin = toMin(start), eMin = toMin(end);
+      var dur = "";
+      if (sMin !== null && eMin !== null) {
+        dur = eMin - sMin;
+        if (dur < 0) dur += 1440; // passage minuit : ajouter 24h en minutes
+      }
       // Protéger contre les formules Excel : préfixer avec apostrophe si commence par = + - @
       var cmt = (commentaire||"").replace(/\n/g," | ");
       if (cmt && "=+-@".indexOf(cmt[0]) > -1) cmt = "'" + cmt;
       rows.push([id, dateStr, jourStr, machineCourt, machineRef, section, type, tache, ref, qui, start, end,
-        makeDT(dateStr,start), makeDT(dateStr,end), dur, cmt]);
+        makeDT(dateStr,start), makeDT(dateStr,end,true,start), dur, cmt]);
     }
 
     // Targets
@@ -1282,9 +1303,18 @@ async function sendToGitHub() {
     "Validation de deux lots commercialisables": "TARGET (Passage en SO3)"
   };
 
-  function makeDTgh(dateS, timeS) {
+  function makeDTgh(dateS, timeS, isEnd, startTimeS) {
     if (!dateS || !timeS || timeS === "--") return "";
-    return dateS + " " + timeS + ":00";
+    var finalDate = dateS;
+    if (isEnd && startTimeS && startTimeS !== "--") {
+      var sMin = toMin(startTimeS), eMin = toMin(timeS);
+      if (sMin !== null && eMin !== null && eMin < sMin) {
+        var d = new Date(dateS + "T00:00:00");
+        d.setDate(d.getDate() + 1);
+        finalDate = d.toISOString().slice(0,10);
+      }
+    }
+    return finalDate + " " + timeS + ":00";
   }
 
   sessions.forEach(function(session) {
@@ -1300,11 +1330,16 @@ async function sendToGitHub() {
     function addRowGH(section, type, tache, ref, qui, start, end, commentaire) {
       rowIdx++;
       var id = machineCourt.replace(/\s/g,"_")+"_"+dateStr+"_"+String(rowIdx).padStart(3,"0");
-      var dur = toMin(start)!==null&&toMin(end)!==null ? toMin(end)-toMin(start) : "";
+      var sMin = toMin(start), eMin = toMin(end);
+      var dur = "";
+      if (sMin !== null && eMin !== null) {
+        dur = eMin - sMin;
+        if (dur < 0) dur += 1440;
+      }
       var cmt = (commentaire||"").replace(/\n/g," | ");
       if (cmt && "=+-@".indexOf(cmt[0]) > -1) cmt = "'" + cmt;
       rows.push([id, dateStr, jourStr, machineCourt, machineRef, section, type, tache, ref, qui, start, end,
-        makeDTgh(dateStr,start), makeDTgh(dateStr,end), dur, cmt]);
+        makeDTgh(dateStr,start), makeDTgh(dateStr,end,true,start), dur, cmt]);
     }
 
     [["grand_t1","TARGET (Grand T1)"],["nettoyage","TARGET (Nettoyage)"],["petit_t1","TARGET (Petit t1)"],["rondelle","TARGET (Rondelle)"],["anticipation_feeder","TARGET (Anticipation Feeder)"],["passage_so3","TARGET (Passage en SO3)"]].forEach(function(td){
