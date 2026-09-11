@@ -44,7 +44,9 @@ const TASKS_BOUT_FROID = [
   {id:"bf_3", machine:"Arrivée de toutes sections", qui:"Automation", color:"#795548", labelDebut:"Début", labelFin:"Fin"},
   {id:"bf_6", machine:"Top qualité", qui:"Automation", color:"#9b59b6", labelDebut:"Début", labelFin:"Fin"},
   {id:"bf_9", machine:"Montée en régime", qui:"Automation", color:"#059669", labelDebut:"Début", labelFin:"Fin"},
+  {id:"bf_10", machine:"Première palette sortie", qui:"Automation", color:"#e84393", labelDebut:"Début", labelFin:"Fin"},
   {id:"bf_7", machine:"Premier lot sorti", qui:"Automation", color:"#1abc9c", labelDebut:"Début", labelFin:"Fin"},
+  {id:"bf_11", machine:"Top emballage", qui:"Automation", color:"#3498db", labelDebut:"Début", labelFin:"Fin"},
   {id:"bf_8", machine:"Validation de deux lots commercialisables", qui:"Automation", color:"#e74c3c", labelDebut:"Début", labelFin:"Fin"}
 ];
 
@@ -72,6 +74,7 @@ const CAUSES_BOUT_FROID_DICT = {
   "Arrivée deux sections contrôlables": ["Retard arrivée sections","Recuit NOK","Réglage équipement BF"],
   "Arrivée de toutes sections": ["Retard démarrage","Top Qualité retardé","Top Emballage retardé","Tombées sur arche","Réglage BF"],
   "Top qualité": ["Top Qualité retardé","Démarrage tardif","SAP"],
+  "Montée en régime": ["Cadence non atteinte","Démarrage tardif","Problème mécanique","Problème réglage"],
   "Premier lot sorti": ["Lot bloqué","Défaut qualité","Défaut palettisation","SAP - étiquette","Démarrage tardif"],
   "Validation de deux lots commercialisables": ["Lot bloqué","Validation retardée"]
 };
