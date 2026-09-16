@@ -1218,7 +1218,7 @@ Machine_36_2026-09-14_025;2026-09-14;lundi;Machine 36;52475 01;Bout Froid;Tâche
 Machine_36_2026-09-14_026;2026-09-14;lundi;Machine 36;52475 01;Bout Froid;Tâche;Première palette sortie;--;Automation;16:34;16:36;2026-09-14 16:34:00;2026-09-14 16:36:00;2;
 Machine_36_2026-09-14_027;2026-09-14;lundi;Machine 36;52475 01;Bout Froid;Tâche;Premier lot sorti;TARGET (Passage en SO3);Automation;18:05;18:07;2026-09-14 18:05:00;2026-09-14 18:07:00;2;Lot bloqué | Défaut qualité | Lot bloqué en M51 : à retrier (4 moules en verticalité)
 Machine_36_2026-09-14_028;2026-09-14;lundi;Machine 36;52475 01;Bout Froid;Tâche;Top emballage;--;Automation;15:50;15:52;2026-09-14 15:50:00;2026-09-14 15:52:00;2;
-Machine_36_2026-09-14_029;2026-09-14;lundi;Machine 36;52475 01;Bout Froid;Tâche;Validation de deux lots commercialisables;TARGET (Passage en SO3);Automation;;;;;;Pas de lots livrables à J+1 - 08h15 (E94-assurance super contrôle Qualité)
+Machine_36_2026-09-14_029;2026-09-14;lundi;Machine 36;52475 01;Bout Froid;Tâche;Validation de deux lots commercialisables;TARGET (Passage en SO3);Automation;;;;;;Pas de lots livrables à J+1 - 15h40 (E94-assurance super contrôle Qualité)
 Machine_35_2026-09-15_001;2026-09-15;mardi;Machine 35;52515 05;TARGET (Grand T1);TARGET;TARGET (Grand T1);--;--;6:30;8:40;2026-09-15 6:30:00;2026-09-15 8:40:00;130;T1 = Rondelle + tube + poinçon + Catégorie 3 + déflecteurs = 15+30+40+15 = 130 min
 Machine_35_2026-09-15_002;2026-09-15;mardi;Machine 35;52515 05;TARGET (Nettoyage);TARGET;TARGET (Nettoyage);--;--;6:30;6:45;2026-09-15 6:30:00;2026-09-15 6:45:00;15;
 Machine_35_2026-09-15_003;2026-09-15;mardi;Machine 35;52515 05;TARGET (Petit t1);TARGET;TARGET (Petit t1);--;--;7:36;8:31;2026-09-15 7:36:00;2026-09-15 8:31:00;55;t1 = Catégorie 3 + déflecteurs = 40+15 = 55 min
@@ -1233,7 +1233,7 @@ Machine_35_2026-09-15_011;2026-09-15;mardi;Machine 35;52515 05;Bout Chaud;Tâche
 Machine_35_2026-09-15_012;2026-09-15;mardi;Machine 35;52515 05;Bout Chaud;Tâche;Distributeur sous verre;TARGET (Petit t1);Feederman;9:25;9:27;2026-09-15 9:25:00;2026-09-15 9:27:00;2;
 Machine_35_2026-09-15_013;2026-09-15;mardi;Machine 35;52515 05;Bout Chaud;Tâche;Demarrage section sans flacon;TARGET (Grand T1);Chef de section;8:44;8:46;2026-09-15 8:44:00;2026-09-15 8:46:00;2;
 Machine_35_2026-09-15_014;2026-09-15;mardi;Machine 35;52515 05;Bout Chaud;Tâche;Debut section avec flacon;TARGET (Grand T1);Chef de section;9:30;9:32;2026-09-15 9:30:00;2026-09-15 9:32:00;2;
-Machine_35_2026-09-15_015;2026-09-15;mardi;Machine 35;52515 05;Bout Chaud;Tâche;Machine complete avec flacon;TARGET (Grand T1);Chef de section;;;;;;'- Réglages opérationnels (opérationnel)
+Machine_35_2026-09-15_015;2026-09-15;mardi;Machine 35;52515 05;Bout Chaud;Tâche;Machine complete avec flacon;TARGET (Grand T1);Chef de section;12:17;12:19;2026-09-15 12:17:00;2026-09-15 12:19:00;2;'- Réglages opérationnels (opérationnel)
 Machine_35_2026-09-15_016;2026-09-15;mardi;Machine 35;52515 05;Bout Chaud;Tâche;Mise a l arche;TARGET (Grand T1);Chef de section;10:10;10:12;2026-09-15 10:10:00;2026-09-15 10:12:00;2;Mise a l'arche avec 2 sections
 Machine_35_2026-09-15_017;2026-09-15;mardi;Machine 35;52515 05;Bout Chaud;Tâche;Changement Traitement Surface;TARGET (Grand T1);Production;;;;;;
 Machine_35_2026-09-15_018;2026-09-15;mardi;Machine 35;52515 05;Bout Chaud;Tâche;Nettoyage SO3;TARGET (Passage en SO3);Production;;;;;;
@@ -1242,96 +1242,183 @@ Machine_35_2026-09-15_020;2026-09-15;mardi;Machine 35;52515 05;Bout Froid;Tâche
 Machine_35_2026-09-15_021;2026-09-15;mardi;Machine 35;52515 05;Bout Froid;Tâche;T1 : Durée pré-réglage;TARGET (Anticipation Feeder);Automation;7:42;;2026-09-15 7:42:00;;;Matériel NOK | Réglage non terminé | Intervention maintenance | Témoins NOK | Calibrage Mx D en réglage, Panne Multi D
 Machine_35_2026-09-15_022;2026-09-15;mardi;Machine 35;52515 05;Bout Froid;Tâche;Arrivée deux sections contrôlables;TARGET (Anticipation Feeder);Automation;11:18;11:20;2026-09-15 11:18:00;2026-09-15 11:20:00;2;Recuit NOK | Risque de casse sur ligne
 Machine_35_2026-09-15_023;2026-09-15;mardi;Machine 35;52515 05;Bout Froid;Tâche;Arrivée de toutes sections;TARGET (Anticipation Feeder);Automation;;;;;;
-Machine_35_2026-09-15_024;2026-09-15;mardi;Machine 35;52515 05;Bout Froid;Tâche;Top qualité;TARGET (Passage en SO3);Automation;;;;;;
+Machine_35_2026-09-15_024;2026-09-15;mardi;Machine 35;52515 05;Bout Froid;Tâche;Top qualité;TARGET (Passage en SO3);Automation;;;;;;Démarrage tardif | Pas de top Qualité à 15h40. Verticalité, glaçures, casse, mauvaise répartition
 Machine_35_2026-09-15_025;2026-09-15;mardi;Machine 35;52515 05;Bout Froid;Tâche;Montée en régime;--;Automation;;;;;;
 Machine_35_2026-09-15_026;2026-09-15;mardi;Machine 35;52515 05;Bout Froid;Tâche;Première palette sortie;--;Automation;;;;;;
 Machine_35_2026-09-15_027;2026-09-15;mardi;Machine 35;52515 05;Bout Froid;Tâche;Premier lot sorti;TARGET (Passage en SO3);Automation;;;;;;
 Machine_35_2026-09-15_028;2026-09-15;mardi;Machine 35;52515 05;Bout Froid;Tâche;Top emballage;--;Automation;;;;;;
 Machine_35_2026-09-15_029;2026-09-15;mardi;Machine 35;52515 05;Bout Froid;Tâche;Validation de deux lots commercialisables;TARGET (Passage en SO3);Automation;;;;;;
-Machine_32_A/B_2026-09-16_001;2026-09-16;mercredi;Machine 32 A/B;52464 01;TARGET (Grand T1);TARGET;TARGET (Grand T1);--;--;;;;;;
+Machine_32_A/B_2026-09-16_001;2026-09-16;mercredi;Machine 32 A/B;52464 01;TARGET (Grand T1);TARGET;TARGET (Grand T1);--;--;5:50;7:50;2026-09-16 5:50:00;2026-09-16 7:50:00;120;T1 - Rondelle + categoria 3 = 120 min
 Machine_32_A/B_2026-09-16_002;2026-09-16;mercredi;Machine 32 A/B;52464 01;TARGET (Nettoyage);TARGET;TARGET (Nettoyage);--;--;;;;;;
-Machine_32_A/B_2026-09-16_003;2026-09-16;mercredi;Machine 32 A/B;52464 01;TARGET (Petit t1);TARGET;TARGET (Petit t1);--;--;;;;;;
-Machine_32_A/B_2026-09-16_004;2026-09-16;mercredi;Machine 32 A/B;52464 01;TARGET (Rondelle);TARGET;TARGET (Rondelle);--;--;;;;;;
+Machine_32_A/B_2026-09-16_003;2026-09-16;mercredi;Machine 32 A/B;52464 01;TARGET (Petit t1);TARGET;TARGET (Petit t1);--;--;5:50;7:35;2026-09-16 5:50:00;2026-09-16 7:35:00;105;t1 - Categoria 3 = 105 min
+Machine_32_A/B_2026-09-16_004;2026-09-16;mercredi;Machine 32 A/B;52464 01;TARGET (Rondelle);TARGET;TARGET (Rondelle);--;--;6:50;7:05;2026-09-16 6:50:00;2026-09-16 7:05:00;15;Norme 15 min
 Machine_32_A/B_2026-09-16_005;2026-09-16;mercredi;Machine 32 A/B;52464 01;TARGET (Anticipation Feeder);TARGET;TARGET (Anticipation Feeder);--;--;;;;;;
 Machine_32_A/B_2026-09-16_006;2026-09-16;mercredi;Machine 32 A/B;52464 01;TARGET (Passage en SO3);TARGET;TARGET (Passage en SO3);--;--;;;;;;
-Machine_32_A/B_2026-09-16_007;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Nettoyage de machine;TARGET (Nettoyage);Production;;;;;;
-Machine_32_A/B_2026-09-16_008;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Changement rondelle (cuvette);TARGET (Rondelle);Feederman;;;;;;
-Machine_32_A/B_2026-09-16_009;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Cote Finisseur;TARGET (Grand T1);Atelier IS;;;;;;
-Machine_32_A/B_2026-09-16_010;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Cote Ebaucheur;TARGET (Grand T1);Atelier IS;;;;;;
-Machine_32_A/B_2026-09-16_011;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Entonnoir sous verre;TARGET (Petit t1);Feederman;;;;;;
-Machine_32_A/B_2026-09-16_012;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Distributeur sous verre;TARGET (Petit t1);Feederman;;;;;;
-Machine_32_A/B_2026-09-16_013;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Demarrage section sans flacon;TARGET (Grand T1);Chef de section;;;;;;
-Machine_32_A/B_2026-09-16_014;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Debut section avec flacon;TARGET (Grand T1);Chef de section;;;;;;
-Machine_32_A/B_2026-09-16_015;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Machine complete avec flacon;TARGET (Grand T1);Chef de section;;;;;;
-Machine_32_A/B_2026-09-16_016;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Mise a l arche;TARGET (Grand T1);Chef de section;;;;;;
+Machine_32_A/B_2026-09-16_007;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Nettoyage de machine;TARGET (Nettoyage);Production;5:50;7:10;2026-09-16 5:50:00;2026-09-16 7:10:00;80;'- Nettoyage machine A (5h50 à 7h10) | - Nettoyage machine B (5h50 à 6h50)
+Machine_32_A/B_2026-09-16_008;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Changement rondelle (cuvette);TARGET (Rondelle);Feederman;6:50;7:05;2026-09-16 6:50:00;2026-09-16 7:05:00;15;Changement seulement machine B
+Machine_32_A/B_2026-09-16_009;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Cote Finisseur;TARGET (Grand T1);Atelier IS;7:10;8:10;2026-09-16 7:10:00;2026-09-16 8:10:00;60;Machine A | - Sec.3: réglage bras transfert
+Machine_32_A/B_2026-09-16_010;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Cote Ebaucheur;TARGET (Grand T1);Atelier IS;7:20;7:57;2026-09-16 7:20:00;2026-09-16 7:57:00;37;Machine A
+Machine_32_A/B_2026-09-16_011;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Entonnoir sous verre;TARGET (Petit t1);Feederman;8:16;8:18;2026-09-16 8:16:00;2026-09-16 8:18:00;2;Machine A
+Machine_32_A/B_2026-09-16_012;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Distributeur sous verre;TARGET (Petit t1);Feederman;8:46;8:48;2026-09-16 8:46:00;2026-09-16 8:48:00;2;Machine A et B
+Machine_32_A/B_2026-09-16_013;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Demarrage section sans flacon;TARGET (Grand T1);Chef de section;8:25;8:27;2026-09-16 8:25:00;2026-09-16 8:27:00;2;Machine A
+Machine_32_A/B_2026-09-16_014;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Debut section avec flacon;TARGET (Grand T1);Chef de section;8:50;8:52;2026-09-16 8:50:00;2026-09-16 8:52:00;2;Machine A | - Variation de poids
+Machine_32_A/B_2026-09-16_015;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Machine complete avec flacon;TARGET (Grand T1);Chef de section;9:00;9:02;2026-09-16 9:00:00;2026-09-16 9:02:00;2;Machine A
+Machine_32_A/B_2026-09-16_016;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Mise a l arche;TARGET (Grand T1);Chef de section;9:21;9:23;2026-09-16 9:21:00;2026-09-16 9:23:00;2;Machine A - avec é section
 Machine_32_A/B_2026-09-16_017;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Changement Traitement Surface;TARGET (Grand T1);Production;;;;;;
 Machine_32_A/B_2026-09-16_018;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Chaud;Tâche;Nettoyage SO3;TARGET (Passage en SO3);Production;;;;;;
-Machine_32_A/B_2026-09-16_019;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Aligneur vide;TARGET (Nettoyage);Production;;;;;;
-Machine_32_A/B_2026-09-16_020;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;T0 : Nettoyage de ligne;TARGET (Nettoyage);Production;;;;;;
-Machine_32_A/B_2026-09-16_021;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;T1 : Durée pré-réglage;TARGET (Anticipation Feeder);Automation;;;;;;
-Machine_32_A/B_2026-09-16_022;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Arrivée deux sections contrôlables;TARGET (Anticipation Feeder);Automation;;;;;;
-Machine_32_A/B_2026-09-16_023;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Arrivée de toutes sections;TARGET (Anticipation Feeder);Automation;;;;;;
-Machine_32_A/B_2026-09-16_024;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Top qualité;TARGET (Passage en SO3);Automation;;;;;;
-Machine_32_A/B_2026-09-16_025;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Montée en régime;--;Automation;;;;;;
+Machine_32_A/B_2026-09-16_019;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Aligneur vide;TARGET (Nettoyage);Production;6:20;6:22;2026-09-16 6:20:00;2026-09-16 6:22:00;2;Manque de personnel
+Machine_32_A/B_2026-09-16_020;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;T0 : Nettoyage de ligne;TARGET (Nettoyage);Production;6:20;10:00;2026-09-16 6:20:00;2026-09-16 10:00:00;220;Nettoyage non terminé | Manque de personnel | Pas d'informations
+Machine_32_A/B_2026-09-16_021;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;T1 : Durée pré-réglage;TARGET (Anticipation Feeder);Automation;7:30;10:37;2026-09-16 7:30:00;2026-09-16 10:37:00;187;Nettoyage (débris verre) | Manque de personnel | Chariot film NOK | Lecture symplex impossible perles trop hautes=lecture sur machine CO
+Machine_32_A/B_2026-09-16_022;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Arrivée deux sections contrôlables;TARGET (Anticipation Feeder);Automation;9:50;9:52;2026-09-16 9:50:00;2026-09-16 9:52:00;2;Beaucoup de tombées
+Machine_32_A/B_2026-09-16_023;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Arrivée de toutes sections;TARGET (Anticipation Feeder);Automation;12:00;12:02;2026-09-16 12:00:00;2026-09-16 12:02:00;2;Tombées sur arche | Pas de série contrôlable Cf SQ A.C 11h27
+Machine_32_A/B_2026-09-16_024;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Top qualité;TARGET (Passage en SO3);Automation;12:45;12:47;2026-09-16 12:45:00;2026-09-16 12:47:00;2;
+Machine_32_A/B_2026-09-16_025;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Montée en régime;--;Automation;12:45;;2026-09-16 12:45:00;;;12 numéro en éjection
 Machine_32_A/B_2026-09-16_026;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Première palette sortie;--;Automation;;;;;;
 Machine_32_A/B_2026-09-16_027;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Premier lot sorti;TARGET (Passage en SO3);Automation;;;;;;
 Machine_32_A/B_2026-09-16_028;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Top emballage;--;Automation;;;;;;
 Machine_32_A/B_2026-09-16_029;2026-09-16;mercredi;Machine 32 A/B;52464 01;Bout Froid;Tâche;Validation de deux lots commercialisables;TARGET (Passage en SO3);Automation;;;;;;
-Machine_33_2026-09-16_001;2026-09-16;mercredi;Machine 33;52490 07;TARGET (Grand T1);TARGET;TARGET (Grand T1);--;--;;;;;;
+Machine_33_2026-09-16_001;2026-09-16;mercredi;Machine 33;52490 07;TARGET (Grand T1);TARGET;TARGET (Grand T1);--;--;7:55;8:05;2026-09-16 7:55:00;2026-09-16 8:05:00;10;T1 - Catégorie 2 = 10 min
 Machine_33_2026-09-16_002;2026-09-16;mercredi;Machine 33;52490 07;TARGET (Nettoyage);TARGET;TARGET (Nettoyage);--;--;;;;;;
-Machine_33_2026-09-16_003;2026-09-16;mercredi;Machine 33;52490 07;TARGET (Petit t1);TARGET;TARGET (Petit t1);--;--;;;;;;
+Machine_33_2026-09-16_003;2026-09-16;mercredi;Machine 33;52490 07;TARGET (Petit t1);TARGET;TARGET (Petit t1);--;--;7:55;8:05;2026-09-16 7:55:00;2026-09-16 8:05:00;10;t1 - Catégorie 2 = 10 min
 Machine_33_2026-09-16_004;2026-09-16;mercredi;Machine 33;52490 07;TARGET (Rondelle);TARGET;TARGET (Rondelle);--;--;;;;;;
 Machine_33_2026-09-16_005;2026-09-16;mercredi;Machine 33;52490 07;TARGET (Anticipation Feeder);TARGET;TARGET (Anticipation Feeder);--;--;;;;;;
 Machine_33_2026-09-16_006;2026-09-16;mercredi;Machine 33;52490 07;TARGET (Passage en SO3);TARGET;TARGET (Passage en SO3);--;--;;;;;;
 Machine_33_2026-09-16_007;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Nettoyage de machine;TARGET (Nettoyage);Production;;;;;;
 Machine_33_2026-09-16_008;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Changement rondelle (cuvette);TARGET (Rondelle);Feederman;;;;;;
 Machine_33_2026-09-16_009;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Cote Finisseur;TARGET (Grand T1);Atelier IS;;;;;;
-Machine_33_2026-09-16_010;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Cote Ebaucheur;TARGET (Grand T1);Atelier IS;;;;;;
+Machine_33_2026-09-16_010;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Cote Ebaucheur;TARGET (Grand T1);Atelier IS;7:55;8:05;2026-09-16 7:55:00;2026-09-16 8:05:00;10;'- Changement ébaucheur
 Machine_33_2026-09-16_011;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Entonnoir sous verre;TARGET (Petit t1);Feederman;;;;;;
 Machine_33_2026-09-16_012;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Distributeur sous verre;TARGET (Petit t1);Feederman;;;;;;
-Machine_33_2026-09-16_013;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Demarrage section sans flacon;TARGET (Grand T1);Chef de section;;;;;;
-Machine_33_2026-09-16_014;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Debut section avec flacon;TARGET (Grand T1);Chef de section;;;;;;
-Machine_33_2026-09-16_015;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Machine complete avec flacon;TARGET (Grand T1);Chef de section;;;;;;
-Machine_33_2026-09-16_016;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Mise a l arche;TARGET (Grand T1);Chef de section;;;;;;
-Machine_33_2026-09-16_017;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Changement Traitement Surface;TARGET (Grand T1);Production;;;;;;
+Machine_33_2026-09-16_013;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Demarrage section sans flacon;TARGET (Grand T1);Chef de section;7:57;7:59;2026-09-16 7:57:00;2026-09-16 7:59:00;2;
+Machine_33_2026-09-16_014;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Debut section avec flacon;TARGET (Grand T1);Chef de section;8:12;8:14;2026-09-16 8:12:00;2026-09-16 8:14:00;2;
+Machine_33_2026-09-16_015;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Machine complete avec flacon;TARGET (Grand T1);Chef de section;8:17;8:19;2026-09-16 8:17:00;2026-09-16 8:19:00;2;
+Machine_33_2026-09-16_016;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Mise a l arche;TARGET (Grand T1);Chef de section;8:18;8:20;2026-09-16 8:18:00;2026-09-16 8:20:00;2;Mise a l'arche avec 2 sections
+Machine_33_2026-09-16_017;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Changement Traitement Surface;TARGET (Grand T1);Production;8:00;8:10;2026-09-16 8:00:00;2026-09-16 8:10:00;10;Réglage du tunnel de traitement à chaud.
 Machine_33_2026-09-16_018;2026-09-16;mercredi;Machine 33;52490 07;Bout Chaud;Tâche;Nettoyage SO3;TARGET (Passage en SO3);Production;;;;;;
-Machine_33_2026-09-16_019;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;Aligneur vide;TARGET (Nettoyage);Production;;;;;;
-Machine_33_2026-09-16_020;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;T0 : Nettoyage de ligne;TARGET (Nettoyage);Production;;;;;;
-Machine_33_2026-09-16_021;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;T1 : Durée pré-réglage;TARGET (Anticipation Feeder);Automation;;;;;;
+Machine_33_2026-09-16_019;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;Aligneur vide;TARGET (Nettoyage);Production;8:45;8:47;2026-09-16 8:45:00;2026-09-16 8:47:00;2;
+Machine_33_2026-09-16_020;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;T0 : Nettoyage de ligne;TARGET (Nettoyage);Production;8:45;9:15;2026-09-16 8:45:00;2026-09-16 9:15:00;30;
+Machine_33_2026-09-16_021;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;T1 : Durée pré-réglage;TARGET (Anticipation Feeder);Automation;9:15;9:20;2026-09-16 9:15:00;2026-09-16 9:20:00;5;Réglages robot palettiseur
 Machine_33_2026-09-16_022;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;Arrivée deux sections contrôlables;TARGET (Anticipation Feeder);Automation;;;;;;
-Machine_33_2026-09-16_023;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;Arrivée de toutes sections;TARGET (Anticipation Feeder);Automation;;;;;;
+Machine_33_2026-09-16_023;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;Arrivée de toutes sections;TARGET (Anticipation Feeder);Automation;9:15;9:17;2026-09-16 9:15:00;2026-09-16 9:17:00;2;
 Machine_33_2026-09-16_024;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;Top qualité;TARGET (Passage en SO3);Automation;;;;;;
 Machine_33_2026-09-16_025;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;Montée en régime;--;Automation;;;;;;
 Machine_33_2026-09-16_026;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;Première palette sortie;--;Automation;;;;;;
 Machine_33_2026-09-16_027;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;Premier lot sorti;TARGET (Passage en SO3);Automation;;;;;;
 Machine_33_2026-09-16_028;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;Top emballage;--;Automation;;;;;;
 Machine_33_2026-09-16_029;2026-09-16;mercredi;Machine 33;52490 07;Bout Froid;Tâche;Validation de deux lots commercialisables;TARGET (Passage en SO3);Automation;;;;;;
-Machine_24_2026-09-16_001;2026-09-16;mercredi;Machine 24;52662 04;TARGET (Grand T1);TARGET;TARGET (Grand T1);--;--;;;;;;
+Machine_24_2026-09-16_001;2026-09-16;mercredi;Machine 24;52662 04;TARGET (Grand T1);TARGET;TARGET (Grand T1);--;--;8:20;8:30;2026-09-16 8:20:00;2026-09-16 8:30:00;10;t1 = catégorie 2 = 10 min
 Machine_24_2026-09-16_002;2026-09-16;mercredi;Machine 24;52662 04;TARGET (Nettoyage);TARGET;TARGET (Nettoyage);--;--;;;;;;
-Machine_24_2026-09-16_003;2026-09-16;mercredi;Machine 24;52662 04;TARGET (Petit t1);TARGET;TARGET (Petit t1);--;--;;;;;;
+Machine_24_2026-09-16_003;2026-09-16;mercredi;Machine 24;52662 04;TARGET (Petit t1);TARGET;TARGET (Petit t1);--;--;8:45;8:55;2026-09-16 8:45:00;2026-09-16 8:55:00;10;t1 = catégorie 2 = 10 min
 Machine_24_2026-09-16_004;2026-09-16;mercredi;Machine 24;52662 04;TARGET (Rondelle);TARGET;TARGET (Rondelle);--;--;;;;;;
 Machine_24_2026-09-16_005;2026-09-16;mercredi;Machine 24;52662 04;TARGET (Anticipation Feeder);TARGET;TARGET (Anticipation Feeder);--;--;;;;;;
 Machine_24_2026-09-16_006;2026-09-16;mercredi;Machine 24;52662 04;TARGET (Passage en SO3);TARGET;TARGET (Passage en SO3);--;--;;;;;;
 Machine_24_2026-09-16_007;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Nettoyage de machine;TARGET (Nettoyage);Production;;;;;;
-Machine_24_2026-09-16_008;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Changement rondelle (cuvette);TARGET (Rondelle);Feederman;;;;;;
-Machine_24_2026-09-16_009;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Cote Finisseur;TARGET (Grand T1);Atelier IS;;;;;;
+Machine_24_2026-09-16_008;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Changement rondelle (cuvette);TARGET (Rondelle);Feederman;8:45;9:07;2026-09-16 8:45:00;2026-09-16 9:07:00;22;'- Contrôle de la protection SGD pour le remplacement de la rondelle en vue de son utilisation lors du changement.
+Machine_24_2026-09-16_009;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Cote Finisseur;TARGET (Grand T1);Atelier IS;8:45;9:00;2026-09-16 8:45:00;2026-09-16 9:00:00;15;'- Changement fond finisseur, finisseur et moule de bague | - Réglage en hauteur de moule de bague.
 Machine_24_2026-09-16_010;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Cote Ebaucheur;TARGET (Grand T1);Atelier IS;;;;;;
-Machine_24_2026-09-16_011;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Entonnoir sous verre;TARGET (Petit t1);Feederman;;;;;;
-Machine_24_2026-09-16_012;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Distributeur sous verre;TARGET (Petit t1);Feederman;;;;;;
-Machine_24_2026-09-16_013;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Demarrage section sans flacon;TARGET (Grand T1);Chef de section;;;;;;
-Machine_24_2026-09-16_014;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Debut section avec flacon;TARGET (Grand T1);Chef de section;;;;;;
-Machine_24_2026-09-16_015;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Machine complete avec flacon;TARGET (Grand T1);Chef de section;;;;;;
-Machine_24_2026-09-16_016;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Mise a l arche;TARGET (Grand T1);Chef de section;;;;;;
+Machine_24_2026-09-16_011;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Entonnoir sous verre;TARGET (Petit t1);Feederman;9:07;9:09;2026-09-16 9:07:00;2026-09-16 9:09:00;2;
+Machine_24_2026-09-16_012;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Distributeur sous verre;TARGET (Petit t1);Feederman;9:07;9:09;2026-09-16 9:07:00;2026-09-16 9:09:00;2;
+Machine_24_2026-09-16_013;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Demarrage section sans flacon;TARGET (Grand T1);Chef de section;9:03;9:05;2026-09-16 9:03:00;2026-09-16 9:05:00;2;
+Machine_24_2026-09-16_014;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Debut section avec flacon;TARGET (Grand T1);Chef de section;9:07;9:09;2026-09-16 9:07:00;2026-09-16 9:09:00;2;
+Machine_24_2026-09-16_015;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Machine complete avec flacon;TARGET (Grand T1);Chef de section;9:10;9:12;2026-09-16 9:10:00;2026-09-16 9:12:00;2;
+Machine_24_2026-09-16_016;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Mise a l arche;TARGET (Grand T1);Chef de section;9:17;9:19;2026-09-16 9:17:00;2026-09-16 9:19:00;2;Mise a l'arche avec tout sections
 Machine_24_2026-09-16_017;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Changement Traitement Surface;TARGET (Grand T1);Production;;;;;;
 Machine_24_2026-09-16_018;2026-09-16;mercredi;Machine 24;52662 04;Bout Chaud;Tâche;Nettoyage SO3;TARGET (Passage en SO3);Production;;;;;;
-Machine_24_2026-09-16_019;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;Aligneur vide;TARGET (Nettoyage);Production;;;;;;
-Machine_24_2026-09-16_020;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;T0 : Nettoyage de ligne;TARGET (Nettoyage);Production;;;;;;
-Machine_24_2026-09-16_021;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;T1 : Durée pré-réglage;TARGET (Anticipation Feeder);Automation;;;;;;
+Machine_24_2026-09-16_019;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;Aligneur vide;TARGET (Nettoyage);Production;9:00;9:02;2026-09-16 9:00:00;2026-09-16 9:02:00;2;
+Machine_24_2026-09-16_020;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;T0 : Nettoyage de ligne;TARGET (Nettoyage);Production;9:00;9:15;2026-09-16 9:00:00;2026-09-16 9:15:00;15;
+Machine_24_2026-09-16_021;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;T1 : Durée pré-réglage;TARGET (Anticipation Feeder);Automation;9:15;9:35;2026-09-16 9:15:00;2026-09-16 9:35:00;20;
 Machine_24_2026-09-16_022;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;Arrivée deux sections contrôlables;TARGET (Anticipation Feeder);Automation;;;;;;
-Machine_24_2026-09-16_023;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;Arrivée de toutes sections;TARGET (Anticipation Feeder);Automation;;;;;;
+Machine_24_2026-09-16_023;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;Arrivée de toutes sections;TARGET (Anticipation Feeder);Automation;9:55;9:57;2026-09-16 9:55:00;2026-09-16 9:57:00;2;
 Machine_24_2026-09-16_024;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;Top qualité;TARGET (Passage en SO3);Automation;;;;;;
 Machine_24_2026-09-16_025;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;Montée en régime;--;Automation;;;;;;
 Machine_24_2026-09-16_026;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;Première palette sortie;--;Automation;;;;;;
 Machine_24_2026-09-16_027;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;Premier lot sorti;TARGET (Passage en SO3);Automation;;;;;;
 Machine_24_2026-09-16_028;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;Top emballage;--;Automation;;;;;;
 Machine_24_2026-09-16_029;2026-09-16;mercredi;Machine 24;52662 04;Bout Froid;Tâche;Validation de deux lots commercialisables;TARGET (Passage en SO3);Automation;;;;;;
+Machine_33_2026-09-17_001;2026-09-17;jeudi;Machine 33;00770 37;TARGET (Grand T1);TARGET;TARGET (Grand T1);--;--;;;;;;
+Machine_33_2026-09-17_002;2026-09-17;jeudi;Machine 33;00770 37;TARGET (Nettoyage);TARGET;TARGET (Nettoyage);--;--;;;;;;
+Machine_33_2026-09-17_003;2026-09-17;jeudi;Machine 33;00770 37;TARGET (Petit t1);TARGET;TARGET (Petit t1);--;--;;;;;;
+Machine_33_2026-09-17_004;2026-09-17;jeudi;Machine 33;00770 37;TARGET (Rondelle);TARGET;TARGET (Rondelle);--;--;;;;;;
+Machine_33_2026-09-17_005;2026-09-17;jeudi;Machine 33;00770 37;TARGET (Anticipation Feeder);TARGET;TARGET (Anticipation Feeder);--;--;;;;;;
+Machine_33_2026-09-17_006;2026-09-17;jeudi;Machine 33;00770 37;TARGET (Passage en SO3);TARGET;TARGET (Passage en SO3);--;--;;;;;;
+Machine_33_2026-09-17_007;2026-09-17;jeudi;Machine 33;00770 37;Bout Chaud;Tâche;Nettoyage de machine;TARGET (Nettoyage);Production;;;;;;
+Machine_33_2026-09-17_008;2026-09-17;jeudi;Machine 33;00770 37;Bout Chaud;Tâche;Changement rondelle (cuvette);TARGET (Rondelle);Feederman;;;;;;
+Machine_33_2026-09-17_009;2026-09-17;jeudi;Machine 33;00770 37;Bout Chaud;Tâche;Cote Finisseur;TARGET (Grand T1);Atelier IS;;;;;;
+Machine_33_2026-09-17_010;2026-09-17;jeudi;Machine 33;00770 37;Bout Chaud;Tâche;Cote Ebaucheur;TARGET (Grand T1);Atelier IS;;;;;;
+Machine_33_2026-09-17_011;2026-09-17;jeudi;Machine 33;00770 37;Bout Chaud;Tâche;Entonnoir sous verre;TARGET (Petit t1);Feederman;;;;;;
+Machine_33_2026-09-17_012;2026-09-17;jeudi;Machine 33;00770 37;Bout Chaud;Tâche;Distributeur sous verre;TARGET (Petit t1);Feederman;;;;;;
+Machine_33_2026-09-17_013;2026-09-17;jeudi;Machine 33;00770 37;Bout Chaud;Tâche;Demarrage section sans flacon;TARGET (Grand T1);Chef de section;;;;;;
+Machine_33_2026-09-17_014;2026-09-17;jeudi;Machine 33;00770 37;Bout Chaud;Tâche;Debut section avec flacon;TARGET (Grand T1);Chef de section;;;;;;
+Machine_33_2026-09-17_015;2026-09-17;jeudi;Machine 33;00770 37;Bout Chaud;Tâche;Machine complete avec flacon;TARGET (Grand T1);Chef de section;;;;;;
+Machine_33_2026-09-17_016;2026-09-17;jeudi;Machine 33;00770 37;Bout Chaud;Tâche;Mise a l arche;TARGET (Grand T1);Chef de section;;;;;;
+Machine_33_2026-09-17_017;2026-09-17;jeudi;Machine 33;00770 37;Bout Chaud;Tâche;Changement Traitement Surface;TARGET (Grand T1);Production;;;;;;
+Machine_33_2026-09-17_018;2026-09-17;jeudi;Machine 33;00770 37;Bout Chaud;Tâche;Nettoyage SO3;TARGET (Passage en SO3);Production;;;;;;
+Machine_33_2026-09-17_019;2026-09-17;jeudi;Machine 33;00770 37;Bout Froid;Tâche;Aligneur vide;TARGET (Nettoyage);Production;;;;;;
+Machine_33_2026-09-17_020;2026-09-17;jeudi;Machine 33;00770 37;Bout Froid;Tâche;T0 : Nettoyage de ligne;TARGET (Nettoyage);Production;;;;;;
+Machine_33_2026-09-17_021;2026-09-17;jeudi;Machine 33;00770 37;Bout Froid;Tâche;T1 : Durée pré-réglage;TARGET (Anticipation Feeder);Automation;;;;;;
+Machine_33_2026-09-17_022;2026-09-17;jeudi;Machine 33;00770 37;Bout Froid;Tâche;Arrivée deux sections contrôlables;TARGET (Anticipation Feeder);Automation;;;;;;
+Machine_33_2026-09-17_023;2026-09-17;jeudi;Machine 33;00770 37;Bout Froid;Tâche;Arrivée de toutes sections;TARGET (Anticipation Feeder);Automation;;;;;;
+Machine_33_2026-09-17_024;2026-09-17;jeudi;Machine 33;00770 37;Bout Froid;Tâche;Top qualité;TARGET (Passage en SO3);Automation;;;;;;
+Machine_33_2026-09-17_025;2026-09-17;jeudi;Machine 33;00770 37;Bout Froid;Tâche;Montée en régime;--;Automation;;;;;;
+Machine_33_2026-09-17_026;2026-09-17;jeudi;Machine 33;00770 37;Bout Froid;Tâche;Première palette sortie;--;Automation;;;;;;
+Machine_33_2026-09-17_027;2026-09-17;jeudi;Machine 33;00770 37;Bout Froid;Tâche;Premier lot sorti;TARGET (Passage en SO3);Automation;;;;;;
+Machine_33_2026-09-17_028;2026-09-17;jeudi;Machine 33;00770 37;Bout Froid;Tâche;Top emballage;--;Automation;;;;;;
+Machine_33_2026-09-17_029;2026-09-17;jeudi;Machine 33;00770 37;Bout Froid;Tâche;Validation de deux lots commercialisables;TARGET (Passage en SO3);Automation;;;;;;
+Machine_22_A/B_2026-09-17_001;2026-09-17;jeudi;Machine 22 A/B;00776 40;TARGET (Grand T1);TARGET;TARGET (Grand T1);--;--;;;;;;
+Machine_22_A/B_2026-09-17_002;2026-09-17;jeudi;Machine 22 A/B;00776 40;TARGET (Nettoyage);TARGET;TARGET (Nettoyage);--;--;;;;;;
+Machine_22_A/B_2026-09-17_003;2026-09-17;jeudi;Machine 22 A/B;00776 40;TARGET (Petit t1);TARGET;TARGET (Petit t1);--;--;;;;;;
+Machine_22_A/B_2026-09-17_004;2026-09-17;jeudi;Machine 22 A/B;00776 40;TARGET (Rondelle);TARGET;TARGET (Rondelle);--;--;;;;;;
+Machine_22_A/B_2026-09-17_005;2026-09-17;jeudi;Machine 22 A/B;00776 40;TARGET (Anticipation Feeder);TARGET;TARGET (Anticipation Feeder);--;--;;;;;;
+Machine_22_A/B_2026-09-17_006;2026-09-17;jeudi;Machine 22 A/B;00776 40;TARGET (Passage en SO3);TARGET;TARGET (Passage en SO3);--;--;;;;;;
+Machine_22_A/B_2026-09-17_007;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Chaud;Tâche;Nettoyage de machine;TARGET (Nettoyage);Production;;;;;;
+Machine_22_A/B_2026-09-17_008;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Chaud;Tâche;Changement rondelle (cuvette);TARGET (Rondelle);Feederman;;;;;;
+Machine_22_A/B_2026-09-17_009;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Chaud;Tâche;Cote Finisseur;TARGET (Grand T1);Atelier IS;;;;;;
+Machine_22_A/B_2026-09-17_010;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Chaud;Tâche;Cote Ebaucheur;TARGET (Grand T1);Atelier IS;;;;;;
+Machine_22_A/B_2026-09-17_011;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Chaud;Tâche;Entonnoir sous verre;TARGET (Petit t1);Feederman;;;;;;
+Machine_22_A/B_2026-09-17_012;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Chaud;Tâche;Distributeur sous verre;TARGET (Petit t1);Feederman;;;;;;
+Machine_22_A/B_2026-09-17_013;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Chaud;Tâche;Demarrage section sans flacon;TARGET (Grand T1);Chef de section;;;;;;
+Machine_22_A/B_2026-09-17_014;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Chaud;Tâche;Debut section avec flacon;TARGET (Grand T1);Chef de section;;;;;;
+Machine_22_A/B_2026-09-17_015;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Chaud;Tâche;Machine complete avec flacon;TARGET (Grand T1);Chef de section;;;;;;
+Machine_22_A/B_2026-09-17_016;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Chaud;Tâche;Mise a l arche;TARGET (Grand T1);Chef de section;;;;;;
+Machine_22_A/B_2026-09-17_017;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Chaud;Tâche;Changement Traitement Surface;TARGET (Grand T1);Production;;;;;;
+Machine_22_A/B_2026-09-17_018;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Chaud;Tâche;Nettoyage SO3;TARGET (Passage en SO3);Production;;;;;;
+Machine_22_A/B_2026-09-17_019;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Froid;Tâche;Aligneur vide;TARGET (Nettoyage);Production;;;;;;
+Machine_22_A/B_2026-09-17_020;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Froid;Tâche;T0 : Nettoyage de ligne;TARGET (Nettoyage);Production;;;;;;
+Machine_22_A/B_2026-09-17_021;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Froid;Tâche;T1 : Durée pré-réglage;TARGET (Anticipation Feeder);Automation;;;;;;
+Machine_22_A/B_2026-09-17_022;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Froid;Tâche;Arrivée deux sections contrôlables;TARGET (Anticipation Feeder);Automation;;;;;;
+Machine_22_A/B_2026-09-17_023;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Froid;Tâche;Arrivée de toutes sections;TARGET (Anticipation Feeder);Automation;;;;;;
+Machine_22_A/B_2026-09-17_024;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Froid;Tâche;Top qualité;TARGET (Passage en SO3);Automation;;;;;;
+Machine_22_A/B_2026-09-17_025;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Froid;Tâche;Montée en régime;--;Automation;;;;;;
+Machine_22_A/B_2026-09-17_026;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Froid;Tâche;Première palette sortie;--;Automation;;;;;;
+Machine_22_A/B_2026-09-17_027;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Froid;Tâche;Premier lot sorti;TARGET (Passage en SO3);Automation;;;;;;
+Machine_22_A/B_2026-09-17_028;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Froid;Tâche;Top emballage;--;Automation;;;;;;
+Machine_22_A/B_2026-09-17_029;2026-09-17;jeudi;Machine 22 A/B;00776 40;Bout Froid;Tâche;Validation de deux lots commercialisables;TARGET (Passage en SO3);Automation;;;;;;
+Machine_24_2026-09-18_001;2026-09-18;vendredi;Machine 24;52691 09;TARGET (Grand T1);TARGET;TARGET (Grand T1);--;--;;;;;;
+Machine_24_2026-09-18_002;2026-09-18;vendredi;Machine 24;52691 09;TARGET (Nettoyage);TARGET;TARGET (Nettoyage);--;--;;;;;;
+Machine_24_2026-09-18_003;2026-09-18;vendredi;Machine 24;52691 09;TARGET (Petit t1);TARGET;TARGET (Petit t1);--;--;;;;;;
+Machine_24_2026-09-18_004;2026-09-18;vendredi;Machine 24;52691 09;TARGET (Rondelle);TARGET;TARGET (Rondelle);--;--;;;;;;
+Machine_24_2026-09-18_005;2026-09-18;vendredi;Machine 24;52691 09;TARGET (Anticipation Feeder);TARGET;TARGET (Anticipation Feeder);--;--;;;;;;
+Machine_24_2026-09-18_006;2026-09-18;vendredi;Machine 24;52691 09;TARGET (Passage en SO3);TARGET;TARGET (Passage en SO3);--;--;;;;;;
+Machine_24_2026-09-18_007;2026-09-18;vendredi;Machine 24;52691 09;Bout Chaud;Tâche;Nettoyage de machine;TARGET (Nettoyage);Production;;;;;;
+Machine_24_2026-09-18_008;2026-09-18;vendredi;Machine 24;52691 09;Bout Chaud;Tâche;Changement rondelle (cuvette);TARGET (Rondelle);Feederman;;;;;;
+Machine_24_2026-09-18_009;2026-09-18;vendredi;Machine 24;52691 09;Bout Chaud;Tâche;Cote Finisseur;TARGET (Grand T1);Atelier IS;;;;;;
+Machine_24_2026-09-18_010;2026-09-18;vendredi;Machine 24;52691 09;Bout Chaud;Tâche;Cote Ebaucheur;TARGET (Grand T1);Atelier IS;;;;;;
+Machine_24_2026-09-18_011;2026-09-18;vendredi;Machine 24;52691 09;Bout Chaud;Tâche;Entonnoir sous verre;TARGET (Petit t1);Feederman;;;;;;
+Machine_24_2026-09-18_012;2026-09-18;vendredi;Machine 24;52691 09;Bout Chaud;Tâche;Distributeur sous verre;TARGET (Petit t1);Feederman;;;;;;
+Machine_24_2026-09-18_013;2026-09-18;vendredi;Machine 24;52691 09;Bout Chaud;Tâche;Demarrage section sans flacon;TARGET (Grand T1);Chef de section;;;;;;
+Machine_24_2026-09-18_014;2026-09-18;vendredi;Machine 24;52691 09;Bout Chaud;Tâche;Debut section avec flacon;TARGET (Grand T1);Chef de section;;;;;;
+Machine_24_2026-09-18_015;2026-09-18;vendredi;Machine 24;52691 09;Bout Chaud;Tâche;Machine complete avec flacon;TARGET (Grand T1);Chef de section;;;;;;
+Machine_24_2026-09-18_016;2026-09-18;vendredi;Machine 24;52691 09;Bout Chaud;Tâche;Mise a l arche;TARGET (Grand T1);Chef de section;;;;;;
+Machine_24_2026-09-18_017;2026-09-18;vendredi;Machine 24;52691 09;Bout Chaud;Tâche;Changement Traitement Surface;TARGET (Grand T1);Production;;;;;;
+Machine_24_2026-09-18_018;2026-09-18;vendredi;Machine 24;52691 09;Bout Chaud;Tâche;Nettoyage SO3;TARGET (Passage en SO3);Production;;;;;;
+Machine_24_2026-09-18_019;2026-09-18;vendredi;Machine 24;52691 09;Bout Froid;Tâche;Aligneur vide;TARGET (Nettoyage);Production;;;;;;
+Machine_24_2026-09-18_020;2026-09-18;vendredi;Machine 24;52691 09;Bout Froid;Tâche;T0 : Nettoyage de ligne;TARGET (Nettoyage);Production;;;;;;
+Machine_24_2026-09-18_021;2026-09-18;vendredi;Machine 24;52691 09;Bout Froid;Tâche;T1 : Durée pré-réglage;TARGET (Anticipation Feeder);Automation;;;;;;
+Machine_24_2026-09-18_022;2026-09-18;vendredi;Machine 24;52691 09;Bout Froid;Tâche;Arrivée deux sections contrôlables;TARGET (Anticipation Feeder);Automation;;;;;;
+Machine_24_2026-09-18_023;2026-09-18;vendredi;Machine 24;52691 09;Bout Froid;Tâche;Arrivée de toutes sections;TARGET (Anticipation Feeder);Automation;;;;;;
+Machine_24_2026-09-18_024;2026-09-18;vendredi;Machine 24;52691 09;Bout Froid;Tâche;Top qualité;TARGET (Passage en SO3);Automation;;;;;;
+Machine_24_2026-09-18_025;2026-09-18;vendredi;Machine 24;52691 09;Bout Froid;Tâche;Montée en régime;--;Automation;;;;;;
+Machine_24_2026-09-18_026;2026-09-18;vendredi;Machine 24;52691 09;Bout Froid;Tâche;Première palette sortie;--;Automation;;;;;;
+Machine_24_2026-09-18_027;2026-09-18;vendredi;Machine 24;52691 09;Bout Froid;Tâche;Premier lot sorti;TARGET (Passage en SO3);Automation;;;;;;
+Machine_24_2026-09-18_028;2026-09-18;vendredi;Machine 24;52691 09;Bout Froid;Tâche;Top emballage;--;Automation;;;;;;
+Machine_24_2026-09-18_029;2026-09-18;vendredi;Machine 24;52691 09;Bout Froid;Tâche;Validation de deux lots commercialisables;TARGET (Passage en SO3);Automation;;;;;;
