@@ -79,13 +79,119 @@ const CAUSES_BOUT_FROID_DICT = {
   "Validation de deux lots commercialisables": ["Lot bloqué","Validation retardée"]
 };
 
+// Liste UNIQUE des targets (ordre d'affichage). Pour ajouter une target : une seule ligne ici.
+// Ne jamais modifier une "key" existante (c'est la clé de stockage dans Firebase).
+const TARGET_DEFS = [
+  {key:"grand_t1", label:"TARGET (Grand T1)", color:"#c0392b"},
+  {key:"nettoyage", label:"TARGET (Nettoyage)", color:"#27ae60"},
+  {key:"petit_t1", label:"TARGET (Petit t1)", color:"#e07b54"},
+  {key:"rondelle", label:"TARGET (Rondelle)", color:"#7d3c98"},
+  {key:"anticipation_feeder", label:"TARGET (Anticipation Feeder)", color:"#2980b9"},
+  {key:"passage_so3", label:"TARGET (Passage en SO3)", color:"#e91e8c"},
+  {key:"mise_regime_2s", label:"TARGET (Mise en régime 2 sections)", color:"#16a085"}
+];
+const TARGET_KEYS = TARGET_DEFS.map(function(t){ return t.key; });
+function emptyTargets() { var o = {}; TARGET_KEYS.forEach(function(k){ o[k] = {}; }); return o; }
+
+// ── TARGETS FIXES BOUT FROID (valeur fixe par ligne, pas de saisie) ──────────
+// Pour modifier une valeur : changer le chiffre ici. Les séances déjà enregistrées gardent leur ancienne valeur.
+// "seuil" = valeur utilisée si la ligne n'est pas dans le tableau.
+const FIXED_TARGETS_BF = [
+  {key:"vide_ligne", label:"TARGET (Temps vide de ligne)", seuil:30,
+   valeurs:{221:30, 222:30, 224:35, 232:95, 233:36, 235:30, 236:130}},
+  {key:"pre_reglage", label:"TARGET (Temps pré-réglage)", seuil:100,
+   valeurs:{221:125, 222:165, 224:124, 232:142, 233:120, 235:118, 236:130}}
+];
+const FIXED_BG = "#fff3c4";     // fond vanille
+const FIXED_COLOR = "#9a7b00";  // texte jaune foncé
+
+// "Machine 24" / "24" / "224" / "Machine 22A" / "Machine 32 A/B"  ->  224 / 224 / 224 / 222 / 232
+function getLigneNum(machine) {
+  var m = String(machine||"").match(/\d{2,3}/);
+  if (!m) return null;
+  var n = parseInt(m[0], 10);
+  return m[0].length === 2 ? 200 + n : n;
+}
+
+// Calcule les valeurs à partir du tableau pour une machine donnée
+function computeFixedTargets(machine) {
+  var ligne = getLigneNum(machine);
+  var res = {ligne: ligne || ""};
+  FIXED_TARGETS_BF.forEach(function(ft) {
+    if (!ligne) res[ft.key] = "";
+    else res[ft.key] = (ft.valeurs[ligne] !== undefined) ? ft.valeurs[ligne] : ft.seuil;
+  });
+  return res;
+}
+
+// Valeurs d'une séance : celles enregistrées (figées) si même ligne, sinon calculées
+function getFixedTargets(session, machineOverride) {
+  session = session || {};
+  var machine = machineOverride !== undefined ? machineOverride : (session.machine||"");
+  var saved = session.targetsFixes;
+  if (saved && String(saved.ligne) === String(getLigneNum(machine)||"")) return saved;
+  return computeFixedTargets(machine);
+}
+
+// Correspondance tâche -> TARGET de référence (utilisée par les 2 exports)
+// Les noms doivent correspondre EXACTEMENT à ceux dans TASKS_RONDELLE et TASKS_BOUT_FROID
+const TACHE_REF = {
+  "Nettoyage de machine": "TARGET (Nettoyage)",
+  "Changement rondelle (cuvette)": "TARGET (Rondelle)",
+  "Cote Finisseur": "TARGET (Grand T1)",
+  "Cote Ebaucheur": "TARGET (Grand T1)",
+  "Entonnoir sous verre": "TARGET (Petit t1)",
+  "Distributeur sous verre": "TARGET (Petit t1)",
+  "Demarrage section sans flacon": "TARGET (Grand T1)",
+  "Debut section avec flacon": "TARGET (Grand T1)",
+  "Machine complete avec flacon": "TARGET (Grand T1)",
+  "Mise a l arche": "TARGET (Grand T1)",
+  "Changement Traitement Surface": "TARGET (Grand T1)",
+  "Nettoyage SO3": "TARGET (Passage en SO3)",
+  "Aligneur vide": "TARGET (Temps vide de ligne)",
+  "T0 : Nettoyage de ligne": "TARGET (Temps vide de ligne)",
+  "T1 : Durée pré-réglage": "TARGET (Temps pré-réglage)",
+  "Arrivée deux sections contrôlables": "TARGET (Anticipation Feeder)",
+  "Arrivée de toutes sections": "TARGET (Anticipation Feeder)",
+  "Top qualité": "TARGET (Passage en SO3)",
+  "Premier lot sorti": "TARGET (Passage en SO3)",
+  "Validation de deux lots commercialisables": "TARGET (Passage en SO3)"
+};
+
+// En-têtes de l'export (Type_Changement ajouté À LA FIN pour ne pas décaler Power BI)
+const EXPORT_HEADERS = ["ID_Changement","Date","Jour","Machine","Référence_Machine","Section","Type_Tâche","Tâche","Tâche_Référence","Qui","Début","Fin","Date_Heure_Début","Date_Heure_Fin","Durée (min)","Commentaires","Type_Changement"];
+
+// Export : début du 1er créneau -> fin du dernier créneau (pauses comprises) + tous les commentaires
+function spanSlots(obj) {
+  obj = obj || {};
+  var sl = [["sh","sm","eh","em","comment"],["sh2","sm2","eh2","em2","comment2"],["sh3","sm3","eh3","em3","comment3"],["sh4","sm4","eh4","em4","comment4"]];
+  var start = "", end = "", cmts = [];
+  sl.forEach(function(k) {
+    var s = getTV(obj[k[0]]||"", obj[k[1]]||""), e = getTV(obj[k[2]]||"", obj[k[3]]||"");
+    if (!start && s) start = s;
+    if (e) end = e;
+    var c = (obj[k[4]]||"").trim(); if (c) cmts.push(c);
+  });
+  return {start:start, end:end, comment:cmts.join(" | ")};
+}
+
+// Référence d'une séance : champ dédié enregistré, sinon ancienne méthode (texte après " - " dans Machine)
+function sessionMachineInfo(session) {
+  var machine = session.machine||"";
+  var parts = machine.indexOf(" - ") > -1 ? machine.split(" - ") : [machine, ""];
+  var court = parts[0].trim();
+  var refM = parts.slice(1).join(" - ").trim();
+  if (session.reference && String(session.reference).trim()) refM = String(session.reference).trim();
+  return {court:court, ref:refM};
+}
+
 const BOUT_FROID_COLOR = "#2e86ab";
 const MAX_SLOTS = 4;
 const HISTORY_PAGE_SIZE = 5;
 const ALL_TASK_IDS = TASKS_RONDELLE.map(function(t){return t.id;}).concat(TASKS_BOUT_FROID.map(function(t){return t.id;}));
 
 let allSessions = {};
-let ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{},nettoyage:{},anticipation_feeder:{},passage_so3:{}}, tasks:{}, extraTasks:[] };
+let ganttData = { targets:emptyTargets(), tasks:{}, extraTasks:[] };
 let allTasks = {};
 let historyPage = 0;
 let ganttQuiOverrides = {};
@@ -181,6 +287,12 @@ function initApp() {
   });
 
   document.getElementById("save-btn").addEventListener("click", saveSession);
+  var machInp = document.getElementById("f-machine-name");
+  if (machInp) machInp.addEventListener("input", refreshFixedTargetsBox);
+  var refInp = document.getElementById("f-reference");
+  if (refInp) refInp.addEventListener("input", function() { modifiedFields.add("meta_reference"); });
+  var typeInp = document.getElementById("f-type-indice");
+  if (typeInp) typeInp.addEventListener("change", function() { modifiedFields.add("meta_type"); });
 
   // Écouter la corbeille pour afficher le badge
   onValue(ref(db, "corbeille"), function(snap) {
@@ -211,12 +323,13 @@ function initApp() {
 }
 
 function resetState() {
-  ganttData = { targets:{grand_t1:{},petit_t1:{},rondelle:{},nettoyage:{},anticipation_feeder:{},passage_so3:{}}, tasks:{}, extraTasks:[] };
+  ganttData = { targets:emptyTargets(), tasks:{}, extraTasks:[] };
   ganttQuiOverrides = {};
   modifiedFields = new Set();
   currentSessId = null;
   document.getElementById("f-machine-name").value = "";
   var refField = document.getElementById("f-reference"); if (refField) refField.value = "";
+  var typeBox = document.getElementById("f-type-indice"); if (typeBox) typeBox.checked = false;
   document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
 }
 
@@ -227,12 +340,9 @@ function buildForm() {
 
   var targetsGroup = document.createElement("div");
   targetsGroup.style.cssText = "background:#f0f2f5;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;margin-bottom:4px;";
-  targetsGroup.appendChild(buildTargetSection("grand_t1","TARGET (Grand T1)","#c0392b",ganttData.targets.grand_t1||{}));
-  targetsGroup.appendChild(buildTargetSection("nettoyage","TARGET (Nettoyage)","#27ae60",ganttData.targets.nettoyage||{}));
-  targetsGroup.appendChild(buildTargetSection("petit_t1","TARGET (Petit t1)","#e07b54",ganttData.targets.petit_t1||{}));
-  targetsGroup.appendChild(buildTargetSection("rondelle","TARGET (Rondelle)","#7d3c98",ganttData.targets.rondelle||{}));
-  targetsGroup.appendChild(buildTargetSection("anticipation_feeder","TARGET (Anticipation Feeder)","#2980b9",ganttData.targets.anticipation_feeder||{}));
-  targetsGroup.appendChild(buildTargetSection("passage_so3","TARGET (Passage en SO3)","#e91e8c",ganttData.targets.passage_so3||{}));
+  TARGET_DEFS.forEach(function(td) {
+    targetsGroup.appendChild(buildTargetSection(td.key, td.label, td.color, (ganttData.targets||{})[td.key]||{}));
+  });
   container.appendChild(targetsGroup);
 
   var tasksSec = document.createElement("div");
@@ -254,6 +364,12 @@ function buildForm() {
   var bfSep = document.createElement("div");
   bfSep.style.cssText = "background:"+BOUT_FROID_COLOR+";color:#fff;font-size:12px;font-weight:700;padding:8px 12px;letter-spacing:.5px;";
   bfSep.textContent = "BOUT FROID"; tasksSec.appendChild(bfSep);
+
+  var fixedBox = document.createElement("div");
+  fixedBox.id = "fixed-targets-box";
+  fixedBox.style.cssText = "background:"+FIXED_BG+";padding:10px 12px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid #eee;";
+  tasksSec.appendChild(fixedBox);
+  refreshFixedTargetsBox();
 
   TASKS_BOUT_FROID.forEach(function(task) {
     var tv = ganttData.tasks[task.id] || {};
@@ -572,7 +688,7 @@ function encCmt(str) { if(!str) return ""; return str.replace(/\\/g,"\\\\").repl
 function collectData() {
   var container = document.getElementById("form-sections");
   var out = { targets:{}, tasks:{}, extraTasks:[] };
-  ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feeder","passage_so3"].forEach(function(key) {
+  TARGET_KEYS.forEach(function(key) {
     var sec = container.querySelector('[data-target-key="'+key+'"]');
     if (sec) out.targets[key] = readSlots(sec);
   });
@@ -598,7 +714,32 @@ function collectData() {
   return out;
 }
 
+// Encadré des targets fixes dans le formulaire (lecture seule)
+function refreshFixedTargetsBox() {
+  var box = document.getElementById("fixed-targets-box"); if (!box) return;
+  var mField = document.getElementById("f-machine-name");
+  var machine = mField ? mField.value : "";
+  var sess = (currentSessId && allSessions[currentSessId]) || {};
+  var fixes = getFixedTargets(sess, machine);
+  box.innerHTML = "";
+  FIXED_TARGETS_BF.forEach(function(ft){
+    var line = document.createElement("div");
+    line.style.cssText = "display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:"+FIXED_COLOR+";";
+    var l = document.createElement("span"); l.textContent = ft.label;
+    var v = document.createElement("span");
+    v.textContent = (fixes[ft.key]!=="" && fixes[ft.key]!==undefined) ? fixes[ft.key]+" min" : "-- (saisir la machine)";
+    line.appendChild(l); line.appendChild(v); box.appendChild(line);
+  });
+}
+
 // ── SAUVEGARDE ────────────────────────────────────────────────────────────────
+function getFormReference() { var f = document.getElementById("f-reference"); return f ? f.value.trim() : ""; }
+function getFormType() { var b = document.getElementById("f-type-indice"); return (b && b.checked) ? "Indice" : "Complet"; }
+function fillSessionInfo(d) {
+  var refField = document.getElementById("f-reference"); if (refField) refField.value = d.reference || "";
+  var typeBox = document.getElementById("f-type-indice"); if (typeBox) typeBox.checked = (d.typeChangement === "Indice");
+}
+
 async function ensureSession() {
   var date = document.getElementById("f-date").value;
   var machine = document.getElementById("f-machine-name").value.trim();
@@ -610,8 +751,9 @@ async function ensureSession() {
   var dl = new Date(date+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"});
   await set(ref(db,"sessions/"+sessId), {
     date:date, machine:machine,
-    ganttData:{ targets:{grand_t1:{},nettoyage:{},petit_t1:{},rondelle:{},anticipation_feeder:{},passage_so3:{}}, tasks:{}, extraTasks:[] },
-    title:machine+" - "+dl, savedAt:Date.now()
+    ganttData:{ targets:emptyTargets(), tasks:{}, extraTasks:[] },
+    title:machine+" - "+dl, savedAt:Date.now(),
+    reference:getFormReference(), typeChangement:getFormType()
   });
   currentSessId = sessId;
   return sessId;
@@ -634,7 +776,7 @@ async function saveSession() {
   var isFirstSave = !snapCheck.val() || Object.keys(snapCheck.val()).length === 0;
 
   // Sauvegarder les targets
-  for (var tkey of ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feeder","passage_so3"]) {
+  for (var tkey of TARGET_KEYS) {
     if (isFirstSave || modifiedFields.has("target_"+tkey)) {
       await set(ref(db,"sessions/"+sessId+"/ganttData/targets/"+tkey), data.targets[tkey]||{});
     }
@@ -657,6 +799,19 @@ async function saveSession() {
   await set(ref(db,"sessions/"+sessId+"/date"), date);
   await set(ref(db,"sessions/"+sessId+"/title"), machine+" - "+dl);
   await set(ref(db,"sessions/"+sessId+"/savedAt"), Date.now());
+  // Targets fixes Bout Froid : figées à l'enregistrement (recalculées seulement si la ligne change)
+  var sessPrev = allSessions[sessId] || {};
+  var fixesNow = computeFixedTargets(machine);
+  if (!sessPrev.targetsFixes || String(sessPrev.targetsFixes.ligne) !== String(fixesNow.ligne)) {
+    await set(ref(db,"sessions/"+sessId+"/targetsFixes"), fixesNow);
+  }
+  // Référence et type de changement : enregistrés si modifiés sur ce PC (ou 1er enregistrement)
+  if (isFirstSave || modifiedFields.has("meta_reference")) {
+    await set(ref(db,"sessions/"+sessId+"/reference"), getFormReference());
+  }
+  if (isFirstSave || modifiedFields.has("meta_type")) {
+    await set(ref(db,"sessions/"+sessId+"/typeChangement"), getFormType());
+  }
 
   modifiedFields = new Set(); // Réinitialiser le tracking après sauvegarde
   showToast("Séance enregistrée !", "#34c759");
@@ -822,6 +977,8 @@ async function loadHistorySession(id) {
   var d = snap.val(); if (!d) return;
   document.getElementById("f-date").value = d.date||"";
   document.getElementById("f-machine-name").value = d.machine||"";
+  fillSessionInfo(d);
+  modifiedFields = new Set();
   ganttData = d.ganttData || {};
   ganttData.targets = ganttData.targets || {grand_t1:{},petit_t1:{},rondelle:{}};
   ganttData.tasks = ganttData.tasks || {};
@@ -837,6 +994,8 @@ async function editHistorySession(id) {
   var d = snap.val(); if (!d) return;
   document.getElementById("f-date").value = d.date||"";
   document.getElementById("f-machine-name").value = d.machine||"";
+  fillSessionInfo(d);
+  modifiedFields = new Set();
   ganttData = d.ganttData || {};
   ganttData.targets = ganttData.targets || {grand_t1:{},petit_t1:{},rondelle:{}};
   ganttData.tasks = ganttData.tasks || {};
@@ -924,7 +1083,7 @@ function renderGantt(date, machine, data) {
     if(obj.sh4||obj.eh4) regT(obj.sh4,obj.sm4,obj.eh4,obj.em4);
   }
 
-  ["grand_t1","nettoyage","petit_t1","rondelle","anticipation_feeder","passage_so3"].forEach(function(k){ regObj(targets[k]||{}); });
+  TARGET_KEYS.forEach(function(k){ regObj(targets[k]||{}); });
   TASKS_RONDELLE.forEach(function(t){ regObj(tasks[t.id]||{}); });
   TASKS_BOUT_FROID.forEach(function(t){ regObj(tasks[t.id]||{}); });
   extras.forEach(function(et){ regObj(et); });
@@ -940,14 +1099,7 @@ function renderGantt(date, machine, data) {
   document.getElementById("gantt-machine-title").textContent = machine||"Changement - Temp/Machine";
   document.getElementById("gantt-subtitle").textContent = "SGD Pharma - Sucy-en-Brie"+(dateStr?" - "+dateStr:"");
 
-  var targetDefs=[
-    {key:"grand_t1",label:"TARGET (Grand T1)",color:"#c0392b"},
-    {key:"nettoyage",label:"TARGET (Nettoyage)",color:"#27ae60"},
-    {key:"petit_t1",label:"TARGET (Petit t1)",color:"#e07b54"},
-    {key:"rondelle",label:"TARGET (Rondelle)",color:"#7d3c98"},
-    {key:"anticipation_feeder",label:"TARGET (Anticipation Feeder)",color:"#2980b9"},
-    {key:"passage_so3",label:"TARGET (Passage en SO3)",color:"#e91e8c"}
-  ];
+  var targetDefs=TARGET_DEFS;
 
   var h='<table class="gantt"><tr><th colspan="4"></th>';
   for(var m=minT;m<maxT;m+=60) h+='<th colspan="'+(60/slotMin)+'" style="background:#1a3a6b;color:#fff">60 min</th>';
@@ -1058,6 +1210,20 @@ function renderGantt(date, machine, data) {
 
   // Bout Froid - ordre fixe
   h+='<tr><td colspan="'+(4+slots+1)+'" style="background:'+BOUT_FROID_COLOR+';color:#fff;font-weight:700;font-size:12px;padding:7px 12px;">BOUT FROID</td></tr>';
+  var sessG = (currentSessId && allSessions[currentSessId]) || {};
+  var fixesG = getFixedTargets(sessG, machine||"");
+  FIXED_TARGETS_BF.forEach(function(ft){
+    var v = fixesG[ft.key];
+    h+='<tr class="target-section" style="background:'+FIXED_BG+';">'+
+      '<td class="info machine-name" style="color:'+FIXED_COLOR+';font-weight:700;">'+ft.label+'</td>'+
+      '<td class="info who-cell">--</td>'+
+      '<td class="info time-cell">--</td>'+
+      '<td class="info time-cell">--</td>'+
+      '<td colspan="'+slots+'" class="bar-cell" style="text-align:center;color:'+FIXED_COLOR+';font-weight:700;font-size:13px;">'+
+        (v!==""&&v!==undefined ? "Target : "+v+" min" : "Target : -- (machine non reconnue)")+'</td>'+
+      '<td style="background:'+FIXED_BG+';"></td>'+
+      '</tr>';
+  });
   TASKS_BOUT_FROID.forEach(function(task,idx){ renderTaskRow(task, tasks[task.id]||{}, idx, true, idx); });
   extrasBoutFroid.forEach(function(et,idx){ renderExtraRow(et, idx, true, TASKS_BOUT_FROID.length+idx); });
 
@@ -1153,37 +1319,10 @@ function initExportButtons(){
   });
 }
 
-function exportToExcel(dateFrom,dateTo){
-  var sessions=Object.values(allSessions);
-  var filtered=dateFrom&&dateTo?sessions.filter(function(s){return s.date>=dateFrom&&s.date<=dateTo;}):sessions;
-  if(!filtered.length){alert("Aucune seance trouvee.");return;}
-  filtered.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
-  var rows=[["ID_Changement","Date","Jour","Machine","Référence_Machine","Section","Type_Tâche","Tâche","Tâche_Référence","Qui","Début","Fin","Date_Heure_Début","Date_Heure_Fin","Durée (min)","Commentaires"]];
-
-  // Correspondance tâche -> TARGET de référence
-  // Les noms doivent correspondre EXACTEMENT à ceux dans TASKS_RONDELLE et TASKS_BOUT_FROID
-  var TACHE_REF = {
-    "Nettoyage de machine": "TARGET (Nettoyage)",
-    "Changement rondelle (cuvette)": "TARGET (Rondelle)",
-    "Cote Finisseur": "TARGET (Grand T1)",
-    "Cote Ebaucheur": "TARGET (Grand T1)",
-    "Entonnoir sous verre": "TARGET (Petit t1)",
-    "Distributeur sous verre": "TARGET (Petit t1)",
-    "Demarrage section sans flacon": "TARGET (Grand T1)",
-    "Debut section avec flacon": "TARGET (Grand T1)",
-    "Machine complete avec flacon": "TARGET (Grand T1)",
-    "Mise a l arche": "TARGET (Grand T1)",
-    "Changement Traitement Surface": "TARGET (Grand T1)",
-    "Nettoyage SO3": "TARGET (Passage en SO3)",
-    "Aligneur vide": "TARGET (Nettoyage)",
-    "T0 : Nettoyage de ligne": "TARGET (Nettoyage)",
-    "T1 : Durée pré-réglage": "TARGET (Anticipation Feeder)",
-    "Arrivée deux sections contrôlables": "TARGET (Anticipation Feeder)",
-    "Arrivée de toutes sections": "TARGET (Anticipation Feeder)",
-    "Top qualité": "TARGET (Passage en SO3)",
-    "Premier lot sorti": "TARGET (Passage en SO3)",
-    "Validation de deux lots commercialisables": "TARGET (Passage en SO3)"
-  };
+// Construit les lignes d'export (commune à l'Excel et à l'envoi Power BI)
+// blankLineBetween : ligne vide entre les séances (Excel uniquement, comme avant)
+function buildExportRows(sessions, blankLineBetween) {
+  var rows = [EXPORT_HEADERS.slice()];
 
   function makeDT(dateS, timeS, isEnd, startTimeS) {
     if (!dateS || !timeS || timeS === "--") return "";
@@ -1200,23 +1339,20 @@ function exportToExcel(dateFrom,dateTo){
     return finalDate + " " + timeS + ":00";
   }
 
-  var exportRowIdx = 0;
-  filtered.forEach(function(session){
-    exportRowIdx = 0;
-    var dateStr=session.date||"",jourStr=dateStr?new Date(dateStr+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long"}):"",machine=session.machine||"";
-    var data=session.ganttData||{},targets=data.targets||{},tasks=data.tasks||{},extras=data.extraTasks||[];
+  sessions.forEach(function(session){
+    var rowIdx = 0;
+    var dateStr = session.date||"";
+    var jourStr = dateStr ? new Date(dateStr+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long"}) : "";
+    var info = sessionMachineInfo(session);
+    var machineCourt = info.court, machineRef = info.ref;
+    var typeChg = session.typeChangement || ""; // vide pour les anciennes séances
+    var data = session.ganttData||{}, targets = data.targets||{}, tasks = data.tasks||{}, extras = data.extraTasks||[];
 
-    // Extraire nom court (avant " - ") et référence
-    var machineParts = machine.indexOf(" - ") > -1 ? machine.split(" - ") : [machine, ""];
-    var machineCourt = machineParts[0].trim();
-    var machineRef = machineParts.slice(1).join(" - ").trim();
-    // Si un champ référence dédié existe, l'utiliser en priorité
-    var refField = document.getElementById("f-reference");
-    if (refField && refField.value.trim()) machineRef = refField.value.trim();
-
-    function addRow(section, type, tache, ref, qui, start, end, commentaire) {
-      exportRowIdx++;
-      var id = machineCourt.replace(/\s/g,"_")+"_"+dateStr+"_"+String(exportRowIdx).padStart(3,"0");
+    function addRow(section, type, tache, refT, qui, obj) {
+      rowIdx++;
+      var sp = spanSlots(obj);
+      var start = sp.start, end = sp.end;
+      var id = machineCourt.replace(/\s/g,"_")+"_"+dateStr+"_"+String(rowIdx).padStart(3,"0");
       var sMin = toMin(start), eMin = toMin(end);
       var dur = "";
       if (sMin !== null && eMin !== null) {
@@ -1224,42 +1360,54 @@ function exportToExcel(dateFrom,dateTo){
         if (dur < 0) dur += 1440; // passage minuit : ajouter 24h en minutes
       }
       // Protéger contre les formules Excel : préfixer avec apostrophe si commence par = + - @
-      var cmt = (commentaire||"").replace(/\n/g," | ");
+      var cmt = (sp.comment||"").replace(/\n/g," | ");
       if (cmt && "=+-@".indexOf(cmt[0]) > -1) cmt = "'" + cmt;
-      rows.push([id, dateStr, jourStr, machineCourt, machineRef, section, type, tache, ref, qui, start, end,
-        makeDT(dateStr,start), makeDT(dateStr,end,true,start), dur, cmt]);
+      rows.push([id, dateStr, jourStr, machineCourt, machineRef, section, type, tache, refT, qui, start, end,
+        makeDT(dateStr,start), makeDT(dateStr,end,true,start), dur, cmt, typeChg]);
     }
 
     // Targets
-    [["grand_t1","TARGET (Grand T1)"],["nettoyage","TARGET (Nettoyage)"],["petit_t1","TARGET (Petit t1)"],["rondelle","TARGET (Rondelle)"],["anticipation_feeder","TARGET (Anticipation Feeder)"],["passage_so3","TARGET (Passage en SO3)"]].forEach(function(td){
-      var t=targets[td[0]]||{};
-      var start=getTV(t.sh||"",t.sm||""), end=getTV(t.eh||"",t.em||"");
-      addRow(td[1], "TARGET", td[1], "--", "--", start, end, t.comment||"");
+    TARGET_DEFS.forEach(function(td){
+      addRow(td.label, "TARGET", td.label, "--", "--", targets[td.key]);
+    });
+
+    // Targets fixes Bout Froid (durée fixe selon la ligne, sans heures)
+    var fixes = getFixedTargets(session);
+    FIXED_TARGETS_BF.forEach(function(ft){
+      rowIdx++;
+      var idF = machineCourt.replace(/\s/g,"_")+"_"+dateStr+"_"+String(rowIdx).padStart(3,"0");
+      rows.push([idF, dateStr, jourStr, machineCourt, machineRef, ft.label, "TARGET", ft.label, "--", "--", "", "", "", "", fixes[ft.key], "", typeChg]);
     });
 
     // Bout Chaud
     TASKS_RONDELLE.forEach(function(task){
-      var t=tasks[task.id]||{};
-      var start=getTV(t.sh||"",t.sm||""), end=getTV(t.eh||"",t.em||"");
-      addRow("Bout Chaud", "Tâche", task.machine, TACHE_REF[task.machine]||"--", t.qui||task.qui, start, end, t.comment||"");
+      var t = tasks[task.id]||{};
+      addRow("Bout Chaud", "Tâche", task.machine, TACHE_REF[task.machine]||"--", t.qui||task.qui, t);
     });
 
     // Bout Froid
     TASKS_BOUT_FROID.forEach(function(task){
-      var t=tasks[task.id]||{};
-      var start=getTV(t.sh||"",t.sm||""), end=getTV(t.eh||"",t.em||"");
-      addRow("Bout Froid", "Tâche", task.machine, TACHE_REF[task.machine]||"--", t.qui||task.qui, start, end, t.comment||"");
+      var t = tasks[task.id]||{};
+      addRow("Bout Froid", "Tâche", task.machine, TACHE_REF[task.machine]||"--", t.qui||task.qui, t);
     });
 
     // Extras
     extras.forEach(function(et){
-      var start=getTV(et.sh||"",et.sm||""), end=getTV(et.eh||"",et.em||"");
       var section = et.group==="boutfroid" ? "Bout Froid" : "Bout Chaud";
-      addRow(section, "Tâche", et.machine||"Extra", TACHE_REF[et.machine]||"--", et.qui||"", start, end, et.comment||"");
+      addRow(section, "Tâche", et.machine||"Extra", TACHE_REF[et.machine]||"--", et.qui||"", et);
     });
 
-    rows.push(Array(15).fill(""));
+    if (blankLineBetween) rows.push(Array(EXPORT_HEADERS.length).fill(""));
   });
+  return rows;
+}
+
+function exportToExcel(dateFrom,dateTo){
+  var sessions=Object.values(allSessions);
+  var filtered=dateFrom&&dateTo?sessions.filter(function(s){return s.date>=dateFrom&&s.date<=dateTo;}):sessions;
+  if(!filtered.length){alert("Aucune seance trouvee.");return;}
+  filtered.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+  var rows=buildExportRows(filtered, true);
   var csv=rows.map(function(row){return row.map(function(cell){var str=String(cell!==null&&cell!==undefined?cell:"").replace(/\n/g," | ").replace(/\r/g,""); return(str.indexOf(";")>-1||str.indexOf('"')>-1)?'"'+str.replace(/"/g,'""')+'"':str;}).join(";");}).join("\n");
   var blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
   var url=URL.createObjectURL(blob),a=document.createElement("a");
@@ -1281,91 +1429,7 @@ async function sendToGitHub() {
   var sessions = Object.values(allSessions);
   if (!sessions.length) { alert("Aucune séance à envoyer."); return; }
   sessions.sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
-
-  var rows = [["ID_Changement","Date","Jour","Machine","Référence_Machine","Section","Type_Tâche","Tâche","Tâche_Référence","Qui","Début","Fin","Date_Heure_Début","Date_Heure_Fin","Durée (min)","Commentaires"]];
-
-  var TACHE_REF_GH = {
-    "Nettoyage de machine": "TARGET (Nettoyage)",
-    "Changement rondelle (cuvette)": "TARGET (Rondelle)",
-    "Cote Finisseur": "TARGET (Grand T1)",
-    "Cote Ebaucheur": "TARGET (Grand T1)",
-    "Entonnoir sous verre": "TARGET (Petit t1)",
-    "Distributeur sous verre": "TARGET (Petit t1)",
-    "Demarrage section sans flacon": "TARGET (Grand T1)",
-    "Debut section avec flacon": "TARGET (Grand T1)",
-    "Machine complete avec flacon": "TARGET (Grand T1)",
-    "Mise a l arche": "TARGET (Grand T1)",
-    "Changement Traitement Surface": "TARGET (Grand T1)",
-    "Nettoyage SO3": "TARGET (Passage en SO3)",
-    "Aligneur vide": "TARGET (Nettoyage)",
-    "T0 : Nettoyage de ligne": "TARGET (Nettoyage)",
-    "T1 : Durée pré-réglage": "TARGET (Anticipation Feeder)",
-    "Arrivée deux sections contrôlables": "TARGET (Anticipation Feeder)",
-    "Arrivée de toutes sections": "TARGET (Anticipation Feeder)",
-    "Top qualité": "TARGET (Passage en SO3)",
-    "Premier lot sorti": "TARGET (Passage en SO3)",
-    "Validation de deux lots commercialisables": "TARGET (Passage en SO3)"
-  };
-
-  function makeDTgh(dateS, timeS, isEnd, startTimeS) {
-    if (!dateS || !timeS || timeS === "--") return "";
-    var finalDate = dateS;
-    if (isEnd && startTimeS && startTimeS !== "--") {
-      var sMin = toMin(startTimeS), eMin = toMin(timeS);
-      if (sMin !== null && eMin !== null && eMin < sMin) {
-        var d = new Date(dateS + "T00:00:00");
-        d.setDate(d.getDate() + 1);
-        finalDate = d.toISOString().slice(0,10);
-      }
-    }
-    return finalDate + " " + timeS + ":00";
-  }
-
-  sessions.forEach(function(session) {
-    var dateStr = session.date||"";
-    var jourStr = dateStr ? new Date(dateStr+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long"}) : "";
-    var machine = session.machine||"";
-    var machineParts = machine.indexOf(" - ") > -1 ? machine.split(" - ") : [machine, ""];
-    var machineCourt = machineParts[0].trim();
-    var machineRef = machineParts.slice(1).join(" - ").trim();
-    var data = session.ganttData||{}, targets = data.targets||{}, tasks = data.tasks||{}, extras = data.extraTasks||[];
-    var rowIdx = 0;
-
-    function addRowGH(section, type, tache, ref, qui, start, end, commentaire) {
-      rowIdx++;
-      var id = machineCourt.replace(/\s/g,"_")+"_"+dateStr+"_"+String(rowIdx).padStart(3,"0");
-      var sMin = toMin(start), eMin = toMin(end);
-      var dur = "";
-      if (sMin !== null && eMin !== null) {
-        dur = eMin - sMin;
-        if (dur < 0) dur += 1440;
-      }
-      var cmt = (commentaire||"").replace(/\n/g," | ");
-      if (cmt && "=+-@".indexOf(cmt[0]) > -1) cmt = "'" + cmt;
-      rows.push([id, dateStr, jourStr, machineCourt, machineRef, section, type, tache, ref, qui, start, end,
-        makeDTgh(dateStr,start), makeDTgh(dateStr,end,true,start), dur, cmt]);
-    }
-
-    [["grand_t1","TARGET (Grand T1)"],["nettoyage","TARGET (Nettoyage)"],["petit_t1","TARGET (Petit t1)"],["rondelle","TARGET (Rondelle)"],["anticipation_feeder","TARGET (Anticipation Feeder)"],["passage_so3","TARGET (Passage en SO3)"]].forEach(function(td){
-      var t = targets[td[0]]||{};
-      addRowGH(td[1], "TARGET", td[1], "--", "--", getTV(t.sh||"",t.sm||""), getTV(t.eh||"",t.em||""), t.comment||"");
-    });
-
-    TASKS_RONDELLE.forEach(function(task){
-      var t = tasks[task.id]||{};
-      addRowGH("Bout Chaud", "Tâche", task.machine, TACHE_REF_GH[task.machine]||"--", t.qui||task.qui, getTV(t.sh||"",t.sm||""), getTV(t.eh||"",t.em||""), t.comment||"");
-    });
-
-    TASKS_BOUT_FROID.forEach(function(task){
-      var t = tasks[task.id]||{};
-      addRowGH("Bout Froid", "Tâche", task.machine, TACHE_REF_GH[task.machine]||"--", t.qui||task.qui, getTV(t.sh||"",t.sm||""), getTV(t.eh||"",t.em||""), t.comment||"");
-    });
-
-    extras.forEach(function(et){
-      var section = et.group==="boutfroid" ? "Bout Froid" : "Bout Chaud";
-      addRowGH(section, "Tâche", et.machine||"Extra", TACHE_REF_GH[et.machine]||"--", et.qui||"", getTV(et.sh||"",et.sm||""), getTV(et.eh||"",et.em||""), et.comment||"");
-    });
-  });
+  var rows = buildExportRows(sessions, false);
 
   var csv = rows.map(function(row){
     return row.map(function(cell){
